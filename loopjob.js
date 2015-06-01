@@ -1,4 +1,5 @@
 var simplehttp = require('./simplehttp');
+var loopCounter = 0;
 
  var jobStatus = {
     url: null,
@@ -8,6 +9,7 @@ var simplehttp = require('./simplehttp');
     isRequestSending: false,
     loopInterval: 500,
     intervalObj: null,
+    timeout: 500,
     urlInjection: function(url) {return url},
     optionsInjection: function(options) {return options},
     responseHandler: null
@@ -47,7 +49,11 @@ function stopLooping() {
     jobStatus.lastRequestTime = timeStemp;
     var url = jobStatus.urlInjection( jobStatus.url);
     jobStatus.isRequestSending = true;
-    console.log("loopWork...");
+    loopCounter++;
+    if (loopCounter%100===0) {
+        console.log("loopWork...", loopCounter);    
+    }
+    
 
     var options =  {"../timeout": jobStatus.timeout, "../cookieJar":null};
     jobStatus.optionsInjection(options);

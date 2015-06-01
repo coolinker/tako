@@ -3,6 +3,7 @@ var simplehttp = require('../simplehttp');
 var htmlparser = require('../htmlparser');
 
 function  detect(callback, step) {
+    console.log("detectlatesttransferid start...");
     var options = {};
     var url = "http://www.renrendai.com/transfer/transferList!json.action?pageIndex=1&_=" + new Date().getTime();
     simplehttp.GET(url, options, function(error, response, body) {
@@ -19,6 +20,7 @@ function  detect(callback, step) {
 }
 
 function detectMaxTransferId (startId, callback, step) {
+    console.log("detectlatesttransferid...", startId, step);
     var detectId = startId+step;
     var url = "http://www.renrendai.com/transfer/loanTransferDetail.action?transferId="+detectId;
     simplehttp.GET(url, {}, function(error, response, body) {
