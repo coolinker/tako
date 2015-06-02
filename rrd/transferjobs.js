@@ -6,9 +6,9 @@ function startNewTransferLoop(callback) {
     var transfers = [];
     detectLatestTransferId(function(startId){
         loopNewTransfer(startId, function(newTransferObj) {
-            transfers.push(newTransferObj);
-            if (transfers.length > 100) transfers.shift();
-            callback(transfers);
+            // transfers.push(newTransferObj);
+            // if (transfers.length > 100) transfers.shift();
+            callback(newTransferObj);
         })
     }, 10000);
 }
