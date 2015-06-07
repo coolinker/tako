@@ -6,9 +6,10 @@ var simplehttp = require('../simplehttp');
 var publicKey = require("./publickey");
 
 exports.login = login;
-function login(logininfo, callback) {
-    var user = logininfo.user;
-    var password = logininfo.password;
+
+function login(account, callback) {
+    var user = account.user;
+    var password = account.password;
 
     var cncryptPassword = encrypt(password, publicKey);
     var cookieJar = request.jar();
@@ -20,25 +21,50 @@ function login(logininfo, callback) {
             targetUrl: "http://www.renrendai.com/",
             returnUrl: "",
             "../cookieJar": cookieJar
-        },        
+        },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://www.renrendai.com");
             logutil.log("login function", cookie_string);
 
             if (cookie_string.indexOf("rrd_key")) {
-                callback(cookieJar);
+                account.cookieJar = cookieJar;
+                getUserInfo(account, function(userInfo) {
+                    account.avaliableBalance = Number(userInfo.avaliableBalance);
+                    //console.log("0000000avaliableBalance", userInfo.avaliableBalance)
+                    callback(cookieJar);
+                })                
             } else {
                 callback(null);
             }
+
+
         });
 }
 
-function getUserInfo(cookieJar) {
+exports.extendLogin = extendLogin;
+
+function extendLogin(account, callback) {
     var url = 'https://www.renrendai.com/account/getHomePageUserInfo.action?timeout=5000&_=' + new Date().getTime();
-    sendGet(url, {}, cookieJar, function(error, request, body) {
-        console.log("error", error)
-        console.log("getUserInfo:", body);
+    simplehttp.GET(url, {
+        "../cookieJar": account.cookieJar
+    }, function(error, request, body) {
+        var cookie_string = cookieJar.getCookieString("https://www.renrendai.com");
+        if (cookie_string.indexOf("rrd_key")) {
+            callback(cookieJar);
+        } else {
+            account.cookieJar = null;
+            callback(null);
+        }
     });
 }
 
-
+function getUserInfo(account, callback) {
+    var url = 'https://www.renrendai.com/account/getHomePageUserInfo.action?timeout=5000&_=' + new Date().getTime();
+    simplehttp.GET(url, {
+        "../cookieJar": account.cookieJar
+    }, function(error, request, body) {
+        console.log("getUserInfo:", body);
+        var info = JSON.parse(body);
+        callback(info)
+    });
+}

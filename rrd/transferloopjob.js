@@ -39,16 +39,21 @@ function loopNewTransfer(startId, callback) {
                     var interest = Number(htmlparser.getValueFromBody('<dd class="text-xxl"><em class="text-xxxl color-dark-text">', '</em>%</dd>', body));
                     var price = Number(htmlparser.getValueFromBody('<em id="amount-per-share" data-amount-per-share="', '">', body));
                     var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
+                    var transferIdCode  = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
+                    var countRatio  = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
                     var transferObj = {
                         transferId: transferId,
+                        transferIdCode: transferIdCode,
                         interest: interest,
-                        shares: sharesAvailable,
+                        sharesAvailable: sharesAvailable,
                         pricePerShare: price,
+                        countRatio: countRatio,
                         duration: duration,
-                        timestemp: new Date()
+                        source: "www.renrendai.com",
+                        producedTime: new Date()
                     };
                     hasNew = true;
-                    console.log("->", transferObj.transferId, transferObj.interest, transferObj.shares, transferObj.timestemp.toLocaleTimeString());
+                    console.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
                     callback(transferObj);
                     transferId++;
                 }
