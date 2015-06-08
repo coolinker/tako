@@ -24,13 +24,12 @@ function login(account, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://www.renrendai.com");
-            logutil.log("login function", cookie_string);
+           logutil.log("login function", cookie_string);
 
             if (cookie_string.indexOf("rrd_key")) {
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
-                    account.avaliableBalance = Number(userInfo.avaliableBalance);
-                    //console.log("0000000avaliableBalance", userInfo.avaliableBalance)
+                    account.avaliableBalance = Number(userInfo.avaliableBalance.replace(",", ""));
                     callback(cookieJar);
                 })                
             } else {
@@ -48,6 +47,7 @@ function extendLogin(account, callback) {
     simplehttp.GET(url, {
         "../cookieJar": account.cookieJar
     }, function(error, request, body) {
+        var cookieJar = account.cookieJar;
         var cookie_string = cookieJar.getCookieString("https://www.renrendai.com");
         if (cookie_string.indexOf("rrd_key")) {
             callback(cookieJar);

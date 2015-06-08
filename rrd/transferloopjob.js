@@ -35,7 +35,7 @@ function loopNewTransfer(startId, callback) {
                     }
                     //no new item.
                 } else {
-                    var sharesAvailable = htmlparser.getValueFromBody('<em id="max-shares" data-shares="', '">', body);
+                    var sharesAvailable = Number(htmlparser.getValueFromBody('<em id="max-shares" data-shares="', '">', body));
                     var interest = Number(htmlparser.getValueFromBody('<dd class="text-xxl"><em class="text-xxxl color-dark-text">', '</em>%</dd>', body));
                     var price = Number(htmlparser.getValueFromBody('<em id="amount-per-share" data-amount-per-share="', '">', body));
                     var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
