@@ -1,6 +1,7 @@
+var logutil = require("./logutil");
 var simplehttp = require('./simplehttp');
 var loopCounter = 0;
-
+var errorCounter = 0;
  var jobStatus = {
     url: null,
     httpMethod: "GET",
@@ -50,14 +51,18 @@ function stopLooping() {
     var url = jobStatus.urlInjection( jobStatus.url);
     jobStatus.isRequestSending = true;
     loopCounter++;
-    if (loopCounter%100===0) {
-        console.log("loopWork...", loopCounter);    
+    if (loopCounter%1000===0) {
+        // console.log("loopWork...", loopCounter);    
+        logutil.log("loopjob loopWork :", loopCounter, errorCounter, jobStatus.url);
     }
     
 
     var options =  {"../timeout": jobStatus.timeout, "../cookieJar":null};
     jobStatus.optionsInjection(options);
     simplehttp[jobStatus.httpMethod](url, options, function(error, response, body) {
+            if (error) {
+                errorCounter++;
+            }
             jobStatus.isRequestSending = false;
             jobStatus.responseHandler(error, response, body);
     });

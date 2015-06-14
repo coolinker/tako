@@ -33,6 +33,20 @@ function consume(toBeConsumed) {
     //cleanAccounts()
 }
 
+exports.consumeAll = consumeAll;
+function consumeAll(toBeConsumed) {
+    var sourceType = ACCOUNT_TYPES[toBeConsumed[0]['source']];
+    var consumejob = require("./" + sourceType + "/consumejob");
+    accounts = accountQueues[sourceType];
+    var consumeIdx = 0;
+    for (var i = 0; i < accounts.length; i++) {
+        if (accounts[i].cookieJar !== null) {
+            consumejob.consume(accounts[i], toBeConsumed[consumeIdx++]);
+        }
+        if (consumeIdx >= toBeConsumed.length) break;
+    }
+}
+
 function loginAccount(accountInfo) {
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
@@ -67,7 +81,7 @@ function loopLogin() {
 
 function queueLogin() {
     var now = new Date();
-    logutil.log("loopLogin...");
+    // logutil.log("loopLogin...");
     for (var att in accountQueues) {
         queue = accountQueues[att];
         if (queue) {
@@ -85,7 +99,7 @@ function queueLogin() {
                     var loginjobs = require("./" + accounttype + "/loginjobs");
                     acc.locked = true;
                     loginjobs.extendLogin(acc, function(cookieJar) {
-                        accountInfo.cookieJar = cookieJar;
+                        acc.cookieJar = cookieJar;
                         if (cookieJar === null) {
                             logutil.log("extend login failed:", acc);
                         } else {

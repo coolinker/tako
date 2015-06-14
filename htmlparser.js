@@ -8,4 +8,14 @@ function getValueFromBody(preStr, postStr, body) {
     var str = body.substring(startIdx + preStr.length, endIdx);
     return str;
 }
-exports.getValueFromBody = getValueFromBody;
+exports.getValueFromBody = getValueFromBody
+
+
+function getSubStringsFromBody(preStr, postStr, body) {
+    var body = body.replace(/\r\n/g, '');
+    var regStr = preStr +'(.*?)'+postStr;
+    var reg = new RegExp(regStr, "g");
+    var eles = body.match(reg);
+    return eles;
+}
+exports.getSubStringsFromBody = getSubStringsFromBody;

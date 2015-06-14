@@ -17,7 +17,8 @@ CommonAccount.prototype.locked = false;
 CommonAccount.prototype.interestLevel = 100;
 CommonAccount.prototype.avaliableBalance = 0;
 CommonAccount.prototype.minValidBalance = 10000;
+CommonAccount.prototype.maxFundPerProduct = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
-
+CommonAccount.prototype.consumeHistory = {};
 
 module.exports = CommonAccount;

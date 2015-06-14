@@ -25,13 +25,13 @@ function loopNewTransfer(startId, callback) {
         },
         responseHandler: function(error, request, body) {
             if (error) {
-                console.log("loanTransferDetail error:", error)
+                //console.log("loanTransferDetail error:", error)
             } else if (request.statusCode == 200) {
                 var errorcode = htmlparser.getValueFromBody('<div style="display: none;">', '</div>', body);
                 if (errorcode === "500") {
                     if (hasNew) {
                         hasNew = false;
-                        console.log("-|", transferId, new Date().toLocaleTimeString())
+                       // console.log("-|", transferId, new Date().toLocaleTimeString())
                     }
                     //no new item.
                 } else {
@@ -53,7 +53,10 @@ function loopNewTransfer(startId, callback) {
                         producedTime: new Date()
                     };
                     hasNew = true;
-                    console.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
+                    if (transferObj.interest>=13) {
+                        console.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());    
+                    }
+                    
                     callback(transferObj);
                     transferId++;
                 }

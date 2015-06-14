@@ -26,7 +26,7 @@ function login(account, callback) {
             var cookie_string = cookieJar.getCookieString("https://www.renrendai.com");
            logutil.log("login function", cookie_string);
 
-            if (cookie_string.indexOf("rrd_key")) {
+            if (cookie_string.indexOf("rrd_key")>=0) {
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
                     account.avaliableBalance = Number(userInfo.avaliableBalance.replace(",", ""));

@@ -2,7 +2,7 @@ var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
 var INTERVAL_FOR_NEXT_CONSUME = 10000;
-var PRODUCE_TO_CONSUME_MIN = 2700;
+var PRODUCE_TO_CONSUME_MIN = 2300;
 var CONSUMING_INTERVAL_MIN = 5000;
 
 exports.consume = consume;
@@ -18,7 +18,7 @@ function consume(account, toBeConsumed, callback) {
     if (t < 0) {
         doConsume(account, toBeConsumed, callback);
     } else {
-        logutil.log("consume too soon... :", t)
+        logutil.log("consume too soon... :", t+"ms")
         setTimeout(doConsume, t, account, toBeConsumed, callback);
     }
 
