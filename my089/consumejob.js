@@ -25,9 +25,9 @@ function consume(account, toBeConsumed, callback) {
 
 function doConsume(account, toBeConsumed, callback) {
     if (toBeConsumed.sid) {
-        //logutil.log("my089 doConsume:", account.avaliableBalance, toBeConsumed.sid, toBeConsumed.interest, toBeConsumed.percentFinished);
+        //logutil.log("my089 doConsume:", account.availableBalance, toBeConsumed.sid, toBeConsumed.interest, toBeConsumed.percentFinished);
         simplehttp.GET('https://www.my089.com/Loan/OnBid.aspx?sid='+ toBeConsumed.sid, {
-                "../cookieJar": account.cookieJar
+                "cookieJar": account.cookieJar
             },
             function(err, request, body) {
                 if (request.statusCode === 200) {
@@ -35,7 +35,7 @@ function doConsume(account, toBeConsumed, callback) {
                         if (confirm>0) {
                             recordConsumeHIstory(account, toBeConsumed);
                         }
-                        logutil.log("my089 confirm:", toBeConsumed.sid, confirm, account.avaliableBalance);
+                        logutil.log("my089 confirm:", toBeConsumed.sid, confirm, account.availableBalance);
                         account.locked = false;
                         if (callback) callback(confirm);
                         account.lastConsumingTime = new Date();
@@ -58,9 +58,9 @@ function doOnBid(account, toBeConsumed, body, callback) {
     var maxValidFund = Number(htmlparser.getValueFromBody('您最多还可以再投<b class="red font_16 font_ya normal">￥', '</b>元', body));
     var percentFinished = Number(htmlparser.getValueFromBody('当前进度：</p><p class="Load"><em style="width:'
         , '%', body));
-    var avaliableBalanceStr = htmlparser.getValueFromBody('您的可用余额：</p><p><span id="uamt" class="font_ya red">￥', '</span>元', body);
-    var avaliableBalance = avaliableBalanceStr!=null ? Number(avaliableBalanceStr.replace(",", "")): 0;
-    account.avaliableBalance = avaliableBalance;
+    var availableBalanceStr = htmlparser.getValueFromBody('您的可用余额：</p><p><span id="uamt" class="font_ya red">￥', '</span>元', body);
+    var availableBalance = availableBalanceStr!=null ? Number(availableBalanceStr.replace(",", "")): 0;
+    account.availableBalance = availableBalance;
     var validFund = fundAbleToConsume(account, maxValidFund);
     if (validFund===0) {
         callback(0);
@@ -80,14 +80,16 @@ function doOnBid(account, toBeConsumed, body, callback) {
     // console.log("maxValidFund", validFund, maxValidFund,  percentFinished, toBeConsumed.percentFinished, printObj);
     
     simplehttp.POST('https://www.my089.com/Loan/OnBid.aspx?sid='+ sid, {
-                "../cookieJar": account.cookieJar,
-                __EVENTTARGET: __EVENTTARGET,
-                __EVENTARGUMENT: __EVENTARGUMENT,
-                __VIEWSTATE: __VIEWSTATE,
-                __VIEWSTATEGENERATOR: __VIEWSTATEGENERATOR,
-                __EVENTVALIDATION: __EVENTVALIDATION,
-                "ctl00$ContentPlaceHolder1$txtBidAmt": validFund,
-                "ctl00$ContentPlaceHolder1$btnBid": "确认无误，投标"
+                "cookieJar": account.cookieJar,
+                form: {
+                    __EVENTTARGET: __EVENTTARGET,
+                    __EVENTARGUMENT: __EVENTARGUMENT,
+                    __VIEWSTATE: __VIEWSTATE,
+                    __VIEWSTATEGENERATOR: __VIEWSTATEGENERATOR,
+                    __EVENTVALIDATION: __EVENTVALIDATION,
+                    "ctl00$ContentPlaceHolder1$txtBidAmt": validFund,
+                    "ctl00$ContentPlaceHolder1$btnBid": "确认无误，投标"
+                }
             },
             function(err, request, body) {            
                 if (request.statusCode === 302) {
@@ -112,7 +114,7 @@ function ableToConsume(account, toBeConsumed) {
     return (account.consumeHistory[account.source] === undefined || account.consumeHistory[account.source][toBeConsumed.sid] === undefined)
         && toBeConsumed.percentFinished < 100 
         && account.interestLevel <= toBeConsumed.interest 
-        && account.avaliableBalance > account.minValidBalance
+        && account.availableBalance > account.minValidBalance
         && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 

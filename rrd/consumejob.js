@@ -27,24 +27,26 @@ function consume(account, toBeConsumed, callback) {
 
 function doConsume(account, toBeConsumed, callback) {
     if (toBeConsumed.transferId) {
-        logutil.log("rrd doConsume:", account.avaliableBalance, toBeConsumed.transferId, toBeConsumed.interest, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+        logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
         var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
 
         simplehttp.POST('http://www.renrendai.com/transfer/buyLoanTransfer.action', {
-                "agree-contract": "on",
-                transferId: toBeConsumed.transferIdCode,
-                currentPrice: toBeConsumed.pricePerShare,
-                share: canBuyShares,
-                countRatio: toBeConsumed.countRatio,
-                "../cookieJar": account.cookieJar
+                form: {
+                    "agree-contract": "on",
+                    transferId: toBeConsumed.transferIdCode,
+                    currentPrice: toBeConsumed.pricePerShare,
+                    share: canBuyShares,
+                    countRatio: toBeConsumed.countRatio           
+                },
+                "cookieJar": account.cookieJar
             },
             function(err, request, body) {
                 if (request.statusCode === 302) {
                     confirmSpent(toBeConsumed.transferId, account, function(spent) {
                         if (!isNaN(spent)) {
-                            account.avaliableBalance -= spent;    
+                            account.availableBalance -= spent;    
                         }
-                        logutil.log("confirmSpent:", toBeConsumed.transferId, spent, account.avaliableBalance);
+                        logutil.log("confirmSpent:", toBeConsumed.transferId, spent, account.availableBalance);
                         account.locked = false;
                         if (callback) callback(spent);
                         account.lastConsumingTime = new Date();
@@ -59,7 +61,7 @@ function doConsume(account, toBeConsumed, callback) {
 
 function confirmSpent(transferId, account, callback) {
     simplehttp.GET('http://www.renrendai.com/transfer/loanTransferDetail.action?transferId=' + transferId, {
-            "../cookieJar": account.cookieJar
+            "cookieJar": account.cookieJar
         },
         function(err, request, body) {
             //   <div id="pg-server-message" data-status="0" data-message="您已成功投资45.47元，获得1份债权及折让收益0.0元" data-ispop="true" style="display: none;"></div>
@@ -69,14 +71,15 @@ function confirmSpent(transferId, account, callback) {
 }
 
 function sharesAbleToConsume(account, toBeConsumed) {
-    var maxShares = Math.floor(account.avaliableBalance / toBeConsumed.pricePerShare);
-    return Math.min(maxShares, toBeConsumed.sharesAvailable-1);
+    var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
+
+    return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable*0.5));
 }
 
 function ableToConsume(account, toBeConsumed) {
     return toBeConsumed.sharesAvailable > 0 
         && account.interestLevel <= toBeConsumed.interest 
-        && account.avaliableBalance > account.minValidBalance
+        && account.availableBalance > account.minValidBalance
         && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 

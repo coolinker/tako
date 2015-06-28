@@ -57,7 +57,7 @@ function stopLooping() {
     }
     
 
-    var options =  {"../timeout": jobStatus.timeout, "../cookieJar":null};
+    var options =  {"timeout": jobStatus.timeout, "cookieJar":null};
     jobStatus.optionsInjection(options);
     simplehttp[jobStatus.httpMethod](url, options, function(error, response, body) {
             if (error) {

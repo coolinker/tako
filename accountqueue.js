@@ -12,7 +12,7 @@ var LOGIN_ACCOUNTS_NUMBER = 3;
 //     loginExtendedTime: null,
 //     locked: false,
 //     interestLevel: 13,
-//     avaliableBalance: 0,
+//     availableBalance: 0,
 //     lastConsumingTime: null
 // }
 
