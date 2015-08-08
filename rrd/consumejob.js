@@ -1,8 +1,7 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
-var INTERVAL_FOR_NEXT_CONSUME = 10000;
-var PRODUCE_TO_CONSUME_MIN = 2300;
+var PRODUCE_TO_CONSUME_MIN = 1000;
 var CONSUMING_INTERVAL_MIN = 5000;
 
 exports.consume = consume;
@@ -73,7 +72,7 @@ function confirmSpent(transferId, account, callback) {
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
 
-    return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable*0.5));
+    return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable*0.8));
 }
 
 function ableToConsume(account, toBeConsumed) {

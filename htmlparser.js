@@ -10,9 +10,9 @@ function getValueFromBody(preStr, postStr, body) {
 }
 exports.getValueFromBody = getValueFromBody
 
-
-function getSubStringsFromBody(preStr, postStr, body) {
-    var body = body.replace(/\r\n/g, '');
+function getSubStringsFromBody(preStr, postStr, body, newlineregexp) {
+    if (!newlineregexp) newlineregexp = /\r\n/g;
+    var body = body.replace(newlineregexp, '');
     var regStr = preStr +'(.*?)'+postStr;
     var reg = new RegExp(regStr, "g");
     var eles = body.match(reg);

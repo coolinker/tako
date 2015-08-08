@@ -1,3 +1,5 @@
+var logutil = require("../logutil");
+var simplehttp = require('../simplehttp');
 var fs = require('fs');
 var ndarray = require("ndarray")
 var savePixels = require("save-pixels")
@@ -13,21 +15,68 @@ var imageProcessor = require('./captcha/imageprocessor').config({
     COLOR_ISLET_MAX_NUM: 20
 });
 
-exports.guessCaptcha = guessCaptcha;
-function guessCaptcha(source, cookieJar, callback) {
-    getCaptcha(source, cookieJar, function(captachStr) {
-        checkCaptacha(captachStr, source, cookieJar, function(success) {
+
+exports.guessCaptchaForTrading = guessCaptchaForTrading;
+function guessCaptchaForTrading(productId, sid, cookieJar, callback) {
+    simplehttp.POST("https://trading.lufax.com/trading/service/trade/captcha/create-captcha", {
+            "cookieJar": cookieJar,
+            "form": {
+                sid: sid,
+                productId: productId
+            }
+        },
+        function(err, httpResponse, body) {
+            console.log("guessCaptchaForTrading---------create-captcha", body);
+            var captchaInfo = JSON.parse(body);
+            getCaptchaByImageId(captchaInfo.imageId, cookieJar, function(image){
+
+                var captachStr = crackCaptcha(image);
+                captachaPreCheck(captachStr, "sid="+sid+"&imgId="+captchaInfo.imageId, cookieJar, function(success) {
+                    logutil.log("guessCaptcha", captchaInfo.imageId, captachStr, success);
+                    if (success) {
+                        callback(captachStr, captchaInfo.imageId);
+                    } else {
+                        guessCaptchaForTrading(productId, sid, cookieJar, callback)
+                    }
+                })
+            })
+        });
+}
+
+function getCaptchaByImageId(imageId, cookieJar, callback) {
+    simplehttp.image("https://user.lufax.com/user/captcha/get-captcha?source=1&imageId=" + imageId + "&_=" + new Date().getTime(), {
+            "cookieJar": cookieJar,
+            type: 'image/jpeg'
+        },
+        function(err, pixels) {
+            var image = {
+                width: pixels.shape[0],
+                height: pixels.shape[1],
+                data: pixels.data
+            };
+            //var str = crackCaptcha(image);
+            console.log(image.width, image.height, image.data.length)
+            callback(image);
+        });
+}
+
+
+exports.guessCaptchaForLogin = guessCaptchaForLogin;
+function guessCaptchaForLogin(source, cookieJar, callback) {
+    getCaptchaBySource(source, cookieJar, function(captchaImage) {
+        var captachStr = crackCaptcha(captchaImage);
+        preCheck(captachStr, "source="+source, cookieJar, function(success) {
             logutil.log("guessCaptcha", source, captachStr, success);
             if (success) {
                 callback(captachStr);
             } else {
-                guessCaptcha(source, cookieJar, callback)
+                guessCaptchaForLogin(source, cookieJar, callback)
             }
         })
     });
 }
 
-function getCaptcha(source, cookieJar, callback) {
+function getCaptchaBySource(source, cookieJar, callback) {
     simplehttp.image("https://user.lufax.com/user/captcha/captcha.jpg?source=" + source + "&_=" + new Date().getTime(), {
             "cookieJar": cookieJar,
             type: 'image/jpeg'
@@ -38,9 +87,9 @@ function getCaptcha(source, cookieJar, callback) {
                 height: pixels.shape[1],
                 data: pixels.data
             };
-            var str = crackCaptcha(image);
+            //var str = crackCaptcha(image);
 
-            callback(str);
+            callback(image);
         });
 }
 
@@ -65,8 +114,26 @@ function crackCaptcha(imageData) {
     return captachStr;
 }
 
-function checkCaptacha(captachaStr, source, cookieJar, callback) {
-    var url = "https://user.lufax.com/user/captcha/pre-check?inputValue=" + captachaStr + "&source=" + source + "&_=" + new Date().getTime();
+function captachaPreCheck(captachaStr, paramsStr, cookieJar, callback) {
+    //https://trading.lufax.com/trading/service/trade/captcha-pre-check?captcha=jpc4&sid=11559022&imgId=780a5d16b87248eeab325d7c662c98fa&_=1438964923475
+    var url = "https://trading.lufax.com/trading/service/trade/captcha-pre-check?captcha=" + captachaStr + "&"+paramsStr+ "&_=" + new Date().getTime();
+    console.log("checkCaptacha", url);  
+    simplehttp.GET(url, {
+        "cookieJar": cookieJar
+    }, function(error, request, body) {
+        console.log("body", error, body)
+        json = JSON.parse(body);
+        if (json.result === "SUCCESS") {
+            callback(true);
+        } else {
+            console.log("-----------------------------", json);
+            callback(false);
+        }
+    });
+}
+
+function preCheck(captachaStr, paramsStr, cookieJar, callback) {
+    var url = "https://user.lufax.com/user/captcha/pre-check?inputValue=" + captachaStr + "&"+paramsStr+ "&_=" + new Date().getTime();
 
     simplehttp.GET(url, {
         "cookieJar": cookieJar

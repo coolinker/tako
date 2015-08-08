@@ -65,6 +65,8 @@ function getUserInfo(account, callback) {
     }, function(error, request, body) {
         console.log("getUserInfo:", body);
         var info = JSON.parse(body);
+
+        info.availableBalance = info.avaliableBalance
         callback(info)
     });
 }

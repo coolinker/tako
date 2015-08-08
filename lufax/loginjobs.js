@@ -1,3 +1,6 @@
+var request = require("request");
+
+var captchaUtil = require('./captchautil.js');
 
 var RSAKey = require('./rsa.js');
 var logutil = require("../logutil");
@@ -29,10 +32,11 @@ function login(account, callback) {
             var cncryptPassword = rsakey.encrypt(password);
             // console.log("cncryptPassword", cncryptPassword)
 
-            guessCaptcha("login", cookieJar, function(captachStr) {
+            captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
                 doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
                     account.availableBalance = info.availableFund;
-                    console.log("account.availableBalance:", account.availableBalance)
+                    account.uid = info.uid;
+                    console.log("account.availableBalance:", account.availableBalance, account.uid)
                     callback(cookieJar, info);
                 })
             })
@@ -66,10 +70,27 @@ function getUserInfo(cookieJar, callback) {
         function(err, httpResponse, body) {
             var info = htmlparser.getValueFromBody('<input id="assetOverview" type="hidden" value=\'', '\'/>', body);
             info = JSON.parse(info);
-            callback(info);
+            // console.log("---------", info) 18270.60
+            //callback(info);
+            getUserId(cookieJar, function(json) {
+                for (var att in json) {
+                    info[att] = json[att];
+                }
+                callback(info);
+            });
         });
 }
 
+function getUserId(cookieJar, callback) {
+    simplehttp.GET('https://user.lufax.com/user/service/user/current-user-info-for-homepage', {
+            "cookieJar": cookieJar
+        },
+        function(err, httpResponse, body) {
+            var info = JSON.parse(body);
+            // console.log("---------", info) 18270.60
+            callback(info);
+        });
+}
 exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {

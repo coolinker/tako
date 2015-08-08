@@ -13,10 +13,10 @@ function loopNewLoans(callback) {
     var loopjob = require("../loopjob").config({
         url: "https://www.my089.com/Loan/default.aspx?&oc=3&ou=1",
         loopInterval: 500,
-        timeout: 500,
+        timeout: 1000,
         responseHandler: function(error, request, body) {
             if (error) {
-                //console.log("loanTransferDetail error:", error)
+                // console.log("loanTransferDetail error:", error)
             } else if (request.statusCode == 200) {
                 var eles = htmlparser.getSubStringsFromBody('<dl class="LoanList">', '<\/dl>', body);
                 var loanObjs = [];
@@ -27,15 +27,17 @@ function loopNewLoans(callback) {
                     loanObj.vipLevel = Number(htmlparser.getValueFromBody('<em class="My_VIP_', '" title="会员等级"', eles[i]));
                     loanObj.percentFinished = Number(htmlparser.getValueFromBody('<p class="Bar lf"><b class="Bar_1" style="width:', '%', eles[i]));
 
-                    loanObj.totalPrice = Number(htmlparser.getValueFromBody('<dd class="dd_3 mar_top_18"><span class="number"><b>￥</b>', '</span></dd>', eles[i]));
+                    loanObj.totalPrice = Number(htmlparser.getValueFromBody('<dd class="dd_3 mar_top_18"><span class="number"><b>￥</b>', '</span></dd>', eles[i]).replace(',', ''));
                     loanObj.startTime = new Date(htmlparser.getValueFromBody('     <span class="lf">', '</span><b class="lf">', eles[i]));
                     loanObj.source = "www.my089.com";
                     loanObj.producedTime = new Date();
-                    if (loanObj.percentFinished<100) loanObjs.push(loanObj);
+                    
 
                     if (!producedMap[loanObj.sid]) {
                         producedMap[loanObj.sid] = loanObj;
-                        if (loanObj.percentFinished===100) {
+                        if (loanObj.percentFinished<100) {
+                            callback(loanObj);
+                        } else if (loanObj.percentFinished===100) {
                             logutil.log("my089 loopNewLoans too soon to 100%", loanObj.sid, loanObj.interest);
                         } 
                     } else {
@@ -50,7 +52,7 @@ function loopNewLoans(callback) {
                 }
                 
 
-                callback(loanObjs);
+                // callback(loanObjs);
             } else {
                 console.log("?????????????????????????????? statusCode:", response.statusCode)
             }

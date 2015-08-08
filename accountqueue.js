@@ -79,6 +79,8 @@ function loopLogin() {
     setInterval(queueLogin, 60 * 1000)
 }
 
+exports.queueLogin = queueLogin;
+
 function queueLogin() {
     var now = new Date();
     // logutil.log("loopLogin...");

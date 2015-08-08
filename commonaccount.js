@@ -18,10 +18,21 @@ CommonAccount.prototype.minValidBalance = 10000;
 CommonAccount.prototype.maxFundPerProduct = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
 CommonAccount.prototype.consumeHistory = {};
+
 CommonAccount.prototype.config = function (obj){
     for (var att in obj) {
         this[att] = obj[att];
     }
     return this;
+};
+
+CommonAccount.prototype.lock = function (){
+    this.locked = true;
+    this.lockedTime= new Date();
+};
+
+CommonAccount.prototype.unlock = function (){
+    this.locked = false;
+    this.unlockedTime = new Date();
 };
 module.exports = CommonAccount;
