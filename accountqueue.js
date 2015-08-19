@@ -15,37 +15,34 @@ var LOGIN_ACCOUNTS_NUMBER = 3;
 //     availableBalance: 0,
 //     lastConsumingTime: null
 // }
-
+var events = require("events");
 var accountQueues = {};
 
 exports.consume = consume;
-
 function consume(toBeConsumed) {
     var sourceType = ACCOUNT_TYPES[toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
-
     for (var i = 0; i < accounts.length; i++) {
         if (accounts[i].cookieJar !== null) {
             consumejob.consume(accounts[i], toBeConsumed);
         }
     }
-    //cleanAccounts()
 }
 
-exports.consumeAll = consumeAll;
-function consumeAll(toBeConsumed) {
-    var sourceType = ACCOUNT_TYPES[toBeConsumed[0]['source']];
-    var consumejob = require("./" + sourceType + "/consumejob");
-    accounts = accountQueues[sourceType];
-    var consumeIdx = 0;
-    for (var i = 0; i < accounts.length; i++) {
-        if (accounts[i].cookieJar !== null) {
-            consumejob.consume(accounts[i], toBeConsumed[consumeIdx++]);
-        }
-        if (consumeIdx >= toBeConsumed.length) break;
-    }
-}
+// exports.consumeAll = consumeAll;
+// function consumeAll(toBeConsumed) {
+//     var sourceType = ACCOUNT_TYPES[toBeConsumed[0]['source']];
+//     var consumejob = require("./" + sourceType + "/consumejob");
+//     accounts = accountQueues[sourceType];
+//     var consumeIdx = 0;
+//     for (var i = 0; i < accounts.length; i++) {
+//         if (accounts[i].cookieJar !== null) {
+//             consumejob.consume(accounts[i], toBeConsumed[consumeIdx++]);
+//         }
+//         if (consumeIdx >= toBeConsumed.length) break;
+//     }
+// }
 
 function loginAccount(accountInfo) {
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
@@ -72,24 +69,43 @@ function addAccount(accountInfo) {
     accountQueues[accounttype].push(accountInfo);
 }
 
+exports.updateAccountQueue = updateAccountQueue;
+function updateAccountQueue () {
+    var activeTypes = {};
+    for (var accountType in accountQueues) {
+        activeTypes[accountType] = false;
+        var accs = accountQueues[accountType];
+        for (var i=accs.length-1; i>=0; i--) {
+            if (accs[i].isActive()) {
+                activeTypes[accountType] = true;
+            } else {
+                accs.splice(i, 1);
+            }
+        }
+    }
+
+    return activeTypes;
+}
+
 exports.loopLogin = loopLogin;
 
 function loopLogin() {
     queueLogin();
-    setInterval(queueLogin, 60 * 1000)
+    setInterval(queueLogin, 30 * 1000)
 }
 
 exports.queueLogin = queueLogin;
 
 function queueLogin() {
     var now = new Date();
-    // logutil.log("loopLogin...");
     for (var att in accountQueues) {
         queue = accountQueues[att];
         if (queue) {
             for (var i = 0; i < queue.length; i++) {
                 var acc = queue[i];
+                
                 if (acc.cookieJar === null) {
+                    logutil.log("loopLogin...", att, i);
                     loginAccount(acc);
                     continue;
                 }

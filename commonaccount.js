@@ -1,3 +1,4 @@
+var logutil = require("./logutil");
 var CommonAccount = function(user, source){
     this.user = user;
     this.source = source;
@@ -26,13 +27,21 @@ CommonAccount.prototype.config = function (obj){
     return this;
 };
 
+CommonAccount.prototype.isActive = function (){
+    // console.log(this.availableBalance, this.minValidBalance, this)
+    return true;
+    // return this.availableBalance>this.minValidBalance;
+}
+
 CommonAccount.prototype.lock = function (){
     this.locked = true;
     this.lockedTime= new Date();
+    logutil.log("lock account:", this.user);
 };
 
 CommonAccount.prototype.unlock = function (){
     this.locked = false;
     this.unlockedTime = new Date();
+    logutil.log("unlock account:", this.user);
 };
 module.exports = CommonAccount;

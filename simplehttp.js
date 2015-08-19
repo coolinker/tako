@@ -1,6 +1,6 @@
 var request = require("request");
 var pixelsUtil = require("get-pixels");
-
+var logutil = require("./logutil");
 exports.GET = sendGet;
 
 function sendGet(url, options, callback) {
@@ -40,7 +40,9 @@ function image(url, options, callback) {
             callback(new Error('Invalid content-type'))
             return
         }
+        
         pixelsUtil.doParse(type, body, callback)
+        
     })
 }
 

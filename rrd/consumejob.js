@@ -1,7 +1,7 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
-var PRODUCE_TO_CONSUME_MIN = 1000;
+var PRODUCE_TO_CONSUME_MIN = 500;
 var CONSUMING_INTERVAL_MIN = 5000;
 
 exports.consume = consume;
@@ -17,7 +17,7 @@ function consume(account, toBeConsumed, callback) {
     if (t < 0) {
         doConsume(account, toBeConsumed, callback);
     } else {
-        logutil.log("consume too soon... :", t+"ms")
+        // logutil.log("consume too soon... :", t+"ms")
         setTimeout(doConsume, t, account, toBeConsumed, callback);
     }
 
@@ -26,7 +26,7 @@ function consume(account, toBeConsumed, callback) {
 
 function doConsume(account, toBeConsumed, callback) {
     if (toBeConsumed.transferId) {
-        logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+        // logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
         var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
 
         simplehttp.POST('http://www.renrendai.com/transfer/buyLoanTransfer.action', {
@@ -46,9 +46,9 @@ function doConsume(account, toBeConsumed, callback) {
                             account.availableBalance -= spent;    
                         }
                         logutil.log("confirmSpent:", toBeConsumed.transferId, spent, account.availableBalance);
-                        account.locked = false;
+                        if (spent>0) account.lastConsumingTime = new Date();
                         if (callback) callback(spent);
-                        account.lastConsumingTime = new Date();
+                        account.locked = false;
                     })
                 } else {
                     console.log("ERROR consumejob consume");
@@ -72,7 +72,7 @@ function confirmSpent(transferId, account, callback) {
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
 
-    return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable*0.8));
+    return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable*0.5));
 }
 
 function ableToConsume(account, toBeConsumed) {

@@ -1,6 +1,7 @@
 var htmlparser = require('../htmlparser');
 var detectLatestTransferId = require("./detectlatesttransferid");
-
+var LoopJob = require("../loopjob");
+var me = this;
 exports.startNewTransferLoop = startNewTransferLoop;
 function startNewTransferLoop(callback) {
     var transfers = [];
@@ -14,9 +15,14 @@ function startNewTransferLoop(callback) {
 }
 
 function loopNewTransfer(startId, callback) {
+    if (this.loopjob) {
+        console.log("loopNewTransfer loopjob existed");
+        return;
+    }
+
     var transferId = Number(startId);
     var hasNew = false;
-    var loopjob = require("../loopjob").config({
+    var loopjob = new LoopJob().config({
         url: "http://www.renrendai.com/transfer/loanTransferDetail.action",
         loopInterval: 500,
         timeout: 500,
@@ -68,4 +74,15 @@ function loopNewTransfer(startId, callback) {
     });
 
     loopjob.startLooping();
+    me.loopjob = loopjob;
+}
+
+exports.isLoopingStarted = isLoopingStarted;
+function isLoopingStarted() {
+    return !!this.loopjob;
+}
+
+exports.stopNewTransferLoop = stopNewTransferLoop;
+function stopNewTransferLoop() {
+    this.loopjob.stopLooping();
 }

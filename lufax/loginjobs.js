@@ -18,7 +18,7 @@ function login(account, callback) {
     var cookieJar = request.jar();
     var rsakey = new RSAKey();
 
-    logutil.log("login", user, password);
+    // logutil.log("login...", user);
 
     simplehttp.GET('https://user.lufax.com/user/login', {
             "cookieJar": cookieJar
@@ -34,6 +34,7 @@ function login(account, callback) {
 
             captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
                 doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
+                    account.cookieJar = cookieJar;
                     account.availableBalance = info.availableFund;
                     account.uid = info.uid;
                     console.log("account.availableBalance:", account.availableBalance, account.uid)
