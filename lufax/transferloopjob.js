@@ -8,22 +8,30 @@ var MAXMONEY = 10000;
 var MINMONEY = 0;
 var MINRATE = 0.084;
 
+var isDetecting = false;
+
 function detectLastPage(callback) {
+    if (isDetecting) return;
+    isDetecting = true;
     var url = 'http://list.lufax.com/list/transfer/anyi?minMoney=' + MINMONEY + '&maxMoney=' + MAXMONEY + '&minDays=&maxDays=&minRate=' + MINRATE + '&maxRate=0.2&mode=&trade=FIX_PRICE&isCx=&currentPage=10000'
     simplehttp.GET(url, {}, function(error, response, body) {
-        
         var no = htmlparser.getValueFromBody('<span class="pagination-no current">', '</span>', body);
         if (no !== null) {
             callback(Number(no));
         } else {
             callback(null);
         }
+        
+        isDetecting = false;
+
     });
 }
 
 exports.startNewTransferLoop = startNewTransferLoop;
 
 function startNewTransferLoop(callback) {
+    if (isDetecting) return;
+
     var transfers = [];
     detectLastPage(function(lastPage) {
         loopNewTransfer(lastPage, function(products) {
@@ -32,6 +40,7 @@ function startNewTransferLoop(callback) {
                 getProductsDetail(0, products, callback)
             }
         })
+
     })
 }
 
@@ -41,13 +50,13 @@ function loopNewTransfer(pageNo, callback) {
         console.log("loopNewTransfer loopjob existed");
         return;
     }
-
+    
     var lastProductId = 0;
     var lastPageNo = null;
     var loopjob = new LoopJob().config({
         url: 'http://list.lufax.com/list/transfer/anyi?minMoney=' + MINMONEY + '&maxMoney=' + MAXMONEY + '&minDays=&maxDays=&minRate=' + MINRATE + '&maxRate=0.2&mode=&trade=FIX_PRICE&isCx=&currentPage=',
-        loopInterval: 1000,
-        timeout: 500,
+        loopInterval: 500,
+        timeout: 800,
         urlInjection: function(url) {
             if (lastPageNo != pageNo) {
                 lastPageNo = pageNo;
@@ -96,7 +105,7 @@ function loopNewTransfer(pageNo, callback) {
                 //     }
 
                 // }
-
+                // console.log(pageNo, lastProductId,  products.length)
                 if (pageUpFlag) {
                     pageNo--;
                     if (pageNo < 1) pageNo = 1;

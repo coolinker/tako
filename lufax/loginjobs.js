@@ -30,13 +30,13 @@ function login(account, callback) {
 
             rsakey.setPublic(publicKey, rsaExponent);
             var cncryptPassword = rsakey.encrypt(password);
-            // console.log("cncryptPassword", cncryptPassword)
-
             captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
+                
                 doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
                     account.cookieJar = cookieJar;
                     account.availableBalance = info.availableFund;
                     account.uid = info.uid;
+
                     console.log("account.availableBalance:", account.availableBalance, account.uid)
                     callback(cookieJar, info);
                 })
@@ -71,8 +71,7 @@ function getUserInfo(cookieJar, callback) {
         function(err, httpResponse, body) {
             var info = htmlparser.getValueFromBody('<input id="assetOverview" type="hidden" value=\'', '\'/>', body);
             info = JSON.parse(info);
-            // console.log("---------", info) 18270.60
-            //callback(info);
+            if (!info) logutil.log("ERROR getUserInfo:", info)
             getUserId(cookieJar, function(json) {
                 for (var att in json) {
                     info[att] = json[att];
@@ -89,11 +88,14 @@ function getUserId(cookieJar, callback) {
         function(err, httpResponse, body) {
             var info = JSON.parse(body);
             // console.log("---------", info) 18270.60
+            if (!info) logutil.log("ERROR getUserId:", body)
             callback(info);
         });
 }
 exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
-    login(account, callback);
+    login(account, function(cookieJar, info) {
+        callback(cookieJar);
+    });
 }

@@ -28,8 +28,9 @@ CommonAccount.prototype.config = function (obj){
 };
 
 CommonAccount.prototype.isActive = function (){
-    // console.log(this.availableBalance, this.minValidBalance, this)
     return true;
+    console.log(this.availableBalance, this.minValidBalance, this.source, this.user)
+    return this.availableBalance >= this.minValidBalance;
     // return this.availableBalance>this.minValidBalance;
 }
 

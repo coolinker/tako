@@ -41,13 +41,19 @@ function consume(account, toBeConsumed, callback) {
                                     }
 
                                     traceOtp(productId, sid, cookieJar, function() {
-                                        investmentRequest(productId, sid, cncryptPassword, captachStr, imageId, cookieJar, function(json) {
-                                            logutil.log("investmentRequest", account.uid, sid, productId, json);
-                                            if (json.code === '01') {
-                                                account.availableBalance -= toBeConsumed.price;
-                                                account.lastConsumingTime = new Date();
+                                        investmentRequest(account.uid, productId, sid, cncryptPassword, captachStr, imageId, cookieJar, function(json) {
+                                            if (!json) {
+                                                logutil.log("investmentRequest failed.", productId);
+                                            } else {
+
+                                                logutil.log("investmentRequest", account.uid, sid, productId, json);
+                                                if (json.code === '01') {
+                                                    account.availableBalance -= toBeConsumed.price;
+                                                    account.lastConsumingTime = new Date();
+                                                }
+                                                logutil.log("confirmSpent:", toBeConsumed.price, account.availableBalance);
                                             }
-                                            logutil.log("confirmSpent:", account.availableBalance);
+
                                             if (callback) callback();
                                             account.unlock();
                                         })
@@ -63,31 +69,7 @@ function consume(account, toBeConsumed, callback) {
         })
     });
 
-
-    // simplehttp.POST('http://www.renrendai.com/transfer/buyLoanTransfer.action', {
-    //         form: {
-    //             "agree-contract": "on",
-    //             transferId: toBeConsumed.transferIdCode,
-    //             currentPrice: toBeConsumed.pricePerShare
-    //         },
-    //         "cookieJar": account.cookieJar
-    //     },
-    //     function(err, request, body) {
-    //         if (request.statusCode === 302) {
-    //             confirmSpent(toBeConsumed.transferId, account, function(spent) {
-    //                 if (!isNaN(spent)) {
-    //                     account.availableBalance -= spent;
-    //                 }
-    //                 logutil.log("confirmSpent:", toBeConsumed.transferId, spent, account.availableBalance);
-    //                 account.locked = false;
-    //                 if (callback) callback(spent);
-    //                 account.lastConsumingTime = new Date();
-    //             })
-    //         } else {
-    //             console.log("ERROR consumejob consume");
-    //         }
-
-    //     });
+    return true;
 }
 
 function confirmSpent(transferId, account, callback) {
@@ -103,12 +85,7 @@ function confirmSpent(transferId, account, callback) {
 
 function ableToConsume(account, toBeConsumed) {
     console.log(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
-    return !account.locked 
-    && account.maxFundPerProduct > toBeConsumed.price 
-    && account.availableBalance > toBeConsumed.price 
-    && account.interestLevel <= toBeConsumed.interest 
-    && account.availableBalance > account.minValidBalance
-    && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
+    return !account.locked && account.maxFundPerProduct > toBeConsumed.price && account.availableBalance > toBeConsumed.price && account.interestLevel <= toBeConsumed.interest && account.availableBalance > account.minValidBalance && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
 
@@ -124,12 +101,15 @@ function investCheck(userId, productId, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             console.log("investCheck---------", userId, productId, err, body);
-
-            var info = JSON.parse(body);
-            if (!info.sid) {
-                logutil.log("investCheck failed", info);
+            try {
+                var info = JSON.parse(body);
+                if (!info.sid) {
+                    logutil.log("investCheck failed", info);
+                }
+                callback(info.sid);
+            } catch (e) {
+                callback(null);
             }
-            callback(info.sid);
         });
 }
 
@@ -235,8 +215,8 @@ function securityValid(productId, sid, cookieJar, callback) {
         });
 }
 
-function investmentRequest(productId, sid, password, captachStr, imageId, cookieJar, callback) {
-    simplehttp.POST("https://trading.lufax.com/trading/users/1145923/investment-request", {
+function investmentRequest(uid, productId, sid, password, captachStr, imageId, cookieJar, callback) {
+    simplehttp.POST("https://trading.lufax.com/trading/users/" +uid+"/investment-request", {
             "cookieJar": cookieJar,
             "form": {
                 "sid": sid,
@@ -251,7 +231,13 @@ function investmentRequest(productId, sid, password, captachStr, imageId, cookie
             }
         },
         function(err, httpResponse, body) {
-            var json = JSON.parse(body);
-            callback(json);
+            try {
+                var json = JSON.parse(body);
+                callback(json);
+            } catch (e) {
+
+                callback();
+            }
+
         });
 }

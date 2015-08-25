@@ -63,7 +63,7 @@ var LoopJob = function() {
             return;
         }
 
-        jobStatus.loopLoanStarted = true;
+        jobStatus.loopStarted = true;
         jobStatus.intervalObj = setInterval(loopWork, jobStatus.loopInterval);
     }
 

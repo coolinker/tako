@@ -1,7 +1,7 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
-var PRODUCE_TO_CONSUME_MIN = 500;
+var PRODUCE_TO_CONSUME_MIN = 0;
 var CONSUMING_INTERVAL_MIN = 5000;
 
 exports.consume = consume;
@@ -10,18 +10,18 @@ function consume(account, toBeConsumed, callback) {
     if (!readyForConsume(account)) return false;
     if (!ableToConsume(account, toBeConsumed)) return false;
 
-    var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
+    //var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
 
     account.locked = true;
 
-    if (t < 0) {
-        doConsume(account, toBeConsumed, callback);
-    } else {
-        // logutil.log("consume too soon... :", t+"ms")
-        setTimeout(doConsume, t, account, toBeConsumed, callback);
-    }
-
-    return true;
+    //if (t < 0) {
+    var canBuyShares = doConsume(account, toBeConsumed, callback);
+    // } else {
+    //     // logutil.log("consume too soon... :", t+"ms")
+    //     setTimeout(doConsume, t, account, toBeConsumed, callback);
+    // }
+    toBeConsumed.sharesAvailable -= canBuyShares;
+    return toBeConsumed.sharesAvailable<=0;
 }
 
 function doConsume(account, toBeConsumed, callback) {
@@ -55,6 +55,8 @@ function doConsume(account, toBeConsumed, callback) {
                 }
 
             });
+
+        return canBuyShares;
     }
 }
 
@@ -73,6 +75,7 @@ function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
 
     return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable*0.5));
+    //return 1;
 }
 
 function ableToConsume(account, toBeConsumed) {
