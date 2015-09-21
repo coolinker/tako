@@ -59,7 +59,7 @@ function loopNewTransfer(startId, callback) {
                         producedTime: new Date()
                     };
                     hasNew = true;
-                    if (transferObj.interest>=13) {
+                    if (transferObj.interest>=12) {
                         console.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());    
                     }
                     
@@ -67,7 +67,7 @@ function loopNewTransfer(startId, callback) {
                     transferId++;
                 }
             } else {
-                console.log("?????????????????????????????? statusCode:", response.statusCode)
+                console.log("?????????????????????????????? statusCode:", request.statusCode)
             }
 
         }
@@ -79,10 +79,11 @@ function loopNewTransfer(startId, callback) {
 
 exports.isLoopingStarted = isLoopingStarted;
 function isLoopingStarted() {
-    return !!this.loopjob;
+    return  this.loopjob &&  this.loopjob.isLoopingStarted();
 }
 
 exports.stopNewTransferLoop = stopNewTransferLoop;
 function stopNewTransferLoop() {
+    console.log("stopNewTransferLoop rrd")
     this.loopjob.stopLooping();
 }

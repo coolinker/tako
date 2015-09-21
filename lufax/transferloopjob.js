@@ -3,17 +3,59 @@ var simplehttp = require('../simplehttp');
 var htmlparser = require('../htmlparser');
 var LoopJob = require("../loopjob");
 var me = this;
-
+var LOOP_INTERVAL = 2000;
 var MAXMONEY = 10000;
 var MINMONEY = 0;
 var MINRATE = 0.084;
 
 var isDetecting = false;
+var lastDetectTime = new Date();
+
+var rollingIntervalObj;
+
+function detectLastProductId(callback) {
+    if (isDetecting) return;
+    isDetecting = true;
+    var url = 'http://list.lu.com/list/transfer/anyi?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&trade=&isCx=&currentPage=';
+    simplehttp.GET(url + 10000, {}, function(error, response, body) {
+        if (!body) return;
+
+        var no = htmlparser.getValueFromBody('<span class="pagination-no current">', '</span>', body);
+
+        if (!no) {
+            logutil.log("ERROR detectLastProductId");
+            isDetecting = false;
+            callback(-1);
+        } else {
+            var page = Number(no);
+            simplehttp.GET(url + page, {}, function(error, response, body) {
+                
+                var newlineregexp = /\n/g;
+                var ids = htmlparser.getSubStringsFromBody('productId=', 'target="_blank"', body, newlineregexp);
+
+                if (!ids) {
+                    isDetecting = false;
+                    detectLastProductId(callback);
+                    logutil.log("********************detectLastProductId failed")
+                } else {
+
+                    var lidstr = ids[ids.length - 1];
+                    var lastPid = htmlparser.getValueFromBody('productId=', ' target="_blank"', lidstr);
+                    callback(Number(lastPid));
+                    isDetecting = false;
+                }
+
+            })
+
+        }
+    });
+}
+
 
 function detectLastPage(callback) {
     if (isDetecting) return;
     isDetecting = true;
-    var url = 'http://list.lufax.com/list/transfer/anyi?minMoney=' + MINMONEY + '&maxMoney=' + MAXMONEY + '&minDays=&maxDays=&minRate=' + MINRATE + '&maxRate=0.2&mode=&trade=FIX_PRICE&isCx=&currentPage=10000'
+    var url = 'http://list.lu.com/list/transfer/anyi?minMoney=' + MINMONEY + '&maxMoney=' + MAXMONEY + '&minDays=&maxDays=&minRate=' + MINRATE + '&maxRate=0.2&mode=&trade=FIX_PRICE&isCx=&currentPage=10000'
     simplehttp.GET(url, {}, function(error, response, body) {
         var no = htmlparser.getValueFromBody('<span class="pagination-no current">', '</span>', body);
         if (no !== null) {
@@ -21,117 +63,150 @@ function detectLastPage(callback) {
         } else {
             callback(null);
         }
-        
+
         isDetecting = false;
 
     });
 }
 
-exports.startNewTransferLoop = startNewTransferLoop;
+// exports.startNewTransferLoop = startNewTransferLoop;
 
-function startNewTransferLoop(callback) {
-    if (isDetecting) return;
+// function startNewTransferLoop(callback) {
+//     if (isDetecting) return;
 
-    var transfers = [];
-    detectLastPage(function(lastPage) {
-        loopNewTransfer(lastPage, function(products) {
-            //callback(products);
-            if (products.length > 0) {
-                getProductsDetail(0, products, callback)
+//     var transfers = [];
+//     detectLastProductId(function(productId) {
+//         loopNewTransfer(productId, function(product) {
+//             return callback(product);
+//         })
+
+//     })
+// }
+
+exports.rollNewProductCheck = rollNewProductCheck;
+
+function rollNewProductCheck(callback) {
+    var  latestProductId = 0;
+    rollingIntervalObj = setInterval(function() {
+        detectLastProductId(function(productId) {
+            if (productId > latestProductId) {
+                callback({productId:productId, source: "www.lufax.com"})
+                latestProductId = productId;
             }
-        })
+            
 
-    })
+        })
+    }, 10000);
 }
 
-
-function loopNewTransfer(pageNo, callback) {
+function loopNewTransfer(startId, callback) {
     if (this.loopjob) {
         console.log("loopNewTransfer loopjob existed");
         return;
     }
-    
-    var lastProductId = 0;
-    var lastPageNo = null;
-    var loopjob = new LoopJob().config({
-        url: 'http://list.lufax.com/list/transfer/anyi?minMoney=' + MINMONEY + '&maxMoney=' + MAXMONEY + '&minDays=&maxDays=&minRate=' + MINRATE + '&maxRate=0.2&mode=&trade=FIX_PRICE&isCx=&currentPage=',
-        loopInterval: 500,
-        timeout: 800,
-        urlInjection: function(url) {
-            if (lastPageNo != pageNo) {
-                lastPageNo = pageNo;
-                // console.log("pageNo:", lastPageNo, lastProductId);
-            }
 
-            return url + pageNo;
+    var productId = Number(startId);
+    var hasNew = false;
+
+    var loopjob = new LoopJob().config({
+        parallelRequests: 5,
+        url: "https://list.lu.com/list/service/product/*/productDetail",
+        loopInterval: LOOP_INTERVAL,
+        timeout: 1.8 * LOOP_INTERVAL,
+        urlInjection: function(parallelIndex, url) {
+            var u = url.replace("*", productId + parallelIndex) + "?t=" + new Date().getTime();
+            return u;
         },
         responseHandler: function(error, request, body) {
             if (error) {
-                //console.log("loanTransferDetail error:", error)
+                // logutil.log("responseHandler error:", error)
             } else if (request.statusCode == 200) {
-                var isLastPage = body.indexOf('<span class="btns btn_page disabled btn_small next">') > -1;
-                var newlineregexp = /\n/g;
-                var tzeles = htmlparser.getSubStringsFromBody('<li class="product-list has-bottom clearfix">', 'target="_blank" class="list-btn">', body, newlineregexp);
-                // var jpeles = htmlparser.getSubStringsFromBody('<li class="product-list  clearfix  ">', '竞拍</span></a>', body, newlineregexp);
-                var products = [];
-                var pageUpFlag = true;
-                if (!tzeles) {
-                    console.log("ERROR:", pageNo, lastProductId)
-                }
-                for (var i = 0; tzeles && i < tzeles.length; i++) {
-                    var priceSection = htmlparser.getValueFromBody('转让价格', '元', tzeles[i]);
-                    var prd = {
-                        productId: Number(htmlparser.getValueFromBody('<a href=/list/productDetail?productId=', ' target=', tzeles[i])),
-                        productType: htmlparser.getValueFromBody('title="', '">', tzeles[i]),
-                        interest: Number(htmlparser.getValueFromBody('<p class="num-style">', '%</p>', tzeles[i])) / 100,
-                        price: Number(htmlparser.getValueFromBody('<em class="num-style">', '</em>', priceSection).replace(',', '')),
-                        source: "www.lufax.com"
-                    }
-                    if (prd.productId > lastProductId) {
-                        products.push(prd);
-                        lastProductId = prd.productId;
+                var catchException;
+                try {
+                    var productObj = JSON.parse(body);
+
+                    if (productObj.productId !== 0) {
+                        hasNew = true;
+                        lastDetectTime = new Date();
+
+                        if (productObj.productType === "TRANSFER_REQUEST" && productObj.tradingMode === "00" && productObj.productStatus === "ONLINE") {
+                            callback({
+                                productId: productObj.productId,
+                                interest: productObj.interestRateDisplay,
+                                price: productObj.price,
+                                publishTime: productObj.publishedAtDateTime,
+                                source: "www.lufax.com",
+                                producedTime: new Date()
+                            });
+                        } else {
+
+                            logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode)
+                        }
+
+                        if (productObj.productId >= productId) {
+                            productId = productObj.productId + 1;
+                        }
+
                     } else {
-                        pageUpFlag = false;
+                        if (hasNew) logutil.log("--");
+                        hasNew = false;
                     }
-
+                } catch (e) {
+                    catchException = e;
+                    // // logutil.log("json error, too busy", productId)
+                    // if ((new Date() - lastDetectTime) > 10000) {
+                    //         lastDetectTime = new Date();
+                    //         detectLastProductId(function(lastProductId) {
+                    //             if (lastProductId > productId) {
+                    //                 productId = lastProductId;
+                    //                 logutil.log("update last product id ==========================", productId)
+                    //             }
+                    //         });
+                    //     }
+                } finally {
+                    if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 10000) {
+                        lastDetectTime = new Date();
+                        logutil.log("detectLastProductId", productId)
+                        detectLastProductId(function(lastProductId) {
+                            if (lastProductId > productId) {
+                                productId = lastProductId;
+                                logutil.log("update last product id ==========================", productId)
+                            }
+                        });
+                    }
                 }
-
-                // for (var i = 0; jpeles && i < jpeles.length; i++) {
-                //     var pid = Number(htmlparser.getValueFromBody('<a href=/list/productDetail?productId=', ' target=', jpeles[i]));
-                //     if (pid > lastProductId) {
-                //         lastProductId = pid;
-                //     } else {
-                //         pageUpFlag = false;
-                //     }
-
-                // }
-                // console.log(pageNo, lastProductId,  products.length)
-                if (pageUpFlag) {
-                    pageNo--;
-                    if (pageNo < 1) pageNo = 1;
-                } else if (!isLastPage) {
-                    pageNo++;
-                }
-
-                if (products.length > 0) callback(products);
-
             } else {
-                console.log("?????????????????????????????? statusCode:", response.statusCode)
+                console.log("?????????????????????????????? statusCode:", request.statusCode)
             }
 
         }
     });
 
     loopjob.startLooping();
-
     me.loopjob = loopjob;
+}
 
+exports.stopRollingNewProductCheck = stopRollingNewProductCheck;
+function stopRollingNewProductCheck() {
+    clearInterval(rollingIntervalObj)
+}
+
+exports.isRollingStarted = isRollingStarted;
+function isRollingStarted() {
+    return !!rollingIntervalObj;
 }
 
 exports.isLoopingStarted = isLoopingStarted;
 
 function isLoopingStarted() {
-    return !!this.loopjob;
+    return this.loopjob && this.loopjob.isLoopingStarted();
+}
+
+exports.pauseNewTransferLoop = pauseNewTransferLoop;
+
+function pauseNewTransferLoop(msc) {
+    logutil.log("pauseNewTransferLoop... lufax", msc);
+    this.loopjob.pause(msc);
 }
 
 exports.stopNewTransferLoop = stopNewTransferLoop;
@@ -141,14 +216,14 @@ function stopNewTransferLoop() {
     this.loopjob.stopLooping();
 }
 
-function getProductsDetail(index, products, callback) {
+function getProductsDetail(index, products) {
     var product = products[index];
 
-    var url = "http://list.lufax.com/list/productDetail?productId=" + product.productId;
+    var url = "http://list.lu.com/list/productDetail?productId=" + product.productId;
     simplehttp.GET(url, {}, function(error, response, body) {
 
         try {
-            var principal = htmlparser.getValueFromBody('<td><strong>', ' 元', htmlparser.getValueFromBody('<td>项目本金：</td>', '</strong></p>', body)).replace(',', '');
+            var principal = htmlparser.getValueFromBody('<td><strong>', ' 元', htmlparser.getValueFromBody('<td>项目本金：</td>', '</strong></td>', body)).replace(',', '');
             product.principal = Number(principal);
         } catch (e) {
             console.log("----", body.indexOf('<td>项目本金：</td>'), product)
@@ -161,10 +236,9 @@ function getProductsDetail(index, products, callback) {
             product.truePrice = Number(trueprice);
         }
 
-        callback(product);
 
         if (index < products.length - 1) {
-            getProductsDetail(index + 1, products, callback);
+            getProductsDetail(index + 1, products);
         }
 
     });

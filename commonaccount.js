@@ -27,11 +27,14 @@ CommonAccount.prototype.config = function (obj){
     return this;
 };
 
-CommonAccount.prototype.isActive = function (){
-    return true;
-    console.log(this.availableBalance, this.minValidBalance, this.source, this.user)
-    return this.availableBalance >= this.minValidBalance;
-    // return this.availableBalance>this.minValidBalance;
+
+CommonAccount.prototype.loggedIn = function (){
+    return !!this.cookieJar;
+}
+
+CommonAccount.prototype.ableToConsume = function (){
+    // console.log(this.availableBalance, this.minValidBalance, this.source, this.user)
+    return this.cookieJar && this.availableBalance >= this.minValidBalance;
 }
 
 CommonAccount.prototype.lock = function (){

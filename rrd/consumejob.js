@@ -27,7 +27,7 @@ function consume(account, toBeConsumed, callback) {
 function doConsume(account, toBeConsumed, callback) {
     if (toBeConsumed.transferId) {
         // logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
-        var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
+        var canBuyShares = 1;//sharesAbleToConsume(account, toBeConsumed);
 
         simplehttp.POST('http://www.renrendai.com/transfer/buyLoanTransfer.action', {
                 form: {

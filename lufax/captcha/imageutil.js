@@ -118,9 +118,7 @@ exports.getIsletsMinDistance = getIsletsMinDistance;
 function getColorPIxelNumber(imageData){
     var totalPixelNumber = 0;
     for (var idx = 0; idx < imageData.data.length; idx += 4) {
-        if (imageData.data[idx] !== BACKGROUND_COLOR
-            || imageData.data[idx+1] !== BACKGROUND_COLOR
-            || imageData.data[idx+2] !== BACKGROUND_COLOR) {
+        if (!isPixelWhite(imageData, idx)) {
             totalPixelNumber++;
         }
     }
@@ -341,7 +339,6 @@ function getSubImage(imageData, pixelMap) {
         height: imageData.height,
         data: []
     };
-
     for (var y = 0; y < imageData.height; y++) {
         for (var x = 0; x < imageData.width; x++) {
             var i = x * 4 + y * 4 * imageData.width;
@@ -359,7 +356,6 @@ function getSubImage(imageData, pixelMap) {
 
         }
     }
-
     return newImage;
 }
 exports.getSubImage = getSubImage;
@@ -373,12 +369,11 @@ function getIslets(imageData, size) {
             if (isPixelWhite(imageData, i) || detectedMap[i] != undefined) continue;
 
             var clrMap = {};
-            var count = 0;
-            detectIslet(imageData, x, y, clrMap);
-            for (var att in clrMap) {
-                detectedMap[att] = clrMap[att];
-                count++;
-            }
+            var count =  detectIslet(imageData, x, y, clrMap, detectedMap);
+            // for (var att in clrMap) {
+            //     detectedMap[att] = clrMap[att];
+            //     count++;
+            // }
             if (count<size) islets.push(clrMap);
         }
     }
@@ -386,8 +381,44 @@ function getIslets(imageData, size) {
     return islets;
 }
 exports.getIslets = getIslets;
+function detectIslet(imageData, x, y, nbrsMap, nbrsMap1) {
+    var p = x * 4 + y * 4 * imageData.width;
+    var count = 0;
+    if (!isPixelWhite(imageData, p)) {
+        nbrsMap[p] = nbrsMap1[p] = p;
+        count++;
+    } else {
+        console.log("ERROR: detectIslet", x, y, p, nbrsMap[p], imageData.data[p])
+        return;
+    }
 
-function detectIslet(imageData, x, y, nbrsMap) {
+    var isletPixels  = [p];
+    var lf = [], rt = [], up = [], dn = [];
+
+    var fun = function(pidx) {
+         if (!nbrsMap[pidx] && !isPixelWhite(imageData, pidx)) {
+            nbrsMap[pidx] = nbrsMap1[pidx] = pidx;
+            isletPixels.push(pidx);
+            count++;
+        }
+    }
+
+    while(isletPixels.length>0) {
+        p = isletPixels.pop();
+        var lp = getNeighbourPixelIndex(imageData, p, -1, 0);
+        fun(lp);
+        var rp = getNeighbourPixelIndex(imageData, p, 1, 0);
+        fun(rp);
+        var up = getNeighbourPixelIndex(imageData, p, 0, -1);
+        fun(up);
+        var dp = getNeighbourPixelIndex(imageData, p, 0, 1);
+        fun(dp);
+    } 
+
+    return count;
+}
+
+function detectIslet1(imageData, x, y, nbrsMap) {
     
     var p = x * 4 + y * 4 * imageData.width;
     if (undefined === nbrsMap[p] && imageData.data[p] !== BACKGROUND_COLOR) {
@@ -717,10 +748,13 @@ function rangeAfterRotate(imageData, degree) {
     var centreX = Math.round((range.left+range.right)/2);
     var centreY = Math.round((range.top+range.bottom)/2);
     var left = imageData.width, right = 0, top = imageData.height, bottom = 0;
-    for (var x = 0; x < imageData.width; x++) {
-        for (var y = 0; y < imageData.height; y++) {
-            var i = x * 4 + y * 4 * imageData.width;
-            if (imageData.data[i] === BACKGROUND_COLOR) continue;
+    var imgWidth = imageData.width;
+    var imgHeight = imageData.height;
+    var imageData_data = imageData.data;
+    for (var x = 0; x < imgWidth; x++) {
+        for (var y = 0; y < imgHeight; y++) {
+            var i = x * 4 + y * 4 * imgWidth;
+            if (imageData_data[i] === BACKGROUND_COLOR) continue;
             var radius = Math.sqrt(Math.pow(x-centreX, 2) + Math.pow(y-centreY, 2));
             var oriDgr = getAngle((x-centreX), (y-centreY));
             var newx = x, newy = y;
@@ -739,7 +773,6 @@ function rangeAfterRotate(imageData, degree) {
             
         }
     }
-    
     return {left: left, right: right, top: top, bottom: bottom};
 }
 exports.rangeAfterRotate = rangeAfterRotate;
@@ -751,14 +784,19 @@ function rotate(imageData, degree) {
     var centreX = Math.round((range.left+range.right)/2);
     var centreY = Math.round((range.top+range.bottom)/2);
     var newImage = copyImage(imageData);
-    for (var i=0; i<newImage.data.length; i++) {
-        newImage.data[i] = 255;
+    var newImage_data = newImage.data;
+    var newImage_dataLen = newImage_data.length;
+    for (var i=0; i<newImage_dataLen; i++) {
+        newImage_data[i] = 255;
     }
 
-    for (var x = 0; x < imageData.width; x++) {
-        for (var y = 0; y < imageData.height; y++) {
-            var i = x * 4 + y * 4 * imageData.width;
-            if (imageData.data[i] === BACKGROUND_COLOR) continue;
+    var imageWidth = imageData.width;
+    var imageHeight = imageData.height;
+    var image_data = imageData.data;
+    for (var x = 0; x < imageWidth; x++) {
+        for (var y = 0; y < imageHeight; y++) {
+            var i = x * 4 + y * 4 * imageWidth;
+            if (image_data[i] === BACKGROUND_COLOR) continue;
             var radius = Math.sqrt(Math.pow(x-centreX, 2) + Math.pow(y-centreY, 2));
             var oriDgr = getAngle((x-centreX), (y-centreY));
             var newi = i;
@@ -767,13 +805,13 @@ function rotate(imageData, degree) {
                 var newx = Math.round(centreX+hlen);
                 var vlen = Math.sin(oriDgr+piv)*radius;
                 var newy = Math.round(centreY+vlen);
-                newi = newx*4+newy*imageData.width*4;
+                newi = newx*4+newy*imageWidth*4;
             } 
 
-            newImage.data[newi] = imageData.data[i];
-            newImage.data[newi+1] = imageData.data[i+1];
-            newImage.data[newi+2] = imageData.data[i+2];
-            newImage.data[newi+3] = imageData.data[i+3];
+            newImage_data[newi] = image_data[i];
+            newImage_data[newi+1] = image_data[i+1];
+            newImage_data[newi+2] = image_data[i+2];
+            newImage_data[newi+3] = image_data[i+3];
             // console.log(Math.round(radius), centreX, "==", (centreY-y)/(x-centreX), x, newx, "degree", oriDgr, piv, "hlen", hlen);
             // console.log(centreX, centreY, "==", x, newx, "==", y, newy);
             

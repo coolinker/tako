@@ -24,12 +24,16 @@ function consume(toBeConsumed) {
     var sourceType = ACCOUNT_TYPES[toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
+    logutil.log("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price);
+    var finished = false;
     for (var i = 0; i < accounts.length; i++) {
         if (accounts[i].cookieJar !== null) {
-            var nomore = consumejob.consume(accounts[i], toBeConsumed);
-            if (nomore) break;
+            finished = consumejob.consume(accounts[i], toBeConsumed);
+            if (finished) break;
         }
     }
+
+    return finished;
 }
 
 // exports.consumeAll = consumeAll;
@@ -79,7 +83,7 @@ function updateAccountQueue() {
         activeTypes[accountType] = false;
         var accs = accountQueues[accountType];
         for (var i = accs.length - 1; i >= 0; i--) {
-            if (accs[i].isActive()) {
+            if (!accs[i].loggedIn() || accs[i].ableToConsume()) {
                 activeTypes[accountType] = true;
             } else {
                 accs.splice(i, 1);
@@ -94,7 +98,7 @@ exports.loopLogin = loopLogin;
 
 function loopLogin() {
     queueLogin();
-    setInterval(queueLogin, 60 * 1000)
+    setInterval(queueLogin, 20 * 1000)
 }
 
 exports.queueLogin = queueLogin;

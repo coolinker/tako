@@ -1,4 +1,4 @@
-var imageUtil = require("./imageUtil");
+var imageUtil = require("./imageutil");
 
 var MINOR_PIXEL_NOISE_LIMIT = 20;
 var BACKGROUND_COLOR = 255;
@@ -24,6 +24,7 @@ function config(cfg) {
 
 
 exports.getMainColorGroupImages = getMainColorGroupImages;
+
 function getMainColorGroupImages(imageData) {
     degrade(imageData);
     removeBackground(imageData);
@@ -34,14 +35,14 @@ function getMainColorGroupImages(imageData) {
     removeThinPixels(imageData);
     cutNoiseLine(imageData);
     cutNoiseLine(imageData);
-// return [imageData]
+        // return [imageData]
     var imgs = isolatedCharactors(imageData);
-    // return imgs;
-    if (imgs.length<4) {
-        for (var i=0; i<imgs.length; i++) {
+        // return imgs;
+    if (imgs.length < 4) {
+        for (var i = 0; i < imgs.length; i++) {
             var pn = imageUtil.getColorPIxelNumber(imgs[i]);
-            
-            if (pn>1400) {
+
+            if (pn > 1400) {
                 var _imgs = splitCharactors(imgs[i]);
                 if (_imgs.length === 2) {
                     imgs.splice(i, 1, _imgs[0], _imgs[1]);
@@ -49,67 +50,75 @@ function getMainColorGroupImages(imageData) {
             }
         }
     } else if (imgs.length === 5) {
-        for (var i=0; i<imgs.length-1; i++) {
+        for (var i = 0; i < imgs.length - 1; i++) {
             var pn0 = imageUtil.getColorPIxelNumber(imgs[i]);
-            var pn1 = imageUtil.getColorPIxelNumber(imgs[i+1]);
-            if (pn0<1000 || pn1<1000) {
+            var pn1 = imageUtil.getColorPIxelNumber(imgs[i + 1]);
+            if (pn0 < 1000 || pn1 < 1000) {
                 var ck0 = imageUtil.getMajorColorKey(imgs[i]);
-                var ck1 = imageUtil.getMajorColorKey(imgs[i+1]);
+                var ck1 = imageUtil.getMajorColorKey(imgs[i + 1]);
                 var dist3d = distanceIn3DByColorKey(ck0, ck1);
                 // console.log("imgs", pn0, ck0, pn1, ck1, dist3d);
-                if (dist3d<50)  {
-                    imageUtil.addToImage(imgs[i], imgs[i+1])
-                    imgs.splice(i+1, 1);   
+                if (dist3d < 50) {
+                    imageUtil.addToImage(imgs[i], imgs[i + 1])
+                    imgs.splice(i + 1, 1);
                 }
             }
-            
+
         }
-    } else if (imgs.length!==4){
+    } else if (imgs.length !== 4) {
         console.log("ERROR: getMainColorGroupImages: imgs.length=", imgs.length)
     }
 
     // return imgs;
-
-    for (var i=0; i<imgs.length; i++) {
+    for (var i = 0; i < imgs.length; i++) {
         cutInnerNoiseLine(imgs[i]);
         removeColorNoiseIslets(imgs[i], 3)
     }
-
     return imgs;
 }
 
 
 exports.rotateToMinWidth = rotateToMinWidth;
+
 function rotateToMinWidth(imageData) {
     imageUtil.moveToCenter(imageData);
     var minwidth = imageData.width;
     var mini = 0;
 
+    var newImage = {
+        width: imageData.width,
+        height: imageData.height,
+        data: []
+    };
+    for (var i = 0; i < imageData.data.length; i += 4) {
+        //var nidx = (imageData, idx, hdirection, vdirection);
+        if (imageUtil.isPixelWhite(imageData, i)) {
+            imageUtil.setPixelColorByIndex(newImage, i, imageData.data[i], imageData.data[i+1], imageData.data[i+2]);
+            continue;
+        }
 
-    for (var i=-30; i<=30; i+=1) {
-        // var img = imageUtil.copyImage(imageData);
-        // imageUtil.rotate(img, i);
-        // var range = imageUtil.pixelRange(img);
-        var range = imageUtil.rangeAfterRotate(imageData, i);
-        if((range.right-range.left) < minwidth) {
-            minwidth = range.right-range.left;
+        var l = imageUtil.getNeighbourPixelIndex(imageData, i, -1, 0);
+        var r = imageUtil.getNeighbourPixelIndex(imageData, i, 1, 0);
+        var u = imageUtil.getNeighbourPixelIndex(imageData, i, 0, -1)
+        var d = imageUtil.getNeighbourPixelIndex(imageData, i, 0, 1)
+        if (l>-1 && imageUtil.isPixelWhite(imageData, l) 
+            || r>-1 && imageUtil.isPixelWhite(imageData, r) 
+            || u>-1 && imageUtil.isPixelWhite(imageData, u)
+            || d>-1 && imageUtil.isPixelWhite(imageData, d)) {
+            imageUtil.setPixelColorByIndex(newImage, i, imageData.data[i], imageData.data[i+1], imageData.data[i+2]);
+            
+        } else {
+            imageUtil.setPixelColorByIndex(newImage, i, BACKGROUND_COLOR, BACKGROUND_COLOR, BACKGROUND_COLOR)
+        }  
+    }
+    
+    for (var i = -30; i <= 30; i += 2) {
+        var range = imageUtil.rangeAfterRotate(newImage, i);
+        if ((range.right - range.left) < minwidth) {
+            minwidth = range.right - range.left;
             mini = i;
         }
     }
-    // console.log("-----------", mini, minwidth);
-    // function getRange(degree) {
-    //     var img = imageUtil.copyImage(imageData);
-    //     imageUtil.rotate(img, degree);
-    //     var range = imageUtil.pixelRange(img);
-    //     if (range.right-range.left < minwidth) {
-    //         minwidth = range.right-range.left;
-    //         mini = degree;
-    //     }
-    // }
-    // var pmini = mini;
-    // getRange(pmini-1);
-    // getRange(pmini+1);
-    // console.log(mini, minwidth);
     imageUtil.rotate(imageData, mini);
     imageUtil.fillAfterRotate(imageData);
 }
@@ -119,7 +128,7 @@ function cutInnerNoiseLine(imageData) {
 
     function closeToWhilte(r, g, b, cmax) {
         var max = Math.max(r, Math.max(g, b));
-        if(max>=cmax && Math.abs(r-g)<=20 && Math.abs(r-b)<=20 && Math.abs(b-g)<=20) return true;
+        if (max >= cmax && Math.abs(r - g) <= 20 && Math.abs(r - b) <= 20 && Math.abs(b - g) <= 20) return true;
         return false;
     }
 
@@ -127,8 +136,8 @@ function cutInnerNoiseLine(imageData) {
         for (var y = 0; y < imageData.height; y++) {
             var i = x * 4 + y * 4 * imageData.width;
             var r = imageData.data[i];
-            var g = imageData.data[i+1];
-            var b = imageData.data[i+2];
+            var g = imageData.data[i + 1];
+            var b = imageData.data[i + 2];
             if (imageUtil.isPixelBlackOrWhite(imageData, i)) continue;
 
             var blackcount = 0;
@@ -160,8 +169,7 @@ function cutInnerNoiseLine(imageData) {
                 if (imageUtil.isPixelWhite(imageData, lefti) && closeToWhilte(r, g, b, 140)) {
                     imageUtil.setPixelColorByIndex(imageData, i, 255, 255, 255);
                 }
-            }
-            ;
+            };
             var leftdowni = imageUtil.getNeighbourPixelIndex(imageData, i, -1, 1);
             var rightupi = imageUtil.getNeighbourPixelIndex(imageData, i, 1, -1);
             var leftlefti = imageUtil.getNeighbourPixelIndex(imageData, i, -2, 0);
@@ -170,19 +178,13 @@ function cutInnerNoiseLine(imageData) {
             var downdowni = imageUtil.getNeighbourPixelIndex(imageData, i, 0, 2);
             if (imageUtil.isPixelBlack(imageData, rightupi)) {
                 blackcount++;
-                if (imageUtil.isPixelWhite(imageData, leftdowni) 
-                    && imageUtil.isPixelWhite(imageData, leftlefti)
-                    && imageUtil.isPixelWhite(imageData, downdowni)
-                    && closeToWhilte(r, g, b, 120)) {
+                if (imageUtil.isPixelWhite(imageData, leftdowni) && imageUtil.isPixelWhite(imageData, leftlefti) && imageUtil.isPixelWhite(imageData, downdowni) && closeToWhilte(r, g, b, 120)) {
                     imageUtil.setPixelColorByIndex(imageData, i, 255, 255, 255);
                 }
             }
             if (imageUtil.isPixelBlack(imageData, leftdowni)) {
                 blackcount++;
-                if (imageUtil.isPixelWhite(imageData, rightupi) 
-                    && imageUtil.isPixelWhite(imageData, rightrighti)
-                    && imageUtil.isPixelWhite(imageData, upupi)
-                    && closeToWhilte(r, g, b, 120)) {
+                if (imageUtil.isPixelWhite(imageData, rightupi) && imageUtil.isPixelWhite(imageData, rightrighti) && imageUtil.isPixelWhite(imageData, upupi) && closeToWhilte(r, g, b, 120)) {
                     imageUtil.setPixelColorByIndex(imageData, i, 255, 255, 255);
                 }
             }
@@ -194,7 +196,7 @@ function cutInnerNoiseLine(imageData) {
         }
     }
 
-// return;
+    // return;
     for (var x = 0; x < imageData.width; x++) {
         for (var y = 0; y < imageData.height; y++) {
             var i = x * 4 + y * 4 * imageData.width;
@@ -204,8 +206,8 @@ function cutInnerNoiseLine(imageData) {
             if (imageUtil.isPixelWhite(imageData, lefti) && imageUtil.isPixelWhite(imageData, righti)) {
                 var leftendi = imageUtil.getFirstDiffColorIndex(imageData, lefti, -1, 0);
                 var rightendi = imageUtil.getFirstDiffColorIndex(imageData, righti, 1, 0);
-                if (leftendi!==-1 && lefti-leftendi<=3*4 && rightendi ===-1 || rightendi!==-1 && rightendi-righti<=3*4 && leftendi === -1) {
-                    imageUtil.setColorsInDirection(imageData, i, righti-4, 1, 0, 255, 255, 255, function(idx){
+                if (leftendi !== -1 && lefti - leftendi <= 3 * 4 && rightendi === -1 || rightendi !== -1 && rightendi - righti <= 3 * 4 && leftendi === -1) {
+                    imageUtil.setColorsInDirection(imageData, i, righti - 4, 1, 0, 255, 255, 255, function(idx) {
                         var _ddiffi = imageUtil.getFirstDiffColorIndex(imageData, idx, 0, 1);
                         var _udiffi = imageUtil.getFirstDiffColorIndex(imageData, idx, 0, -1);
                         return imageUtil.isPixelWhite(imageData, _ddiffi) || imageUtil.isPixelWhite(imageData, _udiffi);
@@ -219,9 +221,8 @@ function cutInnerNoiseLine(imageData) {
 
                 var upendi = imageUtil.getFirstDiffColorIndex(imageData, upi, 0, -1);
                 var downendi = imageUtil.getFirstDiffColorIndex(imageData, downi, 0, 1);
-                if (upendi!==-1 && upi-upendi<=3*4*imageData.width && downendi ===-1 
-                    || downendi!==-1 && downendi-downi<=3*4*imageData.width && upendi === -1) {
-                    imageUtil.setColorsInDirection(imageData, i, downi-4*imageData.width, 0, 1, 255, 255, 255, function(idx){
+                if (upendi !== -1 && upi - upendi <= 3 * 4 * imageData.width && downendi === -1 || downendi !== -1 && downendi - downi <= 3 * 4 * imageData.width && upendi === -1) {
+                    imageUtil.setColorsInDirection(imageData, i, downi - 4 * imageData.width, 0, 1, 255, 255, 255, function(idx) {
                         var _ldiffi = imageUtil.getFirstDiffColorIndex(imageData, idx, -1, 0);
                         var _rdiffi = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, 0);
                         return imageUtil.isPixelWhite(imageData, _ldiffi) || imageUtil.isPixelWhite(imageData, _rdiffi);
@@ -242,9 +243,9 @@ function cutNoiseLine45(imageData) {
             if (!imageUtil.isPixelBlack(imageData, i)) continue;
             var lefti = imageUtil.getNeighbourPixelIndex(imageData, i, -1, 0);
             if (imageUtil.isPixelWhite(imageData, lefti)) {
-                var rightdowni = imageUtil.getFirstDiffColorIndex(imageData, i, 1, 1);              
-                if (rightdowni>-1 && imageUtil.isPixelWhite(imageData, rightdowni)) {
-                    imageUtil.setColorsInDirection(imageData, i, rightdowni, 1, 1, 255, 255, 255, function(idx){
+                var rightdowni = imageUtil.getFirstDiffColorIndex(imageData, i, 1, 1);
+                if (rightdowni > -1 && imageUtil.isPixelWhite(imageData, rightdowni)) {
+                    imageUtil.setColorsInDirection(imageData, i, rightdowni, 1, 1, 255, 255, 255, function(idx) {
                         var downlefti = imageUtil.getFirstDiffColorIndex(imageData, idx, -1, 1);
                         // var uprighti = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, -1);
                         return imageUtil.isPixelWhite(imageData, downlefti)
@@ -252,8 +253,8 @@ function cutNoiseLine45(imageData) {
                 }
 
                 var rightupi = imageUtil.getFirstDiffColorIndex(imageData, i, 1, -1);
-                if (rightupi>-1 && imageUtil.isPixelWhite(imageData, rightupi)) {
-                    imageUtil.setColorsInDirection(imageData, i, rightupi, 1, -1, 255, 255, 255, function(idx){
+                if (rightupi > -1 && imageUtil.isPixelWhite(imageData, rightupi)) {
+                    imageUtil.setColorsInDirection(imageData, i, rightupi, 1, -1, 255, 255, 255, function(idx) {
                         var uplefti = imageUtil.getFirstDiffColorIndex(imageData, idx, -1, -1);
                         return imageUtil.isPixelWhite(imageData, uplefti)
                     });
@@ -269,16 +270,16 @@ function cutNoiseLine45(imageData) {
             var righti = imageUtil.getNeighbourPixelIndex(imageData, i, 1, 0);
             if (imageUtil.isPixelWhite(imageData, righti)) {
                 var leftupdiffi = imageUtil.getFirstDiffColorIndex(imageData, i, -1, -1);
-                if (leftupdiffi>-1 && imageUtil.isPixelWhite(imageData, leftupdiffi)) {
-                    imageUtil.setColorsInDirection(imageData, i, leftupdiffi, -1, -1, 255, 255, 255, function(idx){
+                if (leftupdiffi > -1 && imageUtil.isPixelWhite(imageData, leftupdiffi)) {
+                    imageUtil.setColorsInDirection(imageData, i, leftupdiffi, -1, -1, 255, 255, 255, function(idx) {
                         var rightupi = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, -1);
                         return imageUtil.isPixelWhite(imageData, rightupi)
                     });
                 }
 
                 var leftdowni = imageUtil.getFirstDiffColorIndex(imageData, i, -1, 1);
-                if (leftdowni>-1 && imageUtil.isPixelWhite(imageData, leftdowni)) {
-                    imageUtil.setColorsInDirection(imageData, i, leftdowni, -1, 1, 255, 255, 255, function(idx){
+                if (leftdowni > -1 && imageUtil.isPixelWhite(imageData, leftdowni)) {
+                    imageUtil.setColorsInDirection(imageData, i, leftdowni, -1, 1, 255, 255, 255, function(idx) {
                         var rightdowni = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, 1);
                         return imageUtil.isPixelWhite(imageData, rightdowni);
                     });
@@ -298,20 +299,20 @@ function cutNoiseLine(imageData) {
             var upi = imageUtil.getNeighbourPixelIndex(imageData, i, 0, -1);
             if (imageUtil.isPixelWhite(imageData, upi)) {
                 var fdiffidx = imageUtil.getFirstDiffColorIndex(imageData, i, 0, 1);
-                if (fdiffidx>-1 && imageUtil.isPixelWhite(imageData, fdiffidx)) {
-                    imageUtil.setColorsInDirection(imageData, i, fdiffidx, 0, 1, 255, 255, 255, function(idx){
-                        var len = (fdiffidx-i)/(imageData.width*4);
+                if (fdiffidx > -1 && imageUtil.isPixelWhite(imageData, fdiffidx)) {
+                    imageUtil.setColorsInDirection(imageData, i, fdiffidx, 0, 1, 255, 255, 255, function(idx) {
+                        var len = (fdiffidx - i) / (imageData.width * 4);
                         var righti = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, 0);
-                        if (len>=5 && !imageUtil.isPixelWhite(imageData, righti) && (righti-i)<=8) return false;
+                        if (len >= 5 && !imageUtil.isPixelWhite(imageData, righti) && (righti - i) <= 8) return false;
                         var lefti = imageUtil.getFirstDiffColorIndex(imageData, idx, -1, 0);
-                        if (len>=5 && !imageUtil.isPixelWhite(imageData, lefti) && (i-lefti)<=8) return false;
+                        if (len >= 5 && !imageUtil.isPixelWhite(imageData, lefti) && (i - lefti) <= 8) return false;
                         return (imageUtil.isPixelWhite(imageData, righti) || imageUtil.isPixelWhite(imageData, lefti))
                     });
                 }
             }
         }
     }
-    
+
     cutNoiseLine45(imageData);
 
     for (var x = 0; x < imageData.width; x++) {
@@ -321,13 +322,13 @@ function cutNoiseLine(imageData) {
             var upi = imageUtil.getNeighbourPixelIndex(imageData, i, 0, -1);
             if (imageUtil.isPixelWhite(imageData, upi)) {
                 var downi = imageUtil.getFirstDiffColorIndex(imageData, i, 0, 1);
-                if (downi>-1 && imageUtil.isPixelWhite(imageData, downi)) {
-                    imageUtil.setColorsInDirection(imageData, i, downi, 0, 1, 255, 255, 255, function(idx){
-                        var righti = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, 0);                        
-                        var len = (downi-i)/(imageData.width*4);
-                        if (len >= 5 && !imageUtil.isPixelWhite(imageData, righti) && (righti-i)<=8) return false;
+                if (downi > -1 && imageUtil.isPixelWhite(imageData, downi)) {
+                    imageUtil.setColorsInDirection(imageData, i, downi, 0, 1, 255, 255, 255, function(idx) {
+                        var righti = imageUtil.getFirstDiffColorIndex(imageData, idx, 1, 0);
+                        var len = (downi - i) / (imageData.width * 4);
+                        if (len >= 5 && !imageUtil.isPixelWhite(imageData, righti) && (righti - i) <= 8) return false;
                         var lefti = imageUtil.getFirstDiffColorIndex(imageData, idx, -1, 0);
-                        if (len >= 5 && !imageUtil.isPixelWhite(imageData, lefti) && (i-lefti)<=8) return false;
+                        if (len >= 5 && !imageUtil.isPixelWhite(imageData, lefti) && (i - lefti) <= 8) return false;
                         return true;
                     });
                 }
@@ -339,6 +340,7 @@ function cutNoiseLine(imageData) {
 exports.cutNoiseLine = cutNoiseLine;
 
 exports.degrade = degrade;
+
 function degrade(imageData) {
     var pixelCountMap = {};
     for (var x = 0; x < imageData.width; x++) {
@@ -363,6 +365,7 @@ function degrade(imageData) {
 }
 
 exports.detectNoiseLine = detectNoiseLine;
+
 function detectNoiseLine(imageData, x, y, nbrsMap) {
     var p = x * 4 + y * 4 * imageData.width;
     if (undefined === nbrsMap[p] && isNoiseLine(imageData, p)) {
@@ -372,11 +375,11 @@ function detectNoiseLine(imageData, x, y, nbrsMap) {
     }
     var up = imageUtil.getNeighbourPixelIndex(imageData, p, 0, -1);
     var down = imageUtil.getNeighbourPixelIndex(imageData, p, 0, 1);
-    
+
     var left = imageUtil.getNeighbourPixelIndex(imageData, p, -1, 0);
     var right = imageUtil.getNeighbourPixelIndex(imageData, p, 1, 0);
-    
-    if((up<0 || down<0) && (left<0 || right<0)) return;
+
+    if ((up < 0 || down < 0) && (left < 0 || right < 0)) return;
 
     if (up >= 0 && undefined === nbrsMap[up] && isNoiseLine(imageData, up)) {
         detectNoiseLine(imageData, x, y - 1, nbrsMap);
@@ -409,7 +412,7 @@ function removeBackground(imageData) {
             var g = imageData.data[i + 1];
             var b = imageData.data[i + 2];
             var limit = 180;
-            if (r >= limit && g >= limit || r >= limit &&b >= limit || g >= limit &&b >= limit) {
+            if (r >= limit && g >= limit || r >= limit && b >= limit || g >= limit && b >= limit) {
                 imageData.data[i] = 255;
                 imageData.data[i + 1] = 255;
                 imageData.data[i + 2] = 255;
@@ -443,8 +446,8 @@ function removeNoiseLine(imageData) {
                 detectNoiseLine(imageData, x, y, pixelMap);
                 for (var att in pixelMap) {
                     pixelCountMap[att] = pixelMap[att];
-                }                
-            } 
+                }
+            }
         }
     }
     var nlimg = imageUtil.getSubImage(imageData, pixelCountMap);
@@ -483,31 +486,27 @@ function removeNoiseLine(imageData) {
             }
 
             var rri = imageUtil.getNeighbourPixelIndex(nlimg, i, 2, 0);
-            var drri = imageUtil.getNeighbourPixelIndex(nlimg, i, 2, 1); 
-            if (imageUtil.isPixelWhite(nlimg, righti) && !imageUtil.isPixelWhite(nlimg, upi) && imageUtil.isPixelWhite(nlimg, uprighti)
-                && !imageUtil.isPixelWhite(nlimg, downrighti) && imageUtil.isPixelWhite(nlimg, rri) && !imageUtil.isPixelWhite(nlimg, drri)) {
+            var drri = imageUtil.getNeighbourPixelIndex(nlimg, i, 2, 1);
+            if (imageUtil.isPixelWhite(nlimg, righti) && !imageUtil.isPixelWhite(nlimg, upi) && imageUtil.isPixelWhite(nlimg, uprighti) && !imageUtil.isPixelWhite(nlimg, downrighti) && imageUtil.isPixelWhite(nlimg, rri) && !imageUtil.isPixelWhite(nlimg, drri)) {
                 imageUtil.setPixelColorByIndex(nlimg, righti, 0, 0, 0);
                 continue;
             }
 
             var lli = imageUtil.getNeighbourPixelIndex(nlimg, i, -2, 0);
-            var ulli = imageUtil.getNeighbourPixelIndex(nlimg, i, -2, -1); 
-            if (imageUtil.isPixelWhite(nlimg, lefti) && !imageUtil.isPixelWhite(nlimg, downi) && imageUtil.isPixelWhite(nlimg, downlefti)
-                && !imageUtil.isPixelWhite(nlimg, uplefti) && imageUtil.isPixelWhite(nlimg, lli) && !imageUtil.isPixelWhite(nlimg, ulli)) {
+            var ulli = imageUtil.getNeighbourPixelIndex(nlimg, i, -2, -1);
+            if (imageUtil.isPixelWhite(nlimg, lefti) && !imageUtil.isPixelWhite(nlimg, downi) && imageUtil.isPixelWhite(nlimg, downlefti) && !imageUtil.isPixelWhite(nlimg, uplefti) && imageUtil.isPixelWhite(nlimg, lli) && !imageUtil.isPixelWhite(nlimg, ulli)) {
                 imageUtil.setPixelColorByIndex(nlimg, lefti, 0, 0, 0);
                 continue;
             }
 
-            var urri = imageUtil.getNeighbourPixelIndex(nlimg, i, 2, -1); 
-            if (imageUtil.isPixelWhite(nlimg, righti) && !imageUtil.isPixelWhite(nlimg, downi) && imageUtil.isPixelWhite(nlimg, downrighti)
-                && !imageUtil.isPixelWhite(nlimg, uprighti) && imageUtil.isPixelWhite(nlimg, rri) && !imageUtil.isPixelWhite(nlimg, urri)) {
+            var urri = imageUtil.getNeighbourPixelIndex(nlimg, i, 2, -1);
+            if (imageUtil.isPixelWhite(nlimg, righti) && !imageUtil.isPixelWhite(nlimg, downi) && imageUtil.isPixelWhite(nlimg, downrighti) && !imageUtil.isPixelWhite(nlimg, uprighti) && imageUtil.isPixelWhite(nlimg, rri) && !imageUtil.isPixelWhite(nlimg, urri)) {
                 imageUtil.setPixelColorByIndex(nlimg, righti, 0, 0, 0);
                 continue;
             }
 
-            var dlli = imageUtil.getNeighbourPixelIndex(nlimg, i, -2, 1); 
-            if (imageUtil.isPixelWhite(nlimg, lefti) && !imageUtil.isPixelWhite(nlimg, upi) && imageUtil.isPixelWhite(nlimg, uprighti)
-                && !imageUtil.isPixelWhite(nlimg, downlefti) && imageUtil.isPixelWhite(nlimg, lli) && !imageUtil.isPixelWhite(nlimg, dlli)) {
+            var dlli = imageUtil.getNeighbourPixelIndex(nlimg, i, -2, 1);
+            if (imageUtil.isPixelWhite(nlimg, lefti) && !imageUtil.isPixelWhite(nlimg, upi) && imageUtil.isPixelWhite(nlimg, uprighti) && !imageUtil.isPixelWhite(nlimg, downlefti) && imageUtil.isPixelWhite(nlimg, lli) && !imageUtil.isPixelWhite(nlimg, dlli)) {
                 imageUtil.setPixelColorByIndex(nlimg, lefti, 0, 0, 0);
                 continue;
             }
@@ -517,7 +516,7 @@ function removeNoiseLine(imageData) {
     }
 
     imageUtil.removeSubImage(imageData, nlimg, 0);
-    
+
     for (var x = 0; x < imageData.width; x++) {
         for (var y = 0; y < imageData.height; y++) {
             var i = x * 4 + y * 4 * imageData.width;
@@ -527,8 +526,7 @@ function removeNoiseLine(imageData) {
             if (!imageUtil.isPixelBlack(imageData, di) && !imageUtil.isPixelWhite(imageData, di) && imageUtil.isPixelWhite(imageData, ddi)) {
                 var diffidx = imageUtil.getFirstDiffColorIndex(imageData, i, 0, -1);
                 var diffidxup = imageUtil.getNeighbourPixelIndex(imageData, diffidx, 0, -1);
-                if (diffidx < 0 || imageUtil.isPixelWhite(imageData, diffidx)
-                    || diffidxup < 0 || imageUtil.isPixelWhite(imageData, diffidxup))  {
+                if (diffidx < 0 || imageUtil.isPixelWhite(imageData, diffidx) || diffidxup < 0 || imageUtil.isPixelWhite(imageData, diffidxup)) {
                     imageUtil.setPixelColorByIndex(imageData, di, 0, 0, 0);
                     if (!imageUtil.isPixelWhite(imageData, diffidx) && !imageUtil.isPixelBlack(imageData, diffidx)) {
                         imageUtil.setPixelColorByIndex(imageData, diffidx, 0, 0, 0);
@@ -549,7 +547,7 @@ function removeNoiseLine(imageData) {
                 } else if (imageUtil.isPixelBlackOrWhite(imageData, rdi) && imageUtil.inBlackWhilte(imageData, ldrd)) {
                     imageUtil.setPixelColorByIndex(imageData, di, 0, 0, 0);
                     imageUtil.setPixelColorByIndex(imageData, ldi, 0, 0, 0);
-                } 
+                }
 
             }
 
@@ -575,7 +573,7 @@ function removeNoiseLine(imageData) {
                 } else if (imageUtil.isPixelBlackOrWhite(imageData, rui) && imageUtil.inBlackWhilte(imageData, ldrd)) {
                     imageUtil.setPixelColorByIndex(imageData, ui, 0, 0, 0);
                     imageUtil.setPixelColorByIndex(imageData, lui, 0, 0, 0);
-                } 
+                }
 
             }
 
@@ -584,15 +582,14 @@ function removeNoiseLine(imageData) {
             if (!imageUtil.isPixelBlack(imageData, li) && !imageUtil.isPixelWhite(imageData, li) && imageUtil.isPixelWhite(imageData, lli)) {
                 var diffidx = imageUtil.getFirstDiffColorIndex(imageData, i, 1, 0);
                 var diffidxright = imageUtil.getNeighbourPixelIndex(imageData, diffidx, 1, 0);
-                if (diffidx < 0 || imageUtil.isPixelWhite(imageData, diffidx)
-                    || diffidxright < 0 || imageUtil.isPixelWhite(imageData, diffidxright))  {
+                if (diffidx < 0 || imageUtil.isPixelWhite(imageData, diffidx) || diffidxright < 0 || imageUtil.isPixelWhite(imageData, diffidxright)) {
                     imageUtil.setPixelColorByIndex(imageData, li, 0, 0, 0);
                     if (!imageUtil.isPixelWhite(imageData, diffidx) && !imageUtil.isPixelBlack(imageData, diffidx)) {
                         imageUtil.setPixelColorByIndex(imageData, diffidx, 0, 0, 0);
                     }
                 }
             }
-            
+
             var ri = imageUtil.getNeighbourPixelIndex(nlimg, i, 1, 0);
             var rri = imageUtil.getNeighbourPixelIndex(nlimg, i, 2, 0);
             if (!imageUtil.isPixelBlack(imageData, ri) && !imageUtil.isPixelWhite(imageData, ri) && imageUtil.isPixelWhite(imageData, rri)) {
@@ -620,30 +617,15 @@ function removeNoiseLine(imageData) {
             var leftupi = imageUtil.getNeighbourPixelIndex(imageData, i, -1, -1);
             var rightupi = imageUtil.getNeighbourPixelIndex(imageData, i, 1, -1);
             var leftdowni = imageUtil.getNeighbourPixelIndex(imageData, i, -1, 1);
-            if (imageUtil.isPixelBlack(imageData, rightdowni) 
-                && imageUtil.isPixelWhite(imageData, upi) 
-                && imageUtil.isPixelWhite(imageData, lefti)
-                && (imageUtil.isPixelBlack(imageData, downi) || isNoiseLine(imageData, downi, 255))
-                && (imageUtil.isPixelBlack(imageData, righti) || isNoiseLine(imageData, righti, 255))) {
+            if (imageUtil.isPixelBlack(imageData, rightdowni) && imageUtil.isPixelWhite(imageData, upi) && imageUtil.isPixelWhite(imageData, lefti) && (imageUtil.isPixelBlack(imageData, downi) || isNoiseLine(imageData, downi, 255)) && (imageUtil.isPixelBlack(imageData, righti) || isNoiseLine(imageData, righti, 255))) {
                 imageUtil.setPixelColorByIndex(imageData, i, 0, 0, 0);
-            } else if (imageUtil.isPixelBlack(imageData, lefti)
-                && imageUtil.isPixelBlack(imageData, righti)
-                && imageUtil.isPixelBlack(imageData, upi)
-                && imageUtil.isPixelBlack(imageData, downi)) {
+            } else if (imageUtil.isPixelBlack(imageData, lefti) && imageUtil.isPixelBlack(imageData, righti) && imageUtil.isPixelBlack(imageData, upi) && imageUtil.isPixelBlack(imageData, downi)) {
                 imageUtil.setPixelColorByIndex(imageData, i, 0, 0, 0);
-            } else if (imageUtil.isPixelBlack(imageData, leftupi) 
-                && imageUtil.isPixelWhite(imageData, downi) 
-                && imageUtil.isPixelWhite(imageData, righti)
-                && (imageUtil.isPixelBlack(imageData, upi) || isNoiseLine(imageData, upi, 255))
-                && (imageUtil.isPixelBlack(imageData, lefti) || isNoiseLine(imageData, lefti, 255))) {
+            } else if (imageUtil.isPixelBlack(imageData, leftupi) && imageUtil.isPixelWhite(imageData, downi) && imageUtil.isPixelWhite(imageData, righti) && (imageUtil.isPixelBlack(imageData, upi) || isNoiseLine(imageData, upi, 255)) && (imageUtil.isPixelBlack(imageData, lefti) || isNoiseLine(imageData, lefti, 255))) {
                 imageUtil.setPixelColorByIndex(imageData, i, 0, 0, 0);
-            }  else if (imageUtil.isPixelBlack(imageData, leftupi) 
-                && imageUtil.isPixelWhite(imageData, upi) 
-                && imageUtil.isPixelWhite(imageData, lefti)
-                && (imageUtil.isPixelWhite(imageData, righti) || isNoiseLine(imageData, righti, 255))
-                && (imageUtil.isPixelWhite(imageData, downi) || isNoiseLine(imageData, downi, 255))) {
+            } else if (imageUtil.isPixelBlack(imageData, leftupi) && imageUtil.isPixelWhite(imageData, upi) && imageUtil.isPixelWhite(imageData, lefti) && (imageUtil.isPixelWhite(imageData, righti) || isNoiseLine(imageData, righti, 255)) && (imageUtil.isPixelWhite(imageData, downi) || isNoiseLine(imageData, downi, 255))) {
                 imageUtil.setPixelColorByIndex(imageData, i, 0, 0, 0);
-            } 
+            }
 
 
 
@@ -664,11 +646,11 @@ function splitCharactors(imageData) {
         var r = imageData.data[i];
         var g = imageData.data[i + 1];
         var b = imageData.data[i + 2];
-        if (r===g && r === b && g === b && r===0) {
+        if (r === g && r === b && g === b && r === 0) {
             blackPIxels[i] = i;
             continue;
         } else if (r === g && r === b && r === BACKGROUND_COLOR) continue;
-        
+
         var key = r + "_" + g + "_" + b;
         if (!colorPixels[key]) {
             colorKeys.push(key);
@@ -682,25 +664,25 @@ function splitCharactors(imageData) {
         else if (colorPixels[k1].length < colorPixels[k2].length) return 1;
         else return 0;
     });
-    
-    var getAveX = function (pixels) {
+
+    var getAveX = function(pixels) {
         var tx = 0;
-        for (var _p=0; _p < pixels.length; _p++) {
-            tx += (pixels[_p]%(imageData.width*4))/4;
+        for (var _p = 0; _p < pixels.length; _p++) {
+            tx += (pixels[_p] % (imageData.width * 4)) / 4;
         }
 
-        return tx/pixels.length;
+        return tx / pixels.length;
     }
-    var getAveY = function (pixels) {
+    var getAveY = function(pixels) {
         var ty = 0;
-        for (var _p=0; _p < pixels.length; _p++) {
-            ty += Math.floor(pixels[_p]/(imageData.width*4));
+        for (var _p = 0; _p < pixels.length; _p++) {
+            ty += Math.floor(pixels[_p] / (imageData.width * 4));
         }
-        return ty/pixels.length;
+        return ty / pixels.length;
     }
 
     var mainkey0_idx;
-    var image0pixels = [];//colorPixels[colorKeys[mainkey0_idx]];
+    var image0pixels = []; //colorPixels[colorKeys[mainkey0_idx]];
     var rgb_main_str_0;
     var avex0;
     var avey0;
@@ -711,53 +693,51 @@ function splitCharactors(imageData) {
     var avex1;
     var avey1;
     // console.log("ave:", avex, avey);
-    for (var i = 0; i<colorKeys.length; i++) {
+    for (var i = 0; i < colorKeys.length; i++) {
         var ckey = colorKeys[i];
         var avexi = getAveX(colorPixels[ckey]);
         var aveyi = getAveY(colorPixels[ckey]);
-        if (true || Math.abs(avex-avexi) > 10 || Math.abs(avey-aveyi) > 6) {
-            if (mainkey0_idx===undefined) {
+        if (true || Math.abs(avex - avexi) > 10 || Math.abs(avey - aveyi) > 6) {
+            if (mainkey0_idx === undefined) {
                 mainkey0_idx = i;
                 avex0 = getAveX(colorPixels[colorKeys[i]]);
                 avey0 = getAveY(colorPixels[colorKeys[i]]);
                 // console.log(i, "avex0", avex0, "avey0", avey0, ckey, colorPixels[ckey].length);
                 imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
-            } else if (mainkey0_idx !== undefined 
-                && Math.abs(avex0-avexi) < 25 && Math.abs(avey0-aveyi) < 13) {
+            } else if (mainkey0_idx !== undefined && Math.abs(avex0 - avexi) < 25 && Math.abs(avey0 - aveyi) < 13) {
                 //console.log("add to group0", avex0, avexi, avey0, aveyi, colorKeys[mainkey0_idx], ckey, colorPixels[ckey].length)
                 imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
-            } else if (mainkey1_idx===undefined) {
+            } else if (mainkey1_idx === undefined) {
                 mainkey1_idx = i;
                 avex1 = getAveX(colorPixels[colorKeys[i]]);
                 avey1 = getAveY(colorPixels[colorKeys[i]]);
                 // console.log(i, "avex1", avex1, "avey1", avey1, ckey, colorPixels[ckey].length);
                 imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
-            } else if (mainkey1_idx !== undefined 
-                && Math.abs(avex1-avexi) < 25 && Math.abs(avey1-aveyi) < 13) {
-                imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);    
+            } else if (mainkey1_idx !== undefined && Math.abs(avex1 - avexi) < 25 && Math.abs(avey1 - aveyi) < 13) {
+                imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
                 // console.log("add to group1", colorKeys[mainkey1_idx], ckey, colorPixels[ckey].length)
             } else {
                 var dist0 = distanceIn3DByColorKey(ckey, colorKeys[mainkey0_idx])
                 var dist1 = distanceIn3DByColorKey(ckey, colorKeys[mainkey1_idx])
-                if (dist0 < dist1*0.8 && Math.abs(avex0-avexi) < Math.abs(avex1-avexi)) {
+                if (dist0 < dist1 * 0.8 && Math.abs(avex0 - avexi) < Math.abs(avex1 - avexi)) {
                     imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
-                } else if (dist1 < dist0*0.8 && Math.abs(avex1-avexi) < Math.abs(avex0-avexi)) {
+                } else if (dist1 < dist0 * 0.8 && Math.abs(avex1 - avexi) < Math.abs(avex0 - avexi)) {
                     imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
                 } else {
                     imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
                     imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
-                    // console.log("add to both images",i, ckey, dist0, dist1, colorPixels[ckey].length);
+                        // console.log("add to both images",i, ckey, dist0, dist1, colorPixels[ckey].length);
                 }
-                
-                
+
+
             }
 
-            
+
         } else {
-             console.log("drop", i, "avexi", avexi, "aveyi", aveyi, ckey, colorPixels[ckey].length);
+            console.log("drop", i, "avexi", avexi, "aveyi", aveyi, ckey, colorPixels[ckey].length);
         }
     }
-    if (image0pixels.length< MINIMUM_CHAR_PIXEL || image1pixels.length< MINIMUM_CHAR_PIXEL) return [imageData];
+    if (image0pixels.length < MINIMUM_CHAR_PIXEL || image1pixels.length < MINIMUM_CHAR_PIXEL) return [imageData];
 
     var img0 = imageUtil.getSubImage(imageData, image0pixels);
     var img1 = imageUtil.getSubImage(imageData, image1pixels);
@@ -771,20 +751,20 @@ function splitCharactors(imageData) {
 
     mergePixels(img0, img1);
     mergePixels(img1, img0);
-    
+
     function mergeIslets(_img0, _img1) {
         var islets = imageUtil.getIslets(_img0, 200);
         var img1map = imageUtil.pixelMap(_img1);
-        for (var i = 0; i<islets.length; i++) {
+        for (var i = 0; i < islets.length; i++) {
             var islet = islets[i];
             var count = 0;
             for (var att in islet) {
                 count++;
             }
-            
+
             imageUtil.addToImage(_img1, _img0, islet);
             var dist = imageUtil.getIsletsMinDistance(_img1, islet, img1map);
-            if(dist === 0) {
+            if (dist === 0) {
                 imageUtil.removePixelColor(_img0, islet);
             } else {
                 console.log("mergeIslets:------------------ distance is not 0");
@@ -797,7 +777,7 @@ function splitCharactors(imageData) {
 
     var avx0 = imageUtil.getPixelAveX(img0);
     var avx1 = imageUtil.getPixelAveX(img1);
-    return avx0<avx1?[img0, img1]: [img1, img0];
+    return avx0 < avx1 ? [img0, img1] : [img1, img0];
 }
 
 
@@ -812,11 +792,11 @@ function splitCharactors(imageData, count) {
         var r = imageData.data[i];
         var g = imageData.data[i + 1];
         var b = imageData.data[i + 2];
-        if (r===g && r === b && g === b && r===0) {
+        if (r === g && r === b && g === b && r === 0) {
             blackPIxels[i] = i;
             continue;
         } else if (r === g && r === b && r === BACKGROUND_COLOR) continue;
-        
+
         var key = r + "_" + g + "_" + b;
         if (!colorPixels[key]) {
             colorKeys.push(key);
@@ -830,25 +810,25 @@ function splitCharactors(imageData, count) {
         else if (colorPixels[k1].length < colorPixels[k2].length) return 1;
         else return 0;
     });
-    
-    var getAveX = function (pixels) {
+
+    var getAveX = function(pixels) {
         var tx = 0;
-        for (var _p=0; _p < pixels.length; _p++) {
-            tx += (pixels[_p]%(imageData.width*4))/4;
+        for (var _p = 0; _p < pixels.length; _p++) {
+            tx += (pixels[_p] % (imageData.width * 4)) / 4;
         }
 
-        return tx/pixels.length;
+        return tx / pixels.length;
     }
-    var getAveY = function (pixels) {
+    var getAveY = function(pixels) {
         var ty = 0;
-        for (var _p=0; _p < pixels.length; _p++) {
-            ty += Math.floor(pixels[_p]/(imageData.width*4));
+        for (var _p = 0; _p < pixels.length; _p++) {
+            ty += Math.floor(pixels[_p] / (imageData.width * 4));
         }
-        return ty/pixels.length;
+        return ty / pixels.length;
     }
 
     var mainkey0_idx;
-    var image0pixels = [];//colorPixels[colorKeys[mainkey0_idx]];
+    var image0pixels = []; //colorPixels[colorKeys[mainkey0_idx]];
     var rgb_main_str_0;
     var avex0;
     var avey0;
@@ -859,49 +839,47 @@ function splitCharactors(imageData, count) {
     var avex1;
     var avey1;
     // console.log("ave:", avex, avey);
-    for (var i = 0; i<colorKeys.length; i++) {
+    for (var i = 0; i < colorKeys.length; i++) {
         var ckey = colorKeys[i];
         var avexi = getAveX(colorPixels[ckey]);
         var aveyi = getAveY(colorPixels[ckey]);
-        if (mainkey0_idx===undefined) {
+        if (mainkey0_idx === undefined) {
             mainkey0_idx = i;
             avex0 = getAveX(colorPixels[colorKeys[i]]);
             avey0 = getAveY(colorPixels[colorKeys[i]]);
             // console.log(i, "avex0", avex0, "avey0", avey0, ckey, colorPixels[ckey].length);
             imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
-        } else if (mainkey0_idx !== undefined 
-            && Math.abs(avex0-avexi) < 25 && Math.abs(avey0-aveyi) < 13) {
+        } else if (mainkey0_idx !== undefined && Math.abs(avex0 - avexi) < 25 && Math.abs(avey0 - aveyi) < 13) {
             //console.log("add to group0", avex0, avexi, avey0, aveyi, colorKeys[mainkey0_idx], ckey, colorPixels[ckey].length)
             imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
-        } else if (mainkey1_idx===undefined) {
+        } else if (mainkey1_idx === undefined) {
             mainkey1_idx = i;
             avex1 = getAveX(colorPixels[colorKeys[i]]);
             avey1 = getAveY(colorPixels[colorKeys[i]]);
             // console.log(i, "avex1", avex1, "avey1", avey1, ckey, colorPixels[ckey].length);
             imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
-        } else if (mainkey1_idx !== undefined 
-            && Math.abs(avex1-avexi) < 25 && Math.abs(avey1-aveyi) < 13) {
-            imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);    
+        } else if (mainkey1_idx !== undefined && Math.abs(avex1 - avexi) < 25 && Math.abs(avey1 - aveyi) < 13) {
+            imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
             // console.log("add to group1", colorKeys[mainkey1_idx], ckey, colorPixels[ckey].length)
         } else {
             var dist0 = distanceIn3DByColorKey(ckey, colorKeys[mainkey0_idx])
             var dist1 = distanceIn3DByColorKey(ckey, colorKeys[mainkey1_idx])
-            if (dist0 < dist1*0.8 && Math.abs(avex0-avexi) < Math.abs(avex1-avexi)) {
+            if (dist0 < dist1 * 0.8 && Math.abs(avex0 - avexi) < Math.abs(avex1 - avexi)) {
                 imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
-            } else if (dist1 < dist0*0.8 && Math.abs(avex1-avexi) < Math.abs(avex0-avexi)) {
+            } else if (dist1 < dist0 * 0.8 && Math.abs(avex1 - avexi) < Math.abs(avex0 - avexi)) {
                 imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
             } else {
                 imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
                 imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
-                // console.log("add to both images",i, ckey, dist0, dist1, colorPixels[ckey].length);
+                    // console.log("add to both images",i, ckey, dist0, dist1, colorPixels[ckey].length);
             }
-            
-            
+
+
         }
 
-          
+
     }
-    if (image0pixels.length< MINIMUM_CHAR_PIXEL || image1pixels.length< MINIMUM_CHAR_PIXEL) return [imageData];
+    if (image0pixels.length < MINIMUM_CHAR_PIXEL || image1pixels.length < MINIMUM_CHAR_PIXEL) return [imageData];
 
     var img0 = imageUtil.getSubImage(imageData, image0pixels);
     var img1 = imageUtil.getSubImage(imageData, image1pixels);
@@ -915,20 +893,20 @@ function splitCharactors(imageData, count) {
 
     mergePixels(img0, img1);
     mergePixels(img1, img0);
-    
+
     function mergeIslets(_img0, _img1) {
         var islets = imageUtil.getIslets(_img0, 200);
         var img1map = imageUtil.pixelMap(_img1);
-        for (var i = 0; i<islets.length; i++) {
+        for (var i = 0; i < islets.length; i++) {
             var islet = islets[i];
             var count = 0;
             for (var att in islet) {
                 count++;
             }
-            
+
             imageUtil.addToImage(_img1, _img0, islet);
             var dist = imageUtil.getIsletsMinDistance(_img1, islet, img1map);
-            if(dist === 0) {
+            if (dist === 0) {
                 imageUtil.removePixelColor(_img0, islet);
             } else {
                 console.log("mergeIslets:------------------ distance is not 0");
@@ -941,7 +919,7 @@ function splitCharactors(imageData, count) {
 
     var avx0 = imageUtil.getPixelAveX(img0);
     var avx1 = imageUtil.getPixelAveX(img1);
-    return avx0<avx1?[img0, img1]: [img1, img0];
+    return avx0 < avx1 ? [img0, img1] : [img1, img0];
 }
 
 function getColorGroups(imageData, groupNum, groupMin, rgbMinDiff) {
@@ -953,9 +931,7 @@ function getColorGroups(imageData, groupNum, groupMin, rgbMinDiff) {
         var b = imageData.data[i + 2];
 
         if (r === g && r === b && r === BACKGROUND_COLOR) continue;
-        else if (Math.abs(r - g) <= rgbMinDiff && Math.abs(r - b) <= rgbMinDiff && Math.abs(b - g) <= rgbMinDiff
-            && r<=110 && g<=110 && b<=110
-            || r<=0 && g <= 0 && b<=20) continue;
+        else if (Math.abs(r - g) <= rgbMinDiff && Math.abs(r - b) <= rgbMinDiff && Math.abs(b - g) <= rgbMinDiff && r <= 110 && g <= 110 && b <= 110 || r <= 0 && g <= 0 && b <= 20) continue;
         var key = r + "_" + g + "_" + b;
         if (!colorGroups[key]) {
             colorKeys.push(key);
@@ -1038,67 +1014,64 @@ function hRecoverColorsNearby(img, originImage, leftimg, rightimg) {
             var r = img.data[i];
             var g = img.data[i + 1];
             var b = img.data[i + 2];
-            if (r === BACKGROUND_COLOR && g === BACKGROUND_COLOR && b === BACKGROUND_COLOR
-                || r===0 && g===0 && b===0) continue;
-            
-            var _setRecoverColor = function (_img, _orig, _rps) {
-                    if (_rps.length>0) {
-                        if (_rps.length>15) _rps = _rps.slice(0, 14);
-                        var blackEndStart = -1;
-                        for (var _b=_rps.length-1; _b>=0; _b--) {
-                            if (imageUtil.isPixelBlack(_orig, _rps[_b])) {
-                                blackEndStart = _b;
-                            } else {
-                                break;
-                            }
-                        }        
-                        var blackStart = -1;
-                        var len = _rps.length;
-                        for (var j=0; j<len; j++) {
-                            var ri = _rps[j];
-                            if(blackStart<0 && imageUtil.isPixelBlack(_orig, ri)) {
-                                blackStart = j;                        
-                            }
+            if (r === BACKGROUND_COLOR && g === BACKGROUND_COLOR && b === BACKGROUND_COLOR || r === 0 && g === 0 && b === 0) continue;
 
-                            var _x = (ri%(_orig.width*4))/4;
-                            var _y = Math.floor(ri/(_orig.width*4));
-                            
-
-                            if (blackStart!=-1 && blackStart === blackEndStart && j>=blackEndStart) break;
-
-                            _img.data[ri] = _orig.data[ri];
-                            _img.data[ri+1] = _orig.data[ri+1];
-                            _img.data[ri+2] = _orig.data[ri+2];
-
-                            if (_x>=181 && _y==58) {
-                                console.log(_x, _y, blackStart, blackEndStart, _rps.length, j, _orig.data[ri]);
-                            }
-
-                            if (blackEndStart!=-1 && blackEndStart<=j
-                                && imageUtil.isPixelBlack(_orig, ri)
-                                // && _x>0 && _x<_orig.width-1
-                                && imageUtil.isPixelWhite(_img, ri-4*_orig.width)
-                                && imageUtil.isPixelWhite(_img, ri+4*_orig.width)) {
-                                break;
-                            }
-
+            var _setRecoverColor = function(_img, _orig, _rps) {
+                if (_rps.length > 0) {
+                    if (_rps.length > 15) _rps = _rps.slice(0, 14);
+                    var blackEndStart = -1;
+                    for (var _b = _rps.length - 1; _b >= 0; _b--) {
+                        if (imageUtil.isPixelBlack(_orig, _rps[_b])) {
+                            blackEndStart = _b;
+                        } else {
+                            break;
                         }
                     }
+                    var blackStart = -1;
+                    var len = _rps.length;
+                    for (var j = 0; j < len; j++) {
+                        var ri = _rps[j];
+                        if (blackStart < 0 && imageUtil.isPixelBlack(_orig, ri)) {
+                            blackStart = j;
+                        }
+
+                        var _x = (ri % (_orig.width * 4)) / 4;
+                        var _y = Math.floor(ri / (_orig.width * 4));
+
+
+                        if (blackStart != -1 && blackStart === blackEndStart && j >= blackEndStart) break;
+
+                        _img.data[ri] = _orig.data[ri];
+                        _img.data[ri + 1] = _orig.data[ri + 1];
+                        _img.data[ri + 2] = _orig.data[ri + 2];
+
+                        if (_x >= 181 && _y == 58) {
+                            console.log(_x, _y, blackStart, blackEndStart, _rps.length, j, _orig.data[ri]);
+                        }
+
+                        if (blackEndStart != -1 && blackEndStart <= j && imageUtil.isPixelBlack(_orig, ri)
+                            // && _x>0 && _x<_orig.width-1
+                            && imageUtil.isPixelWhite(_img, ri - 4 * _orig.width) && imageUtil.isPixelWhite(_img, ri + 4 * _orig.width)) {
+                            break;
+                        }
+
+                    }
                 }
+            }
 
             var lefti = imageUtil.getNeighbourPixelIndex(img, i, -1, 0);
-            if (imageUtil.isPixelWhite(img, lefti) ) {
+            if (imageUtil.isPixelWhite(img, lefti)) {
                 var rpixels = checkRecoverColorInDirection(i, -1, 0, img, originImage, leftimg, rightimg);
-                if (y===43) console.log("rpixels:", x, y, rpixels.length);
+                if (y === 43) console.log("rpixels:", x, y, rpixels.length);
                 _setRecoverColor(img, originImage, rpixels);
-            } 
-            
+            }
+
             var righti = imageUtil.getNeighbourPixelIndex(img, i, 1, 0);
-            if (imageUtil.isPixelWhite(img, righti) ) {
+            if (imageUtil.isPixelWhite(img, righti)) {
                 var rpixels = checkRecoverColorInDirection(i, 1, 0, img, originImage, leftimg, rightimg);
                 _setRecoverColor(img, originImage, rpixels);
-            } 
-            
+            }
+
         }
     }
 
@@ -1113,89 +1086,85 @@ function vRecoverColorsNearby(img, originImage, leftimg, rightimg) {
             var r = img.data[i];
             var g = img.data[i + 1];
             var b = img.data[i + 2];
-            if (r === BACKGROUND_COLOR && g === BACKGROUND_COLOR && b === BACKGROUND_COLOR
-                || r===0 && g===0 && b===0) continue;
-            
-                var _setRecoverColor = function (_img, _orig, _rps, thickness, toedge) {
-                    if (_rps.length>0) {
-                        var _lidx = _rps[_rps.length-1];
-                        var _lmap = {};
-                        _lmap[_lidx] = _lidx;
-                        if (!imageUtil.isPixelBlackOrWhite(_orig, _lidx) && imageUtil.inBlackWhilte(_orig, _lmap)){
-                             _rps = _rps.slice(0, _rps.length-1);
-                        }
+            if (r === BACKGROUND_COLOR && g === BACKGROUND_COLOR && b === BACKGROUND_COLOR || r === 0 && g === 0 && b === 0) continue;
 
-                        var minlen = 7-thickness - (toedge>3?0:(3-toedge));
-                        var blackEndStart = -1;
-                        for (var _b=_rps.length-1; _b>=0; _b--) {
-                            if (imageUtil.isPixelBlack(_orig, _rps[_b])) {
-                                blackEndStart = _b;
-                            } else {
-                                break;
-                            }
-                        }        
-                        var blackStart = -1;
-                        var len = _rps.length;
-                        for (var j=0; j<len; j++) {
-                            var ri = _rps[j];
-                            if(blackStart<0 && imageUtil.isPixelBlack(_orig, ri)) {
-                                blackStart = j;                        
-                            }
+            var _setRecoverColor = function(_img, _orig, _rps, thickness, toedge) {
+                if (_rps.length > 0) {
+                    var _lidx = _rps[_rps.length - 1];
+                    var _lmap = {};
+                    _lmap[_lidx] = _lidx;
+                    if (!imageUtil.isPixelBlackOrWhite(_orig, _lidx) && imageUtil.inBlackWhilte(_orig, _lmap)) {
+                        _rps = _rps.slice(0, _rps.length - 1);
+                    }
 
-                            var _x = (ri%(_orig.width*4))/4;
-
-                            // if (_x===80) {
-                            //     console.log(_x, Math.floor(ri/(_orig.width*4)), j, thickness,toedge, minlen, blackStart, blackEndStart, _rps.length, _orig.data[ri]);
-                            // }
-
-                            if (j>minlen) {
-                                if (blackStart!=-1 && blackStart === blackEndStart && j >= (len-blackStart)/2 )break;
-
-                                if (blackEndStart!=-1 && blackEndStart<=j
-                                    && imageUtil.isPixelBlack(_orig, ri)
-                                    && imageUtil.isPixelWhite(_img, ri-4)
-                                    && imageUtil.isPixelWhite(_img, ri+4)) {
-                                    break;
-                                }
-                            }
-                            _img.data[ri] = _orig.data[ri];
-                            _img.data[ri+1] = _orig.data[ri+1];
-                            _img.data[ri+2] = _orig.data[ri+2];
-
-
-
+                    var minlen = 7 - thickness - (toedge > 3 ? 0 : (3 - toedge));
+                    var blackEndStart = -1;
+                    for (var _b = _rps.length - 1; _b >= 0; _b--) {
+                        if (imageUtil.isPixelBlack(_orig, _rps[_b])) {
+                            blackEndStart = _b;
+                        } else {
+                            break;
                         }
                     }
+                    var blackStart = -1;
+                    var len = _rps.length;
+                    for (var j = 0; j < len; j++) {
+                        var ri = _rps[j];
+                        if (blackStart < 0 && imageUtil.isPixelBlack(_orig, ri)) {
+                            blackStart = j;
+                        }
+
+                        var _x = (ri % (_orig.width * 4)) / 4;
+
+                        // if (_x===80) {
+                        //     console.log(_x, Math.floor(ri/(_orig.width*4)), j, thickness,toedge, minlen, blackStart, blackEndStart, _rps.length, _orig.data[ri]);
+                        // }
+
+                        if (j > minlen) {
+                            if (blackStart != -1 && blackStart === blackEndStart && j >= (len - blackStart) / 2) break;
+
+                            if (blackEndStart != -1 && blackEndStart <= j && imageUtil.isPixelBlack(_orig, ri) && imageUtil.isPixelWhite(_img, ri - 4) && imageUtil.isPixelWhite(_img, ri + 4)) {
+                                break;
+                            }
+                        }
+                        _img.data[ri] = _orig.data[ri];
+                        _img.data[ri + 1] = _orig.data[ri + 1];
+                        _img.data[ri + 2] = _orig.data[ri + 2];
+
+
+
+                    }
                 }
+            }
 
 
             var upi = imageUtil.getNeighbourPixelIndex(img, i, 0, -1);
-            if (imageUtil.isPixelWhite(img, upi) ) {
+            if (imageUtil.isPixelWhite(img, upi)) {
                 var rpixels = checkRecoverColorInDirection(i, 0, -1, img, originImage, leftimg, rightimg);
                 var fbgi = imageUtil.getFirstBackgroundColorIndex(originImage, i, 0, 1);
-                var ey = Math.floor(fbgi/(originImage.width*4));
+                var ey = Math.floor(fbgi / (originImage.width * 4));
 
                 var lfbgi = imageUtil.getFirstBackgroundColorIndex(img, i, -1, 0);
                 var lx = imageUtil.getXByIndex(img, lfbgi);
                 var rfbgi = imageUtil.getFirstBackgroundColorIndex(img, i, 1, 0);
                 var rx = imageUtil.getXByIndex(img, rfbgi);
                 // if (x===80 && y==42) console.log("lx rx", lx, rx)
-                _setRecoverColor(img, originImage, rpixels, ey-y,  Math.min(x-lx, rx-x));
-            } 
-            
+                _setRecoverColor(img, originImage, rpixels, ey - y, Math.min(x - lx, rx - x));
+            }
+
             var downi = imageUtil.getNeighbourPixelIndex(img, i, 0, 1);
-            if (imageUtil.isPixelWhite(img, downi) ) {
-                var rpixels = checkRecoverColorInDirection(i, 0, 1, img, originImage, leftimg, rightimg);  
+            if (imageUtil.isPixelWhite(img, downi)) {
+                var rpixels = checkRecoverColorInDirection(i, 0, 1, img, originImage, leftimg, rightimg);
                 var fbgi = imageUtil.getFirstBackgroundColorIndex(originImage, i, 0, -1);
-                var ey = Math.floor(fbgi/(originImage.width*4));     
+                var ey = Math.floor(fbgi / (originImage.width * 4));
                 var lfbgi = imageUtil.getFirstBackgroundColorIndex(img, i, -1, 0);
                 var lx = imageUtil.getXByIndex(img, lfbgi);
                 var rfbgi = imageUtil.getFirstBackgroundColorIndex(img, i, 1, 0);
                 var rx = imageUtil.getXByIndex(img, rfbgi);
 
-                _setRecoverColor(img, originImage, rpixels, y-ey, Math.min(x-lx, rx-x));
-            } 
-            
+                _setRecoverColor(img, originImage, rpixels, y - ey, Math.min(x - lx, rx - x));
+            }
+
         }
     }
 
@@ -1204,46 +1173,45 @@ function vRecoverColorsNearby(img, originImage, leftimg, rightimg) {
 function checkRecoverColorInDirection(idx, h, v, img, origImg, leftImg, rightImg) {
     //var tgtidx = imageUtil.getNeighbourPixelIndex(img, idx, h, v);
     //var tgtrgb = [origImg.data[tgtidx], origImg.data[tgtidx+1], origImg.data[tgtidx+2]];
-    var srcrgb = [img.data[idx], img.data[idx+1], img.data[idx+2]];
+    var srcrgb = [img.data[idx], img.data[idx + 1], img.data[idx + 2]];
     var recoverPixels = [];
     //if (imageUtil.isPixelWhite(origImg, tgtidx)) return recoverPixels;
-    
-    for(var i=1; i<30 ;i++) {
-        var newidx = idx+h*i*4+v*i*4*img.width;
-        var x = (newidx%(origImg.width*4))/4;
-        var y = Math.floor(newidx/(origImg.width*4))
-        if((imageUtil.isPixelWhite(img, newidx) || i>1) && !imageUtil.isPixelWhite(origImg, newidx)
-            && (!leftImg || imageUtil.isPixelWhite(leftImg, newidx)) && (!rightImg || imageUtil.isPixelWhite(rightImg, newidx))) {
+
+    for (var i = 1; i < 30; i++) {
+        var newidx = idx + h * i * 4 + v * i * 4 * img.width;
+        var x = (newidx % (origImg.width * 4)) / 4;
+        var y = Math.floor(newidx / (origImg.width * 4))
+        if ((imageUtil.isPixelWhite(img, newidx) || i > 1) && !imageUtil.isPixelWhite(origImg, newidx) && (!leftImg || imageUtil.isPixelWhite(leftImg, newidx)) && (!rightImg || imageUtil.isPixelWhite(rightImg, newidx))) {
             // if (y===21) console.log(x, y, origImg.data[newidx])
             recoverPixels.push(newidx);
             if (imageUtil.isPixelWhite(img, newidx)) {
-                continue;                
+                continue;
             }
         }
- 
-        if((!leftImg || imageUtil.isPixelWhite(leftImg, newidx)) && (!rightImg || imageUtil.isPixelWhite(rightImg, newidx))) {
-// if (x===36) console.log("recoverPixels1", x, y, recoverPixels.length, !leftImg, !rightImg, imageUtil.isPixelWhite(rightImg, newidx))
+
+        if ((!leftImg || imageUtil.isPixelWhite(leftImg, newidx)) && (!rightImg || imageUtil.isPixelWhite(rightImg, newidx))) {
+            // if (x===36) console.log("recoverPixels1", x, y, recoverPixels.length, !leftImg, !rightImg, imageUtil.isPixelWhite(rightImg, newidx))
             return recoverPixels;
         } else if (leftImg && !imageUtil.isPixelWhite(leftImg, newidx)) {
-            for(var j=0; j<recoverPixels.length; j++) {
+            for (var j = 0; j < recoverPixels.length; j++) {
                 var ridx = recoverPixels[j];
-                var rrgb = [origImg.data[ridx], origImg.data[ridx+1], origImg.data[ridx+2]];
+                var rrgb = [origImg.data[ridx], origImg.data[ridx + 1], origImg.data[ridx + 2]];
                 var distance = distanceIn3D(rrgb, srcrgb);
-                var distanceleft = distanceIn3D(rrgb, [leftImg.data[newidx], leftImg.data[newidx+1], leftImg.data[newidx+2]]);
-                if (distance<distanceleft) continue;
+                var distanceleft = distanceIn3D(rrgb, [leftImg.data[newidx], leftImg.data[newidx + 1], leftImg.data[newidx + 2]]);
+                if (distance < distanceleft) continue;
                 else {
                     recoverPixels = recoverPixels.slice(0, j);
                     break;
                 }
             }
-            return recoverPixels;        
+            return recoverPixels;
         } else if (rightImg && !imageUtil.isPixelWhite(rightImg, newidx)) {
-            for(var j=0; j<recoverPixels.length; j++) {
+            for (var j = 0; j < recoverPixels.length; j++) {
                 var ridx = recoverPixels[j];
-                var rrgb = [origImg.data[ridx], origImg.data[ridx+1], origImg.data[ridx+2]];
+                var rrgb = [origImg.data[ridx], origImg.data[ridx + 1], origImg.data[ridx + 2]];
                 var distance = distanceIn3D(rrgb, srcrgb);
-                var distanceright = distanceIn3D(rrgb, [rightImg.data[newidx], rightImg.data[newidx+1], rightImg.data[newidx+2]]);
-                if (distance<distanceright) continue;
+                var distanceright = distanceIn3D(rrgb, [rightImg.data[newidx], rightImg.data[newidx + 1], rightImg.data[newidx + 2]]);
+                if (distance < distanceright) continue;
                 else {
                     recoverPixels = recoverPixels.slice(0, j);
                     break;
@@ -1254,17 +1222,18 @@ function checkRecoverColorInDirection(idx, h, v, img, origImg, leftImg, rightImg
     }
 
 
-    if (i>20) {
+    if (i > 20) {
 
         console.log("ERROR:**********************************************checkRecoverColorInDirection i>18", i, x, y, recoverPixels.length)
-        //     Math.floor(newidx/(origImg.width*4)), (newidx%(origImg.width*4))/4, recoverPixels.length);
-                // process.exit(1);
-        
+            //     Math.floor(newidx/(origImg.width*4)), (newidx%(origImg.width*4))/4, recoverPixels.length);
+            // process.exit(1);
+
     }
     return recoverPixels;
 }
 
 exports.recoverColorInRange = recoverColorInRange;
+
 function recoverColorInRange(img, leftimg, rightimg, originImage) {
     var range = imageUtil.pixelRange(img);
     var offset = 10;
@@ -1276,51 +1245,51 @@ function recoverColorInRange(img, leftimg, rightimg, originImage) {
             var g = img.data[i + 1];
             var b = img.data[i + 2];
             if (r !== BACKGROUND_COLOR || g !== BACKGROUND_COLOR || b !== BACKGROUND_COLOR) continue;
-            
+
             if (leftimg) {
                 var lr = leftimg.data[i];
-                var lg = leftimg.data[i+1];
-                var lb = leftimg.data[i+2];
+                var lg = leftimg.data[i + 1];
+                var lb = leftimg.data[i + 2];
                 if (lr !== BACKGROUND_COLOR || lg !== BACKGROUND_COLOR || lb !== BACKGROUND_COLOR) continue;
             }
             if (rightimg) {
                 var rr = rightimg.data[i];
-                var rg = rightimg.data[i+1];
-                var rb = rightimg.data[i+2];
+                var rg = rightimg.data[i + 1];
+                var rb = rightimg.data[i + 2];
                 if (rr !== BACKGROUND_COLOR || rg !== BACKGROUND_COLOR || rb !== BACKGROUND_COLOR) continue;
             }
 
 
             img.data[i] = originImage.data[i];
-            img.data[i+1] = originImage.data[i+1];
-            img.data[i+2] = originImage.data[i+2];
+            img.data[i + 1] = originImage.data[i + 1];
+            img.data[i + 2] = originImage.data[i + 2];
         }
     }
 
 }
 
 function isNoiseLine(img, i, range) {
-    if (range===undefined) range = 110;
+    if (range === undefined) range = 110;
     var r = img.data[i];
     var g = img.data[i + 1];
     var b = img.data[i + 2];
-    
+
     if (imageUtil.isPixelWhite(img, i)) return false;
 
-    return (Math.abs(r-g) <=40 && Math.abs(r-b) <=40 && Math.abs(b-g) <=40 
-        && Math.max(r, Math.max(b,g))<=range);
-        
+    return (Math.abs(r - g) <= 40 && Math.abs(r - b) <= 40 && Math.abs(b - g) <= 40 && Math.max(r, Math.max(b, g)) <= range);
+
 }
 
 exports.recoverImage = recoverImage;
-function recoverImage(img, origImage){
+
+function recoverImage(img, origImage) {
     var range = imageUtil.pixelRange(img);
     var offset = 0;
     var recoverMap = {};
     for (var x = 0; x < img.width; x++) {
-        if (x<range.left-offset || x>range.right+offset) continue;
+        if (x < range.left - offset || x > range.right + offset) continue;
         for (var y = 0; y < img.height; y++) {
-            if (y<range.top-offset || y>range.bottom+offset) continue;
+            if (y < range.top - offset || y > range.bottom + offset) continue;
             var i = x * 4 + y * 4 * img.width;
             var r = img.data[i];
             var g = img.data[i + 1];
@@ -1328,57 +1297,53 @@ function recoverImage(img, origImage){
             if (r === BACKGROUND_COLOR && g === BACKGROUND_COLOR && b === BACKGROUND_COLOR) continue;
 
             var lefti = imageUtil.getNeighbourPixelIndex(img, i, -1, 0);
-            if (lefti>-1) {
+            if (lefti > -1) {
                 var leftr = img.data[lefti];
                 var leftg = img.data[lefti + 1];
                 var leftb = img.data[lefti + 2];
                 var oleftr = origImage.data[lefti];
                 var oleftg = origImage.data[lefti + 1];
                 var oleftb = origImage.data[lefti + 2];
-                if (leftr===BACKGROUND_COLOR && leftg===BACKGROUND_COLOR && leftb===BACKGROUND_COLOR
-                    && (oleftr!==BACKGROUND_COLOR || oleftg!==BACKGROUND_COLOR || oleftb!==BACKGROUND_COLOR)) {
+                if (leftr === BACKGROUND_COLOR && leftg === BACKGROUND_COLOR && leftb === BACKGROUND_COLOR && (oleftr !== BACKGROUND_COLOR || oleftg !== BACKGROUND_COLOR || oleftb !== BACKGROUND_COLOR)) {
                     recoverMap[lefti] = lefti;
                 }
             }
 
             var righti = imageUtil.getNeighbourPixelIndex(img, i, 1, 0);
-            if (righti>-1) {
+            if (righti > -1) {
                 var rightr = img.data[righti];
                 var rightg = img.data[righti + 1];
                 var rightb = img.data[righti + 2];
                 var orightr = origImage.data[righti];
                 var orightg = origImage.data[righti + 1];
                 var orightb = origImage.data[righti + 2];
-                if (rightr===BACKGROUND_COLOR && rightg===BACKGROUND_COLOR && rightb===BACKGROUND_COLOR
-                    && (orightr!==BACKGROUND_COLOR || orightg!==BACKGROUND_COLOR || orightb!==BACKGROUND_COLOR)) {
+                if (rightr === BACKGROUND_COLOR && rightg === BACKGROUND_COLOR && rightb === BACKGROUND_COLOR && (orightr !== BACKGROUND_COLOR || orightg !== BACKGROUND_COLOR || orightb !== BACKGROUND_COLOR)) {
                     recoverMap[righti] = righti;
                 }
             }
 
             var upi = imageUtil.getNeighbourPixelIndex(img, i, 0, -1);
-            if (upi>-1) {
+            if (upi > -1) {
                 var upr = img.data[upi];
                 var upg = img.data[upi + 1];
                 var upb = img.data[upi + 2];
                 var oupr = origImage.data[upi];
                 var oupg = origImage.data[upi + 1];
                 var oupb = origImage.data[upi + 2];
-                if (upr===BACKGROUND_COLOR && upg===BACKGROUND_COLOR && upb===BACKGROUND_COLOR
-                    && (oupr!==BACKGROUND_COLOR || oupg!==BACKGROUND_COLOR || oupb!==BACKGROUND_COLOR)) {
+                if (upr === BACKGROUND_COLOR && upg === BACKGROUND_COLOR && upb === BACKGROUND_COLOR && (oupr !== BACKGROUND_COLOR || oupg !== BACKGROUND_COLOR || oupb !== BACKGROUND_COLOR)) {
                     recoverMap[upi] = upi;
                 }
             }
-            
+
             var downi = imageUtil.getNeighbourPixelIndex(img, i, 0, 1);
-            if (downi>-1) {
+            if (downi > -1) {
                 var downr = img.data[downi];
                 var downg = img.data[downi + 1];
                 var downb = img.data[downi + 2];
                 var odownr = origImage.data[downi];
                 var odowng = origImage.data[downi + 1];
                 var odownb = origImage.data[downi + 2];
-                if (downr===BACKGROUND_COLOR && downg===BACKGROUND_COLOR && downb===BACKGROUND_COLOR
-                    && (odownr!==BACKGROUND_COLOR || odowng!==BACKGROUND_COLOR || odownb!==BACKGROUND_COLOR)) {
+                if (downr === BACKGROUND_COLOR && downg === BACKGROUND_COLOR && downb === BACKGROUND_COLOR && (odownr !== BACKGROUND_COLOR || odowng !== BACKGROUND_COLOR || odownb !== BACKGROUND_COLOR)) {
                     recoverMap[downi] = downi;
                 }
             }
@@ -1389,13 +1354,14 @@ function recoverImage(img, origImage){
     for (var att in recoverMap) {
         var idx = recoverMap[att];
         img.data[idx] = origImage.data[idx];
-        img.data[idx+1] = origImage.data[idx+1];
-        img.data[idx+2] = origImage.data[idx+2];
+        img.data[idx + 1] = origImage.data[idx + 1];
+        img.data[idx + 2] = origImage.data[idx + 2];
     }
 
 }
 
 exports.removeOnePixelColorOnNoise = removeOnePixelColorOnNoise;
+
 function removeOnePixelColorOnNoise(imageData) {
     for (var x = 0; x < imageData.width; x++) {
         for (var y = 0; y < imageData.height; y++) {
@@ -1689,6 +1655,7 @@ function distanceIn3DByColorKey(key0, key1) {
 
     return distanceIn3D(rgb0, rgb1);
 }
+
 function distanceIn3D(p0, p1) {
     return Math.sqrt(Math.pow(p0[0] - p1[0], 2) + Math.pow(p0[1] - p1[1], 2) + Math.pow(p0[2] - p1[2], 2));
 }
@@ -1697,41 +1664,48 @@ function isolatedCharactors(imageData) {
     var detectedMap = {};
     var charMaps = [];
     var smallMaps = [];
+    
     for (var x = 0; x < imageData.width; x++) {
         for (var y = 0; y < imageData.height; y++) {
             var i = x * 4 + y * 4 * imageData.width;
             if (imageUtil.isPixelWhite(imageData, i) || detectedMap[i] != undefined) continue;
 
             var clrMap = {};
-            var count = 0;
-            imageUtil.detectIslet(imageData, x, y, clrMap);
-            for (var att in clrMap) {
-                detectedMap[att] = clrMap[att];
-                count++;
-            }
-            if (count>MINIMUM_CHAR_PIXEL) charMaps.push(clrMap);
+            var count = imageUtil.detectIslet(imageData, x, y, clrMap, detectedMap);
+            // for (var att in clrMap) {
+            //     detectedMap[att] = clrMap[att];
+            //     count++;
+            // }
+            // console.log("---------------------------", count)
+            if (count > MINIMUM_CHAR_PIXEL) charMaps.push(clrMap);
             else smallMaps.push(clrMap);
         }
     }
 
 
+
     var imgs = [];
-    for (var i=0; i<charMaps.length; i++) {
+    for (var i = 0; i < charMaps.length; i++) {
         var img = imageUtil.getSubImage(imageData, charMaps[i]);
         var ckey = imageUtil.getMajorColorKey(img);
-        for (var j=0; j<smallMaps.length; j++) {
-            var isletDist = imageUtil.getIsletsMinDistance(imageData, charMaps[i], smallMaps[j])
-            if (isletDist>6) continue;
+        for (var j = 0; j < smallMaps.length; j++) {
+            var isletDist = imageUtil.getIsletsMinDistance(imageData,  smallMaps[j], charMaps[i])
+        
+            if (isletDist > 6) continue;
+            startTime = new Date(); 
             var smallimage = imageUtil.getSubImage(imageData, smallMaps[j]);
+        
             var ckeysmall = imageUtil.getMajorColorKey(smallimage);
             var dist = distanceIn3DByColorKey(ckey, ckeysmall);
-            if (dist<40) {
+            if (dist < 40) {
                 imageUtil.addToImage(img, smallimage);
             }
+
         }
+       
         imgs.push(img);
     }
-
+    
     return imgs;
 }
 
@@ -1814,8 +1788,8 @@ function removeThinPixels(imageData) {
     for (var att in detectedMap) {
         var idx = detectedMap[att];
         imageData.data[idx] = BACKGROUND_COLOR;
-        imageData.data[idx+1] = BACKGROUND_COLOR;
-        imageData.data[idx+2] = BACKGROUND_COLOR;
+        imageData.data[idx + 1] = BACKGROUND_COLOR;
+        imageData.data[idx + 2] = BACKGROUND_COLOR;
     }
     return detectedMap;
 }
@@ -1883,6 +1857,7 @@ function vRemoveFarPixels(imageData) {
 }
 
 exports.hScanForCharactorImages = hScanForCharactorImages;
+
 function hScanForCharactorImages(imageData) {
 
     var xgapwidth = 0;
@@ -1901,17 +1876,17 @@ function hScanForCharactorImages(imageData) {
             }
         }
 
-        if (xcount>3) {
-            seqPixelCount+=xcount;
+        if (xcount > 3) {
+            seqPixelCount += xcount;
             xgapwidth = 0;
         } else {
-            if (xgapwidth>10) seqPixelCount = 0;
+            if (xgapwidth > 10) seqPixelCount = 0;
             xgapwidth++;
         }
 
-        if (seqPixelCount>200) charPassed = true;
+        if (seqPixelCount > 200) charPassed = true;
 
-        if ((xgapwidth>10 || x === imageData.width-1) && charPassed) {
+        if ((xgapwidth > 10 || x === imageData.width - 1) && charPassed) {
             var img = imageUtil.getSubImage(imageData, pixelMap);
             imgs.push(img);
             seqPixelCount = 0;
@@ -1950,7 +1925,7 @@ function hRemoveFarPixels(imageData) {
     }
     var left = 0;
     var gapwidth = 0;
-    for (var i = maxX; i>=0; i--) {
+    for (var i = maxX; i >= 0; i--) {
         if (xMap[i] === 0) {
             gapwidth++;
         } else {
@@ -1963,7 +1938,7 @@ function hRemoveFarPixels(imageData) {
     }
 
     gapwidth = 0;
-    var right = imageData.width-1;
+    var right = imageData.width - 1;
     for (var i = maxX; i < imageData.width; i++) {
         if (xMap[i] === 0) {
             gapwidth++;
@@ -1990,51 +1965,51 @@ function hRemoveFarPixels(imageData) {
 
 }
 
-exports.removeNoiseIslet = removeNoiseIslet;
+// exports.removeNoiseIslet = removeNoiseIslet;
 
-function removeNoiseIslet(imageData) {
-    var detectedMap = {};
-    for (var x = 0; x < imageData.width; x++) {
-        for (var y = 0; y < imageData.height; y++) {
-            var i = x * 4 + y * 4 * imageData.width;
-            if (detectedMap[i] !== undefined) continue;
+// function removeNoiseIslet(imageData) {
+//     var detectedMap = {};
+//     for (var x = 0; x < imageData.width; x++) {
+//         for (var y = 0; y < imageData.height; y++) {
+//             var i = x * 4 + y * 4 * imageData.width;
+//             if (detectedMap[i] !== undefined) continue;
 
-            if (imageData.data[i] === 0 && imageData.data[i + 1] === 0 && imageData.data[i + 2] === 0) {
+//             if (imageData.data[i] === 0 && imageData.data[i + 1] === 0 && imageData.data[i + 2] === 0) {
 
-                var noiseMap = {};
-                imageUtil.detectIslet(imageData, x, y, noiseMap, BACKGROUND_COLOR);
-                // var isNoise = true;
-                for (var _ii in noiseMap) {
-                    detectedMap[_ii] = noiseMap[_ii];
-                }
-                var colorPixels = 0;
-                var noisePixels = 0;
-                for (var _i in noiseMap) {
-                    var _inum = noiseMap[_i];
-                    if (imageData.data[_inum] !== 0 || imageData.data[_inum + 1] !== 0 || imageData.data[_inum + 2] !== 0) {
-                        // isNoise = false;
-                        // break;
-                        colorPixels++;
-                    } else {
-                        noisePixels++;
-                    }
-                }
+//                 var noiseMap = {};
+//                 imageUtil.detectIslet(imageData, x, y, noiseMap, BACKGROUND_COLOR);
+//                 // var isNoise = true;
+//                 for (var _ii in noiseMap) {
+//                     detectedMap[_ii] = noiseMap[_ii];
+//                 }
+//                 var colorPixels = 0;
+//                 var noisePixels = 0;
+//                 for (var _i in noiseMap) {
+//                     var _inum = noiseMap[_i];
+//                     if (imageData.data[_inum] !== 0 || imageData.data[_inum + 1] !== 0 || imageData.data[_inum + 2] !== 0) {
+//                         // isNoise = false;
+//                         // break;
+//                         colorPixels++;
+//                     } else {
+//                         noisePixels++;
+//                     }
+//                 }
 
-                // if (!isNoise) continue;
-                if (colorPixels > COLOR_ISLET_MAX_NUM || noisePixels > COLOR_ISLET_MAX_NUM || colorPixels > noisePixels) continue;
+//                 // if (!isNoise) continue;
+//                 if (colorPixels > COLOR_ISLET_MAX_NUM || noisePixels > COLOR_ISLET_MAX_NUM || colorPixels > noisePixels) continue;
 
-                for (var _i in noiseMap) {
-                    var _inum = noiseMap[_i];
-                    imageData.data[_inum] = BACKGROUND_COLOR;
-                    imageData.data[_inum + 1] = BACKGROUND_COLOR;
-                    imageData.data[_inum + 2] = BACKGROUND_COLOR;
-                }
+//                 for (var _i in noiseMap) {
+//                     var _inum = noiseMap[_i];
+//                     imageData.data[_inum] = BACKGROUND_COLOR;
+//                     imageData.data[_inum + 1] = BACKGROUND_COLOR;
+//                     imageData.data[_inum + 2] = BACKGROUND_COLOR;
+//                 }
 
-            }
-        }
-    }
+//             }
+//         }
+//     }
 
-}
+// }
 
 
 exports.removeColorNoiseIslets = removeColorNoiseIslets;
@@ -2046,17 +2021,17 @@ function removeColorNoiseIslets(imageData, pixelsNum) {
         for (var y = 0; y < imageData.height; y++) {
             var i = x * 4 + y * 4 * imageData.width;
 
-            if (detectedPixels[i] !== undefined || imageData.data[i] === BACKGROUND_COLOR && imageData.data[i + 1] === BACKGROUND_COLOR && imageData.data[i + 2] === BACKGROUND_COLOR) continue;
+            if (detectedPixels[i] !== undefined || imageUtil.isPixelWhite(imageData, i)) continue;
 
             var nbrs = {};
-            imageUtil.detectIslet(imageData, x, y, nbrs, BACKGROUND_COLOR);
+            var count = imageUtil.detectIslet(imageData, x, y, nbrs, detectedPixels);
 
-            var count = 0;
-            for (var att in nbrs) {
-                detectedPixels[att] = nbrs[att];
-                count++;
-            }
-
+            // var count = 0;
+            // for (var att in nbrs) {
+            //     detectedPixels[att] = nbrs[att];
+            //     count++;
+            // }
+            
             if (count > pixelsNum) {
                 continue;
             }
@@ -2073,6 +2048,7 @@ function removeColorNoiseIslets(imageData, pixelsNum) {
 
 
 exports.removeFarIslets = removeFarIslets;
+
 function removeFarIslets(imageData, size, far) {
     var detectedPixels = {};
     var mainland;
@@ -2085,12 +2061,8 @@ function removeFarIslets(imageData, size, far) {
             if (detectedPixels[i] !== undefined || imageData.data[i] === BACKGROUND_COLOR && imageData.data[i + 1] === BACKGROUND_COLOR && imageData.data[i + 2] === BACKGROUND_COLOR) continue;
 
             var nbrs = {};
-            imageUtil.detectIslet(imageData, x, y, nbrs, BACKGROUND_COLOR);
-            var count = 0;
-            for (var att in nbrs) {
-                detectedPixels[att] = nbrs[att];
-                count++;
-            }
+            var count = imageUtil.detectIslet(imageData, x, y, nbrs, detectedPixels);
+
             if (count > mainlandpixels) {
                 mainlandpixels = count;
                 mainland = nbrs;
@@ -2107,15 +2079,15 @@ function removeFarIslets(imageData, size, far) {
         for (var att in il) {
             count++;
         }
-        
-        if (count<size) {
+
+        if (count < size) {
             for (var att in il) {
                 removed[att] = il[att];
                 imageUtil.setPixelColorByIndex(imageData, il[att], 255, 255, 255)
             }
         } else {
             var distance = imageUtil.getIsletsMinDistance(imageData, islets[i], mainland);
-            if (distance>=far) {
+            if (distance >= far) {
                 for (var att in il) {
                     removed[att] = il[att];
                     imageUtil.setPixelColorByIndex(imageData, il[att], 255, 255, 255)
@@ -2123,7 +2095,7 @@ function removeFarIslets(imageData, size, far) {
             }
         }
 
-        
+
     }
     return removed;
 }

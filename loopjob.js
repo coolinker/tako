@@ -7,26 +7,42 @@ var LoopJob = function() {
     var jobStatus = {
         url: null,
         httpMethod: "GET",
+        parallelRequests: 1,
         loopStarted: false,
+        loopPaused: false,
         lastRequestTime: 0,
         isRequestSending: false,
         loopInterval: 500,
         intervalObj: null,
         timeout: 500,
-        urlInjection: function(url) {
+        urlInjection: function(parallelIndex, url) {
             return url
         },
-        optionsInjection: function(options) {
+        optionsInjection: function(parallelIndex, options) {
             return options
         },
         responseHandler: null
     };
+    var parallelRequests = 1;
+    function loopIntervalHandler() {
+        // logutil.log("loopIntervalHandler started...")
+        for (var i=0; i<jobStatus.parallelRequests; i++) {
+            loopWork(i);
+        }
+    }
 
-    function loopWork() {
-        if (jobStatus.isRequestSending) return;
+    function loopWork(parallelIndex) {
+        // if (jobStatus.isRequestSending) {
+        //     return;
+        // }
+        if (jobStatus.loopPaused) {
+            // logutil.log("loopPaused!")
+            return;
+        }
+
         var timeStemp = new Date().getTime();
         jobStatus.lastRequestTime = timeStemp;
-        var url = jobStatus.urlInjection(jobStatus.url);
+        var url = jobStatus.urlInjection(parallelIndex, jobStatus.url, jobStatus);
         jobStatus.isRequestSending = true;
         loopCounter++;
         if (loopCounter % 1000 === 0) {
@@ -39,18 +55,20 @@ var LoopJob = function() {
             "timeout": jobStatus.timeout,
             "cookieJar": null
         };
-        jobStatus.optionsInjection(options);
+        jobStatus.optionsInjection(parallelIndex, options);
+        var startTime = new Date();
         simplehttp[jobStatus.httpMethod](url, options, function(error, response, body) {
+            // logutil.log("loopjob duraiton", new Date()-startTime, error, body);
             if (error) {
                 errorCounter++;
             }
             jobStatus.isRequestSending = false;
             jobStatus.responseHandler(error, response, body);
+
         });
     };
 
     this.config = function(options) {
-        console.log("jobStatus-----", jobStatus.url);
         for (var att in options) {
             jobStatus[att] = options[att];
         }
@@ -64,17 +82,31 @@ var LoopJob = function() {
         }
 
         jobStatus.loopStarted = true;
-        jobStatus.intervalObj = setInterval(loopWork, jobStatus.loopInterval);
+        jobStatus.intervalObj = setInterval(loopIntervalHandler, jobStatus.loopInterval);
+        return this;
     }
 
     this.stopLooping = function() {
         if (!jobStatus.loopStarted) {
-            console.log("startLoanLoop: Already stopped!");
-            return;
+            console.log("stopLooping: Already stopped!");
+            return this;
         }
 
         jobStatus.loopStarted = false;
         clearInterval(jobStatus.intervalObj);
+        return this;
+    }
+
+    this.isLoopingStarted = function() {
+        return jobStatus.loopStarted;
+    }
+
+    this.pause = function (msd) {
+        logutil.log("job pause===========", msd);
+        jobStatus.loopPaused = true;
+        setTimeout(function(){
+             jobStatus.loopPaused = false;
+        }, msd)
     }
 
 }
