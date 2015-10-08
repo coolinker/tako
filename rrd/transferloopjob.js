@@ -1,9 +1,10 @@
 var htmlparser = require('../htmlparser');
+var logutil = require("../logutil");
 var detectLatestTransferId = require("./detectlatesttransferid");
 var LoopJob = require("../loopjob");
 var me = this;
-exports.startNewTransferLoop = startNewTransferLoop;
-function startNewTransferLoop(callback) {
+exports.rollNewProductCheck = rollNewProductCheck;
+function rollNewProductCheck(callback) {
     var transfers = [];
     detectLatestTransferId(function(startId){
         loopNewTransfer(startId, function(newTransferObj) {
@@ -22,17 +23,23 @@ function loopNewTransfer(startId, callback) {
 
     var transferId = Number(startId);
     var hasNew = false;
+    var LOOP_INTERVAL = 300;
     var loopjob = new LoopJob().config({
+        parallelRequests: 2,
         url: "http://www.renrendai.com/transfer/loanTransferDetail.action",
-        loopInterval: 500,
-        timeout: 500,
-        urlInjection: function(url) {
-            return url + "?transferId=" + transferId;
+        loopInterval: LOOP_INTERVAL,
+        timeout: 1.8*LOOP_INTERVAL,
+        urlInjection: function(parallelIndex, url) {
+            return url + "?transferId=" + (transferId+parallelIndex);
         },
-        responseHandler: function(error, request, body) {
+        optionsInjection: function(parallelIndex, options) {
+            options.transferId = (transferId+parallelIndex);
+            return options;
+        },
+        responseHandler: function(error, response, body) {
             if (error) {
                 //console.log("loanTransferDetail error:", error)
-            } else if (request.statusCode == 200) {
+            } else if (response.statusCode == 200) {
                 var errorcode = htmlparser.getValueFromBody('<div style="display: none;">', '</div>', body);
                 if (errorcode === "500") {
                     if (hasNew) {
@@ -47,6 +54,8 @@ function loopNewTransfer(startId, callback) {
                     var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
                     var transferIdCode  = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
                     var countRatio  = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
+                    // var transferIdInPage = htmlparser.getValueFromBody('<span id="pg-helper-transfer-id">', '</span>', body);
+
                     var transferObj = {
                         transferId: transferId,
                         transferIdCode: transferIdCode,
@@ -56,18 +65,24 @@ function loopNewTransfer(startId, callback) {
                         countRatio: countRatio,
                         duration: duration,
                         source: "www.renrendai.com",
+                        publishTime: new Date(),
                         producedTime: new Date()
                     };
                     hasNew = true;
-                    if (transferObj.interest>=12) {
-                        console.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());    
+                    if (transferObj.interest>=13) {
+                        logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());    
                     }
                     
                     callback(transferObj);
-                    transferId++;
+
+                    var req = response.request;
+                    var tid = req.__options.transferId;
+                    if (tid>=transferId) {
+                        transferId  = tid+1;
+                    }
                 }
             } else {
-                console.log("?????????????????????????????? statusCode:", request.statusCode)
+                console.log("?????????????????????????????? statusCode:", response.statusCode)
             }
 
         }
@@ -75,6 +90,18 @@ function loopNewTransfer(startId, callback) {
 
     loopjob.startLooping();
     me.loopjob = loopjob;
+}
+
+function stopRollingNewProductCheck() {
+    // clearInterval(rollingIntervalObj)
+    this.loopjob.stopLooping();
+}
+
+exports.isRollingStarted = isRollingStarted;
+
+function isRollingStarted() {
+    // return !!rollingIntervalObj;
+    return this.loopjob && this.loopjob.isLoopingStarted();
 }
 
 exports.isLoopingStarted = isLoopingStarted;

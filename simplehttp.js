@@ -70,7 +70,9 @@ function sendRequest(options, callback) {
         delete options.cookieJar;
     }
     
-    request(options, function(error, response, body) {
+    var req = request(options, function(error, response, body) {
         callback(error, response, body);
     });
+    req.__options = options;
+    
 }

@@ -24,7 +24,8 @@ function consume(toBeConsumed) {
     var sourceType = ACCOUNT_TYPES[toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
-    logutil.log("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price);
+    //logutil.log("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price, toBeConsumed.interest);
+    
     var finished = false;
     for (var i = 0; i < accounts.length; i++) {
         if (accounts[i].cookieJar !== null) {
@@ -98,7 +99,7 @@ exports.loopLogin = loopLogin;
 
 function loopLogin() {
     queueLogin();
-    setInterval(queueLogin, 20 * 1000)
+    setInterval(queueLogin, 30 * 1000)
 }
 
 exports.queueLogin = queueLogin;

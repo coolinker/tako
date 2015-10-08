@@ -150,12 +150,12 @@ function captachaPreCheck(captachaStr, paramsStr, cookieJar, callback) {
 }
 
 function preCheck(captachaStr, paramsStr, cookieJar, callback) {
-    var url = "https://user.lu.com/user/captcha/pre-check?inputValue=" + captachaStr + "&" + paramsStr + "&_=" + new Date().getTime();
+    var url = "https://user.lufax.com/user/captcha/pre-check?inputValue=" + captachaStr + "&" + paramsStr + "&_=" + new Date().getTime();
 
     simplehttp.GET(url, {
         "cookieJar": cookieJar
     }, function(error, request, body) {
-        // console.log("check:", error, body)
+         console.log("check:", error, body)
         json = JSON.parse(body);
         if (json.result === "SUCCESS") {
             callback(true);
