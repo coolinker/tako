@@ -4,9 +4,10 @@ var detectLatestTransferId = require("./detectlatesttransferid");
 var LoopJob = require("../loopjob");
 var me = this;
 exports.rollNewProductCheck = rollNewProductCheck;
+
 function rollNewProductCheck(callback) {
     var transfers = [];
-    detectLatestTransferId(function(startId){
+    detectLatestTransferId(function(startId) {
         loopNewTransfer(startId, function(newTransferObj) {
             // transfers.push(newTransferObj);
             // if (transfers.length > 100) transfers.shift();
@@ -28,12 +29,12 @@ function loopNewTransfer(startId, callback) {
         parallelRequests: 2,
         url: "http://www.renrendai.com/transfer/loanTransferDetail.action",
         loopInterval: LOOP_INTERVAL,
-        timeout: 1.8*LOOP_INTERVAL,
+        timeout: 1.8 * LOOP_INTERVAL,
         urlInjection: function(parallelIndex, url) {
-            return url + "?transferId=" + (transferId+parallelIndex);
+            return url + "?transferId=" + (transferId + parallelIndex);
         },
         optionsInjection: function(parallelIndex, options) {
-            options.transferId = (transferId+parallelIndex);
+            options.transferId = (transferId + parallelIndex);
             return options;
         },
         responseHandler: function(error, response, body) {
@@ -44,7 +45,7 @@ function loopNewTransfer(startId, callback) {
                 if (errorcode === "500") {
                     if (hasNew) {
                         hasNew = false;
-                       // console.log("-|", transferId, new Date().toLocaleTimeString())
+                        // console.log("-|", transferId, new Date().toLocaleTimeString())
                     }
                     //no new item.
                 } else {
@@ -52,8 +53,8 @@ function loopNewTransfer(startId, callback) {
                     var interest = Number(htmlparser.getValueFromBody('<dd class="text-xxl"><em class="text-xxxl color-dark-text">', '</em>%</dd>', body));
                     var price = Number(htmlparser.getValueFromBody('<em id="amount-per-share" data-amount-per-share="', '">', body));
                     var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
-                    var transferIdCode  = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
-                    var countRatio  = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
+                    var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
+                    var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
                     // var transferIdInPage = htmlparser.getValueFromBody('<span id="pg-helper-transfer-id">', '</span>', body);
 
                     var transferObj = {
@@ -69,16 +70,17 @@ function loopNewTransfer(startId, callback) {
                         producedTime: new Date()
                     };
                     hasNew = true;
-                    if (transferObj.interest>=13) {
-                        logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());    
-                    }
-                    
+
                     callback(transferObj);
 
                     var req = response.request;
                     var tid = req.__options.transferId;
-                    if (tid>=transferId) {
-                        transferId  = tid+1;
+                    if (tid >= transferId) {
+                        if (transferObj.interest >= 13 && transferObj.sharesAvailable >= 2) {
+                            logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
+                        }
+
+                        transferId = tid + 1;
                     }
                 }
             } else {
@@ -105,11 +107,13 @@ function isRollingStarted() {
 }
 
 exports.isLoopingStarted = isLoopingStarted;
+
 function isLoopingStarted() {
-    return  this.loopjob &&  this.loopjob.isLoopingStarted();
+    return this.loopjob && this.loopjob.isLoopingStarted();
 }
 
 exports.stopNewTransferLoop = stopNewTransferLoop;
+
 function stopNewTransferLoop() {
     console.log("stopNewTransferLoop rrd")
     this.loopjob.stopLooping();

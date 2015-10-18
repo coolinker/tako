@@ -1,0 +1,288 @@
+<composition>
+    <screens>
+        <screen type="mobile" name="default" bgcolor="white">
+            <view width="100%" height="100%">
+                <view name="buttons" width="100%" height="70" bgcolor="#c0c0c0" border="2"
+                 y="${this.parent.height-this.height}" bordercolor="ff0000">
+                    <spacedlayout axis="x" inset="2" spacing="5" updateparent="false"></spacedlayout>
+                    <class name="sitebutton" y="${this.selected?-2:5}" width="75" height="60" texty="2" extends="buttonbase"  
+                        border="2"  cornerradius="4" leftpadding="8" toppadding="11">
+                        <attribute name="basecolor" type="string"/>
+                        <attribute name="textsize"  type="number" value="42"/>
+                        <method name="visualize">
+                            this.super();
+                            this.label.setAttribute("fontsize", this.textsize);
+                            this.label.setAttribute("fontfamily", '微软雅黑');
+                        </method>
+                        <handler event="onactivated">
+                            console.log("onactivate", this.selected)
+                            this.setAttribute('selected', !this.selected);
+                        </handler>
+                        <handler event="onclick" args="sel">
+                            console.log(this)
+                            this.parent.selectButton(this);
+                        </handler>
+                    </class>
+                    <sitebutton name="lu" text="陆" bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" bordercolor="ffffff"
+                         gradient="['linear', 45, '#1b2a69 40%', '#5556aa']"
+                         basecolor="1b2a69">
+                        <!-- //orange1 e25517   orange2 fd8238 
+                        //blue1 1b2a69 blue2 5556aa
+                        -->
+                    </sitebutton>
+                    <sitebutton name="rrd" text="人" bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" bordercolor="ffffff"
+                         gradient="['linear', 45, '#80c232 40%', '#a0d272']"
+                         basecolor="80c232">
+                         <!-- green 80c232, blue 00a8df -->
+                         </sitebutton>
+
+                    <sitebutton name="my089" text="岭"  bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" bordercolor="ffffff"
+                         gradient="['linear', 45, '#0182d6 40%', '#41a2f6']"
+                         basecolor="#0182d6">
+                        
+                    </sitebutton>
+
+                    <sitebutton name="kxd" text="开"  bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" bordercolor="ffffff"
+                         gradient="['linear', 45, '#d98100 40%', '#e9a140']"
+                         basecolor="#d98100">
+                        
+                    </sitebutton>
+                    <handler event="oninit">
+                        this.selectButton(this.lu)
+                    </handler>
+                    <method name="selectButton" args="btn">
+                        var btns = this.subviews; 
+                        for (var i=0; btns.length>i; i++){ 
+                            var n = btns[i].name;
+                            if (n != btn.name) {
+                                btns[i].setAttribute("selected", false)
+                            }
+                            this.parent.panels[n].setAttribute("visible", n===btn.name) 
+                        }
+                        this.setAttribute("bordercolor", btn.basecolor);
+                    </method>
+                </view>
+                <view name="panels" width="100%" bgcolor="f0f0f0" 
+                    height="${this.parent.height-this.parent.buttons.height+1}">
+                    <class name="labelinput" height="22">
+                        <attribute name="label" type="string"/>
+                        <attribute name="labelwidth" type="number"/>
+                        <attribute name="labelalign" type="string" value="right"/>
+                        <attribute name="labelcolor" type="string"/>
+
+                        <text name="labelView" text="${this.parent.label}" color="${this.parent.labelcolor}" bgcolor="808080"
+                            textalign="${this.parent.labelalign}" width="${this.parent.labelwidth}" fontsize="18"></text>
+                        <inputtext x="${this.parent.labelwidth+2}" y="-4" width="${this.parent.width-this.parent.labelView.x-this.parent.labelView.width}"
+                            bottomborder="1" bordercolor="808080"></inputtext>
+                    </class>
+
+                    <class name="calliper" width="300" height="100" bordercolor="c0c0c0">
+                        <attribute name="startvalue" value="0" type="number"/>
+                        <attribute name="endvalue" value="100" type="number"/>
+                        <attribute name="leftinitvalue" value="20" type="number"/>
+                        <attribute name="rightinitvalue" value="70" type="number"/>
+                        <attribute name="_span" value="0" type="number"/>
+                        <attribute name="fixedonleft" value="false" type="boolean"/>
+                        <attribute name="fixedonright" value="true" type="boolean"/>
+                        <attribute name="unit" value="元" type="string"/>
+                        
+                        <view name="base" height="10" bgcolor="808080" y="15"/>
+                        <view name="start" width="20" height="20" y="10" bgcolor="808080" cornerradius="10"/>
+                        <view name="end" width="20" height="20" y="10" bgcolor="808080" cornerradius="10"/>
+
+                        <view name="rangeLeft"  with="touchdraggable" dragaxis="x"  bgcolor="orange">
+                            <handler event="onx">
+                                if (this.isdragging) {
+                                    this.classroot.rangeLeftUpdate();
+                                }
+                            </handler>
+                            <handler event="onisdragging" args="isdragging">
+                                this.classroot.updateRangeLabelDisplay();
+                           </handler>
+                        </view>
+                        <view name="range" height="10" bgcolor="orange" y="15"/>
+                        <view name="rangeRight"  with="touchdraggable" dragaxis="x"  bgcolor="orange">
+                            <handler event="onx">
+                                if (this.isdragging) {
+                                    this.classroot.rangeRightUpdate();
+                                }
+                           </handler>
+
+                           <handler event="onisdragging" args="isdragging">
+                                this.classroot.updateRangeLabelDisplay();
+                           </handler>
+                        </view>
+                        <text name="startLabel" fontsize="28" color="808080" fontfamily="roboto"></text>
+                        <text name="endLabel"  fontsize="28" color="808080" fontfamily="roboto"></text>
+                        <text name="rangeLeftLabel"  fontsize="28" color="808080" fontfamily="roboto"></text>
+                        <text name="rangeRightLabel"  fontsize="28" color="808080" fontfamily="roboto"></text>
+                        <text name="unitLabel" fontsize="20" fontfamily="roboto" color="808080">
+                            <handler event="onwidth">
+                                this.setAttribute("x", this.classroot.width/2-this.width/2);
+                                this.setAttribute("y", this.classroot.start.y+this.classroot.start.height+10);
+                            </handler>
+                        </text>
+                        <handler event="onwidth" reference="this.rangeLeftLabel" method="updateRangeLabelDisplay"></handler>
+                        <handler event="onwidth" reference="this.rangeRightLabel" method="updateRangeLabelDisplay"></handler>
+                            
+                        <handler event="onwidth" reference="this.startLabel" method="updateStartEndLabelPosition"></handler>
+                        <handler event="onwidth" reference="this.endLabel" method="updateStartEndLabelPosition"></handler>
+                        
+                        <method name="initNode" args="parent, attrs">
+                            this.super();
+                            this.setAttribute("_span", this.rightinitvalue-this.leftinitvalue);
+                            console.log("initnode", this._span, attrs)
+                            
+                            this.initRender();
+                            var leftx = this.valueToX(this.leftinitvalue);
+                            this.rangeLeft.setAttribute("x", leftx-this.rangeLeft.width/2);
+
+                            var rightx = this.valueToX(this.rightinitvalue);
+                            this.rangeRight.setAttribute("x", rightx-this.rangeRight.width/2);
+                            this.renderRange();
+                        </method>
+                        
+                        <method name="valueToX" args="v">
+                            return Math.round(this.base.x + this.base.width * (v-this.startvalue)/(this.endvalue-this.startvalue));
+                        </method>
+                        
+                        <method name="xToValue" args="x">
+                            var totalwidth = this.base.width;
+                            var ax = x-this.base.x;
+                            return Math.round(this.startvalue + (this.endvalue-this.startvalue) * ax/totalwidth);
+                        </method>
+
+                        <method name="initRender">
+                            this.base.setAttribute("y", this.height/2-this.base.height/2);
+                            this.start.setAttribute("y", this.height/2-this.start.height/2);
+                            this.end.setAttribute("y", this.height/2-this.end.height/2);
+                            this.range.setAttribute("y", this.height/2-this.range.height/2);
+
+                            var fixedEndWidth = 40;
+                            var flexibleEndWidth = 30
+                            var left = this.rangeLeft;
+                            left.setAttribute("width", this.fixedonleft ? fixedEndWidth : flexibleEndWidth);
+                            left.setAttribute("height", this.fixedonleft ? fixedEndWidth : flexibleEndWidth);
+                            left.setAttribute("cornerradius", left.width);
+                            left.setAttribute("y", (this.height-left.height)/2);
+
+                            var right = this.rangeRight;
+                            right.setAttribute("width", this.fixedonright ? fixedEndWidth : flexibleEndWidth);
+                            right.setAttribute("height", this.fixedonright ? fixedEndWidth : flexibleEndWidth);
+                            right.setAttribute("y", (this.height-this.rangeRight.height)/2);
+                            right.setAttribute("cornerradius", right.width);
+
+                            this.base.setAttribute("x", this.start.width/2)
+                            this.base.setAttribute("width", this.width-this.base.x*2);
+                            this.end.setAttribute("x", this.width-this.end.width);
+                            
+                            this.startLabel.setAttribute("text", this.startvalue);
+                            this.endLabel.setAttribute("text", this.endvalue);
+                            this.unitLabel.setAttribute("text", "单位:"+this.unit);
+                        </method>
+
+                        <method name="updateStartEndLabelPosition">
+                            this.startLabel.setAttribute("x", this.base.x-this.startLabel.width/2);
+                            this.startLabel.setAttribute("y", this.start.y+this.start.height+5);
+                            this.endLabel.setAttribute("x", this.base.x+this.base.width-this.endLabel.width/2);
+                            this.endLabel.setAttribute("y", this.end.y+this.end.height+5);
+
+                        </method>
+
+                        <method name="renderRange">
+                            var left = this.rangeLeft,  right = this.rangeRight;
+                            this.range.setAttribute("x", left.x+left.width/2);
+                            this.range.setAttribute("width", right.x+right.width/2-this.range.x);
+                            this.updateRangeLabels();
+                        </method>
+
+                        <method name="rangeLeftUpdate">
+                            var left  = this.rangeLeft, right = this.rangeRight;
+                            if (this.fixedonleft) {
+                                var rangeright = this.valueToX(this.xToValue(left.x+left.width/2)+this._span);
+                                right.setAttribute("x", Math.min(rangeright-right.width/2, this.width-right.width));
+                            } else {
+                                
+                            }
+                            var span = this.xToValue(right.x+right.width/2) - this.xToValue(left.x+left.width/2);
+                            this.setAttribute("_span", span);
+                            console.log("rangeLeftUpdate", this._span)
+                            this.renderRange();
+                        </method>
+
+                        <method name="rangeRightUpdate">
+                            var left  = this.rangeLeft, right = this.rangeRight;
+                            if (this.fixedonright) {
+                                var rangeleft = this.valueToX(this.xToValue(right.x+right.width/2) - this._span);
+                                left.setAttribute("x", Math.max(rangeleft-left.width/2, 0));
+                            } else {
+                                
+                            }
+
+                            var span = this.xToValue(right.x+right.width/2) - this.xToValue(left.x+left.width/2);
+                            this.setAttribute("_span", span);
+                            console.log("rangeRightUpdate", this._span)
+                            this.renderRange();
+                        </method>
+                        
+                        <method name="updateRangeLabels">
+                            var rangevalues = this.getRangeValues();
+                            this.rangeLeftLabel.setAttribute("text", rangevalues.left);
+                            this.rangeRightLabel.setAttribute("text", rangevalues.right);
+                            this.updateRangeLabelDisplay();
+                        </method>
+
+                        <method name="updateRangeLabelDisplay">
+                            var left  = this.rangeLeft, right = this.rangeRight;
+                            var leftLabelX = this.rangeLeft.x+this.rangeLeft.width/2 - this.rangeLeftLabel.width/2;
+                            this.rangeLeftLabel.setAttribute("x", leftLabelX);
+                            this.rangeLeftLabel.setAttribute("y", left.isdragging?-15:0);
+                            this.rangeLeftLabel.setAttribute("bold", left.isdragging?true:false);
+                            this.rangeLeftLabel.setAttribute("fontsize", left.isdragging?32:28);
+                            var rightLabelX = this.rangeRight.x+this.rangeRight.width/2 - this.rangeRightLabel.width/2;
+                            this.rangeRightLabel.setAttribute("x", rightLabelX);
+                            this.rangeRightLabel.setAttribute("y", right.isdragging?-15:0);
+                            this.rangeRightLabel.setAttribute("bold", right.isdragging?true:false);
+                            this.rangeRightLabel.setAttribute("fontsize", right.isdragging?32:28);
+                        </method>
+                        
+                        <method name="getRangeValues">
+                            var leftvalue = this.xToValue(this.rangeLeft.x+this.rangeLeft.width/2);
+                            var rightvalue = this.xToValue(this.rangeRight.x+this.rangeRight.width/2);
+                            var roundsize = (this.startvalue-this.endvalue)/20;
+                            leftvalue = Math.round(leftvalue/roundsize)*roundsize;
+                            rightvalue = Math.round(rightvalue/roundsize)*roundsize;
+                            return {left:leftvalue, right:rightvalue};
+                        </method>
+
+                    </class>
+
+                    <view name="lu" width="100%" height="100%" bgcolor="f8f8f8" border="1">
+                        <attribute name="basecolor" type="string"/>
+                        <attribute name="title" type="string" value="陆金所"/>
+                        <spacedlayout axis="y" spacing="10" />
+                        <view width="100%" height="60" gradient="['linear', 45, '#1b2a69 40%', '#5556aa']" padding="8" >
+                            <text text="${this.parent.parent.title}"  fontsize="40" fontfamily="微软雅黑" color="ffffff"></text>
+                        </view>
+                        <view padding="8">
+                            <spacedlayout axis="y" spacing="10" />
+                            <labelinput labelcolor="ffffff" label="用户名:" labelwidth="80" width="300"></labelinput>
+                            <labelinput labelcolor="ffffff" label="密码:" labelwidth="80" width="300"></labelinput>
+                            <labelinput labelcolor="ffffff" label="交易密码:" labelwidth="80" width="300"></labelinput>
+                            <view height="40"></view>
+                            <calliper name="interest">
+                              
+                            </calliper>
+                        </view>
+                    </view>
+                    <view name="rrd" width="100%" height="100%" bgcolor="f8f8f8" visible="false">
+                    </view>
+                    <view name="my089" width="100%" height="100%" bgcolor="f8f8f8" visible="false">
+                    </view>
+                    <view name="kxd" width="100%" height="100%" bgcolor="f8f8f8" visible="false">
+                    </view>
+                </view>
+            </view>
+        </screen>
+    </screens>
+</composition>
