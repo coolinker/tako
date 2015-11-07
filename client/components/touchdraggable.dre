@@ -1,0 +1,337 @@
+<!-- The MIT License (see LICENSE)
+     Copyright (C) 2014-2015 Teem2 LLC -->
+<!--/**
+   * @mixin dr.draggable {UI Behavior}
+   * Makes an dr.View draggable via the mouse.
+   * 
+   * Also supresses context menus since the mouse down to open it causes bad
+   * behavior since a mouseup event is not always fired.
+   */-->
+<!--
+  Private Attributes:
+    __initLocX:number The initial x location of this view relative to the parent view.
+    __initLocY:number The initial y location of this view relative to the parent view.
+-->
+<mixin name="touchdraggable">
+  <!--// Life Cycle /////////////////////////////////////////////////////////-->
+  <method name="initNode" args="parent, attrs">
+    this.isdraggable = this.isdragging = this.centeronmouse = this.allowabort = false;
+    this.distancebeforedrag = 0;
+    this.dragaxis = 'both';
+    
+    // Will be set after init since the draggable subview(s) probably
+    // don't exist yet.
+    var isdraggable = true;
+    if (attrs.isdraggable !== undefined) {
+      isdraggable = attrs.isdraggable;
+      delete attrs.isdraggable;
+    }
+    this.super();
+    
+    this.xmax = parent.width-this.width;
+    this.ymax = parent.height-this.height;
+    this.setAttribute('isdraggable', isdraggable);
+  </method>
+
+
+  <!--// Attributes /////////////////////////////////////////////////////////-->
+  <attribute name="clickable" value="true" type="boolean"/>
+  <attribute name="xmin" value="0" type="number"/>
+  <attribute name="xmax" type="number"/>
+  <attribute name="ymin" value="0" type="number"/>
+  <attribute name="ymax" type="number"/>
+  <!--/**
+    * @attribute {Boolean} isdraggable
+    * Configures the view to be draggable or not.
+    */-->
+  <attribute name="isdraggable" type="boolean" value="true"/>
+  <setter name="isdraggable" args="v">
+    if (this.setActual('isdraggable', v, 'boolean', true)) this.__updateDraggability();
+  </setter>
+
+  <handler event="ondisabled" method="__updateDraggability"/>
+
+  <!--/**
+    * @method __updateDraggability
+    * @private
+    * Configures the view to be draggable or not.
+    */-->
+  <method name="__updateDraggability">
+    var func;
+    if (this.isdraggable && !this.disabled) {
+      func = this.listenToPlatform.bind(this);
+    } else if (this.initing === false) {
+      func = this.stopListeningToPlatform.bind(this);
+    }
+    
+    if (func) {
+      var dvs = this.getDragViews();
+      if (!Array.isArray(dvs)) dvs = [dvs];
+      
+      var dragview, i = dvs.length;
+      while (i) {
+        dragview = dvs[--i];
+        func(dragview, 'ontouchstart', '__doTouchStart');
+      }
+    }
+  </method>
+
+  <!--/**
+    * @attribute {Boolean} isdragging
+    * Indicates that this view is currently being dragged.
+    */-->
+  <attribute name="isdragging" type="boolean" value="false"/>
+
+  <!--/**
+    * @attribute {Boolean} allowabort
+    * Allows a drag to be aborted by the user by pressing the 'esc' key.
+    */-->
+  <attribute name="allowabort" type="boolean" value="false"/>
+
+  <!--/**
+    * @attribute {Boolean} centeronmouse
+    * If true this draggable will update the draginitx and draginity to keep 
+    * the view centered on the mouse.
+    */-->
+  <attribute name="centeronmouse" type="boolean" value="false"/>
+
+  <!--/**
+    * @attribute {Number} distancebeforedrag
+    * The distance, in pixels, before a mouse down and drag is considered a 
+    * drag action.
+    */-->
+  <attribute name="distancebeforedrag" type="number" value="0"/>
+
+  <!--/**
+    * @attribute {String} dragaxis
+    * Limits dragging to a single axis. Supported values: 'x', 'y', 'both'.
+    */-->
+  <attribute name="dragaxis" type="string" value="both"/>
+
+  <!--/**
+    * @attribute {Boolean} draggableallowbubble
+    * Determines if mousedown and mouseup platform events handled by this component will bubble or not.
+    */-->
+  <attribute name="draggableallowbubble" type="boolean" value="true"/>
+
+  <!--/**
+    * @attribute {Number} dragoffsetx
+    * The x amount to offset the position during dragging.
+    */-->
+  <attribute name="dragoffsetx" type="number" value="0"/>
+  <setter name="dragoffsetx" args="v">this.setDragOffsetX(v, false);</setter>
+  
+  <method name="setDragOffsetX" args="v, supressUpdate">
+    if (this.setActual('dragoffsetx', v, 'number', 0)) {
+      if (this.inited && this.isdragging && !supressUpdate) this.__requestDragPosition();
+    }
+  </method>
+
+  <!--/**
+    * @attribute {Number} dragoffsety
+    * The y amount to offset the position during dragging.
+    */-->
+  <attribute name="dragoffsety" type="number" value="0"/>
+  <setter name="dragoffsety" args="v">this.setDragOffsetY(v, false);</setter>
+
+  <method name="setDragOffsetY" args="v, supressUpdate">
+    if (this.setActual('dragoffsety', v, 'number', 0)) {
+      if (this.inited && this.isdragging && !supressUpdate) this.__requestDragPosition();
+    }
+  </method>
+
+  <!--/**
+    * @attribute {Number} draginitx
+    * Stores initial mouse x position during dragging.
+    */-->
+  <attribute name="draginitx" type="number" value="0"/>
+
+  <!--/**
+    * @attribute {Number} draginity
+    * Stores initial mouse y position during dragging.
+    */-->
+  <attribute name="draginity" type="number" value="0"/>
+
+  <!--/** @overrides dr.disableable */-->
+  <setter name="disabled" args="v">
+    if (this.super) this.super();
+    
+    // When about to disable make sure isdragging is not true. This 
+    // helps prevent unwanted behavior of a disabled view.
+    if (this.disabled && this.isdragging) this.stopDrag(null, false);
+  </setter>
+
+
+  <!--// Methods ////////////////////////////////////////////////////////////-->
+  <!--/**
+    * @method getDragViews
+    * Returns an array of views that can be moused down on to start the
+    * drag. Subclasses should override this to return an appropriate list
+    * of views. By default this view is returned thus making the entire
+    * view capable of starting a drag.
+    * @returns {Array} 
+    */-->
+  <method name="getDragViews">
+    return [this];
+  </method>
+
+  <!--/** @private */-->
+  <method name="__doTouchStart" args="event">
+    this.__initAbsLocX = event.pageX;
+    this.__initAbsLocY = event.pageY;
+    this.__initMouseX = event.x;
+    this.__initMouseY = event.y;
+    this.__initLocX = this.x;
+    this.__initLocY = this.y;
+
+    this.draginitx = event.x;
+    this.draginity = event.y;
+    
+    this.listenToPlatform(this, 'ontouchend', '__doTouchEnd', true);
+    if (this.distancebeforedrag > 0) {
+      this.listenToPlatform(this, 'ontouchmove', '__doDragCheck', true);
+    } else {
+      this.startDrag(event);
+    }
+    
+    dr.sprite.preventDefault(event);
+    
+    return this.draggableallowbubble;
+  </method>
+
+  <!--/** @private */-->
+  <method name="__doTouchEnd" args="event">
+    if (this.isdragging) {
+      this.stopDrag(event, false);
+    } else {
+      this.stopListeningToPlatform(this, 'ontouchend', '__doTouchEnd', true);
+      this.stopListeningToPlatform(this, 'ontouchmove', '__doDragCheck', true);
+    }
+    return this.draggableallowbubble;
+  </method>
+
+  <!--/** @private */-->
+  <method name="__doDragCheck" args="event">
+    var distance = dr.measureDistance(event.pageX, event.pageY, this.draginitx + this.x, this.draginity + this.y);
+    if (distance >= this.distancebeforedrag) {
+      this.stopListeningToPlatform(this, 'ontouchmove', '__doDragCheck', true);
+      this.startDrag(event);
+    }
+  </method>
+
+  <!--/**
+    * @method startDrag
+    * Active until stopDrag is called. The view position will be bound
+    * to the mouse position. Subclasses typically call this onmousedown for
+    * subviews that allow dragging the view.
+    * @param {Object} event The event the mouse event when the drag started.
+    * @returns {void} 
+    */-->
+  <method name="startDrag" args="event">
+    if (!this.disabled) {
+      if (this.centeronmouse) {
+          this.syncTo(this, 'onwidth', '__updateDragInitX');
+          this.syncTo(this, 'onheight', '__updateDragInitY');
+      }
+      
+      if (this.allowabort) this.listenTo(g.keys, 'onkeycodeup', '__watchForAbort');
+      
+      this.setAttribute('isdragging', true);
+      this.listenToPlatform(this, 'ontouchmove', 'updateDrag', true);
+      this.updateDrag(event);
+    }
+  </method>
+
+  <!--/**
+    * @method updateDrag
+    * Called on every mousemove event while dragging.
+    * @returns {void} 
+    */-->
+  <method name="updateDrag" args="event">
+  //console.log(this.getAbsolutePosition().x, event.pageX)
+    this.__lastMousePosition = {x:event.pageX, y:event.pageY};
+    this.__requestDragPosition();
+  </method>
+  
+  <!--/** @private */-->
+  <method name="__updateDragInitX" args="event">
+    this.draginitx = this.width / 2 * (this.xscale || 1);
+  </method>
+
+  <!--/** @private */-->
+  <method name="__updateDragInitY" args="event">
+    this.draginity = this.height / 2 * (this.yscale || 1);
+  </method>
+
+  <!--/** @private */-->
+  <method name="__requestDragPosition">
+    var pos = this.__lastMousePosition;    
+    var parentpos = this.parent.getAbsolutePosition();
+    this.updatePosition(
+        Math.max(this.xmin, Math.min(this.xmax, this.x + pos.x - this.draginitx + this.dragoffsetx - this.getAbsolutePosition().x)), 
+        Math.max(this.ymin, Math.min(this.ymax, this.y + pos.y - this.draginity + this.dragoffsety - this.getAbsolutePosition().y))
+    );
+  </method>
+
+  <!--/**
+    * @method updatePosition
+    * Repositions the view to the provided values. The default implementation
+    * is to directly set x and y. Subclasses should override this method
+    * when it is necessary to constrain the position.
+    * @param {Number} x the new x position.
+    * @param {Number} y the new y position.
+    * @returns {void} 
+    */-->
+  <method name="updatePosition" args="x, y">
+    if (!this.disabled) {
+      var dragaxis = this.dragaxis;
+
+      if (dragaxis !== 'y') this.setAttribute('x', x);
+      if (dragaxis !== 'x') this.setAttribute('y', y);
+    }
+  </method>
+
+  <!--/**
+    * @method stopDrag
+    * Stop the drag. (see startDrag for more details)
+    * @param {Object} event The event that ended the drag.
+    * @param {Boolean} isAbort Indicates if the drag ended normally or was aborted.
+    * @returns {void} 
+    */-->
+  <method name="stopDrag" args="event, isAbort">
+    this.stopListeningToPlatform(this, 'ontouchend', '__doTouchEnd', true);
+    this.stopListeningToPlatform(this, 'ontouchmove', 'updateDrag', true);
+    if (this.centeronmouse) {
+      this.stopListening(this, 'onwidth', '__updateDragInitX');
+      this.stopListening(this, 'onheight', '__updateDragInitY');
+    }
+    
+    this.setAttribute('isdragging', false);
+  </method>
+
+  <!--/** @private */-->
+  <method name="__watchForAbort" args="event">
+    // Watch for ESC key
+    if (event === 27) this.stopDrag(event, true);
+  </method>
+
+  <!--/**
+    * @method getDistanceFromOriginalLocation
+    * Gets the distance dragged from the location of the start of the drag.
+    * If an axis of 'x' or 'y' is provided the value is the pos/neg distance
+    * along that axis. Otherwise, the standard euclidean distance is returned.
+    * @returns {Number} 
+    */-->
+  <method name="getDistanceFromOriginalLocation" args="axis">
+    if (axis === 'x') {
+      return this.x - this.__initLocX;
+    } else if (axis === 'y') {
+        return this.y - this.__initLocY;
+    }
+    return dr.measureDistance(this.x, this.y, this.__initLocX, this.__initLocY);
+  </method>
+  
+  <method name="getOriginalLocation">
+    return {x:this.__initLocX, y:this.__initLocY};
+  </method>
+</mixin>

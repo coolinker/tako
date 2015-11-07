@@ -1,0 +1,98 @@
+<class name="ajaxbutton" extends="simplebutton" fontsize="60" leftpadding="30" rightpadding="30" toppadding="20" bottompadding="20" 
+  cornerradius="10" border="2">
+    <attribute name="url" type="string"/>
+    <attribute name="httpmethod" type="string" value="POST"/>
+    <handler event="onclick">
+        if (!this.validateBeforeSend()) {
+            this.validationFailed();
+        } else {
+            this.beforeSend();
+            this.sendRequest();
+
+        }
+    </handler>
+
+    <method name="beforeSend">
+    </method>
+
+    <method name="validateBeforeSend">
+        return true;
+    </method>
+
+    <method name="validationFailed">
+    
+    </method>
+
+    <method name="afterResponse" args="json">
+    </method>
+    <method name="afterResponseError" args="error">
+    </method>
+    <method name="sendRequest">
+        this.setAttribute("disabled", true)
+        var req = this.getHttpRequest();
+        req.open(this.httpmethod, this.getUrl(), true);
+        var postJson = this.getParamJson();
+        req.send(JSON.stringify(postJson));
+    </method>
+    
+    <method name="getUrl">
+        return this.url;
+    </method>
+
+    <method name="getParamJson">
+        return {};
+    </method>
+    
+    <method name="handleResponse" args="json">
+        this.setAttribute("disabled", false);
+        console.log("handleResponse", json)
+        this.afterResponse(json);
+    </method>
+    
+    <method name="handleResponseError" args="error">
+        this.setAttribute("disabled", false);
+        console.log("handleResponseError", this.disabled)
+        this.afterResponseError(error);
+    </method>
+
+    <method name="getHttpRequest">
+        var me = this;
+        var req = new XMLHttpRequest(); 
+        req.onreadystatechange =  function () { 
+            if (req.readyState === 4) {
+                if (req.status===200) {
+                    me.handleResponse(JSON.parse(req.responseText));
+                } else {
+                    me.handleResponseError(req.status);
+                }
+            
+            } 
+        }; 
+        return req;
+    </method>
+
+    <method name="drawDisabledState">
+        this.setAttribute('boxshadow', null); 
+        this.setAttribute('color', '#e0e0e0'); 
+        this.setAttribute('bordercolor', '#e0e0e0'); 
+        this.setAttribute('bgcolor', '#ffffff');
+    </method>
+    
+    <method name="drawActiveState">
+        this.drawReadyState();
+    </method>
+
+    <method name="drawFocusedState">
+        this.drawReadyState()
+    </method>
+
+    <method name="drawHoverState">
+        this.drawReadyState()
+    </method>
+    <method name="drawReadyState">
+        this.setAttribute('boxshadow', null); 
+        this.setAttribute('bgcolor', '#ffa500'); 
+        this.setAttribute('color', '#ffffff'); 
+        this.setAttribute('bordercolor', '#ffffff');
+    </method>
+</class>

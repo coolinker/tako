@@ -141,7 +141,7 @@ function captchaAuthorize(source, username, cookieJar, callback) {
 function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
     simplehttp.POST('https://user.lu.com/user/login', {
             form: {
-                userNameLogin: userNameLogin,
+                userName: userNameLogin,
                 password: cncryptPassword,
                 validNum: captcha,
                 loginagree: "on",
@@ -151,7 +151,7 @@ function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://user.lu.com");
-            logutil.log("login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin);
+            logutil.log("login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, cookie_string);
             if (cookie_string.indexOf("lufaxSID") < 0) {
                 callback(null);
             } else {

@@ -397,7 +397,8 @@ function securityValid(callback) {
 }
 
 function investmentRequest(uid, productId, sid, password, captachStr, imageId, cookieJar, callback) {
-    simplehttp.POST("https://trading.lu.com/trading/users/" + uid + "/investment-request", {
+    //simplehttp.POST("https://trading.lu.com/trading/users/" + uid + "/investment-request", {
+    simplehttp.POST("https://trading.lu.com/trading/investment-request", {
             "cookieJar": cookieJar,
             "form": {
                 "sid": sid,
@@ -408,7 +409,8 @@ function investmentRequest(uid, productId, sid, password, captachStr, imageId, c
                 "coinString": "",
                 "imgId": imageId,
                 "needWithholding": false,
-                "paymentMethod": 1
+                "paymentMethod": 1,
+                "isSetPassword": 0
             }
         },
         function(err, httpResponse, body) {
@@ -416,7 +418,7 @@ function investmentRequest(uid, productId, sid, password, captachStr, imageId, c
                 var json = JSON.parse(body);
                 callback(json);
             } catch (e) {
-
+                logutil.log(body);
                 callback();
             }
 

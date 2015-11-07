@@ -1,0 +1,33 @@
+<class name="section" defaultplacement="content" height="auto" topborder="3" bottomborder="3" bordercolor="808080" cornerradius="10" leftpadding="30" rightpadding="30" bottompadding="80">
+    <attribute name="issummarymode" type="boolean" value="false"/>
+    <text name="titleText" text="${this.parent.title}" bgcolor="f8f8f8" color="808080" fontsize="60" y="-30"></text>
+    <view name="content" y="80" width="100%">
+    </view>
+    <view name="summaryView" y="80" width="100%">
+        <text name="txt">
+
+        </text>
+    </view>
+    
+    <handler event="onissummarymode" args="issummary">
+        if (issummary) {
+            this.updateSummary();
+            this.summaryView.setAttribute("height", this.content.height);
+            this.summaryView.animate({attribute:'height', to: this.summaryView.txt.height, duration:300});
+        } else {
+
+        }
+        this.content.setAttribute("visible", !issummary);
+        this.summaryView.setAttribute("visible", issummary);
+
+    </handler>
+
+    <method name="updateSummary">
+        var smr = this.getSummary();
+        this.summaryView.txt.setAttribute("text", smr);
+    </method>
+    <method name="getSummary">
+        //overwrite to return summary content string.    
+    </method>
+
+</class>
