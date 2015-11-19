@@ -1,5 +1,5 @@
-<class name="calliper" width="500" height="300" bgcolor="e0e0e0" cornerradius="10"
-    bordercolor="c0c0c0" leftpadding="50" rightpadding="50" toppadding="40">
+<class name="calliper" width="500" height="250" bgcolor="f0f0f0" cornerradius="10"
+    bordercolor="f0f0f0" border="1" leftpadding="50" rightpadding="50" toppadding="15">
     <include href="./touchdraggable.dre"/>
     <attribute name="startvalue" value="0" type="number"/>
     <attribute name="endvalue" value="100" type="number"/>
@@ -18,18 +18,22 @@
 
     <attribute name="title" value="untitled" type="string"/>
     <attribute name="unit" value="元" type="string"/>
-    <text name="title" fontsize="40" color="808080" text="${this.classroot.title}" rightborder="2" leftborder="2" cornerradius="10" 
+    <text name="titleTxt" fontsize="40" color="808080" text="${this.classroot.title}" rightborder="2" leftborder="2" cornerradius="10" 
         bordercolor="808080">
         <handler event="onwidth">
             this.setAttribute("x", -this.classroot.leftpadding);
-            this.setAttribute("y",  -this.classroot.toppadding);
+        </handler>
+        <handler event="onheight">
+            this.setAttribute("y",  -this.classroot.toppadding - this.height);
         </handler>
     </text>
     <text name="unitLabel" fontsize="40" fontfamily="roboto" color="808080"
         rightborder="2" leftborder="2" cornerradius="10" bordercolor="808080">
         <handler event="onwidth">
             this.setAttribute("x",  this.classroot.width-this.width-this.classroot.leftpadding);
-            this.setAttribute("y",  -this.classroot.toppadding);
+        </handler>
+        <handler event="onheight">
+            this.setAttribute("y",  -this.classroot.toppadding - this.height);
         </handler>
     </text>
     <view name="base" height="20" bgcolor="808080" y="30"/>
@@ -150,9 +154,9 @@
 
     <method name="updateStartEndLabelPosition">
         this.startLabel.setAttribute("x", this.base.x-this.startLabel.width/2);
-        this.startLabel.setAttribute("y", this.start.y+this.start.height+5);
+        this.startLabel.setAttribute("y", this.start.y+this.start.height+15);
         this.endLabel.setAttribute("x", this.base.x+this.base.width-this.endLabel.width/2);
-        this.endLabel.setAttribute("y", this.end.y+this.end.height+5);
+        this.endLabel.setAttribute("y", this.end.y+this.end.height+15);
     </method>
 
     <method name="renderRange">
@@ -220,32 +224,57 @@
 
     <method name="rangeLeftUpdate">
         var left  = this.rangeLeft, right = this.rangeRight;
+        var vlauechanged = false;
         var rangevalues = this.getRangeValues();
-        this.leftvalue = rangevalues.left;
-        this.rangeLeftLabel.setAttribute("text", rangevalues.left);
+
+        if (this.leftvalue !== rangevalues.left) {
+            this.leftvalue = rangevalues.left;
+            vlauechanged = true;
+        }
+        //this.rangeLeftLabel.setAttribute("text", rangevalues.left);
         if (this.rangemasteronleft) {
             var rightx = left.x+left.width/2 + this._spanlength - right.width/2
             right.setAttribute("x", Math.min(rightx, right.xmax));
-            this.rightvalue = Math.min(this.endvalue, rangevalues.left + this._spanvalue);
-            this.rangeRightLabel.setAttribute("text", this.rightvalue);
+            var rv = Math.min(this.endvalue, rangevalues.left + this._spanvalue);
+            if (this.rightvalue !== rv) {
+                this.rightvalue = rv;
+                vlauechanged = true;
+            }
+            //this.rangeRightLabel.setAttribute("text", this.rightvalue);
             this.updateSpan();
         }
         this.renderRange();
+
+        if (vlauechanged) {
+            this.sendEvent('onrangevalues', {left: this.leftvalue, right: this.rightvalue});
+        }
     </method>
 
     <method name="rangeRightUpdate">
         var left  = this.rangeLeft, right = this.rangeRight;
+        var vlauechanged = false;
         var rangevalues = this.getRangeValues();
-        this.rightvalue = rangevalues.right;
-        this.rangeRightLabel.setAttribute("text", rangevalues.right);
+        if (this.rightvalue !== rangevalues.right) {
+            this.rightvalue = rangevalues.right;
+            vlauechanged = true;
+        }
+        //this.rangeRightLabel.setAttribute("text", rangevalues.right);
         if (this.rangemasteronright) {
             var leftx = Math.round(right.x+right.width/2-this._spanlength-left.width/2);
             left.setAttribute("x", Math.max(leftx, left.xmin));
-            this.leftvalue = Math.max(this.startvalue, rangevalues.right-this._spanvalue);
-            this.rangeLeftLabel.setAttribute("text", this.leftvalue);
+            var lv = Math.max(this.startvalue, rangevalues.right-this._spanvalue);
+            if (this.leftvalue !== lv) {
+                this.leftvalue = lv;
+                vlauechanged = true;
+            }
+            //this.rangeLeftLabel.setAttribute("text", this.leftvalue);
             this.updateSpan();
         }
         this.renderRange();
+
+        if (vlauechanged) {
+            this.sendEvent('onrangevalues', {left: this.leftvalue, right: this.rightvalue});
+        }
     </method>
     
     <method name="updateRangeLabelDisplay">
@@ -264,13 +293,20 @@
         if (right.isdragging) this.rangeRightLabel.moveToFront();
 
         if (this.rangeLeftLabel.x+this.rangeLeftLabel.width > this.rangeRightLabel.x) {
-            this.rangeLeftLabel.setAttribute("y",  !right.isdragging && (left.isdragging || this.rangeLeftLabel.y === 5)?5:45);
-            this.rangeRightLabel.setAttribute("y", !left.isdragging && (right.isdragging || this.rangeRightLabel.y === 5)?5:45);
+            if (!left.isdragging && !right.isdragging) {
+                this.rangeLeftLabel.setAttribute("y",  -10);
+                this.rangeRightLabel.setAttribute("y", 35);
+            } else {
+                this.rangeLeftLabel.setAttribute("y",  !right.isdragging && (left.isdragging || this.rangeLeftLabel.y === -10)?-10:35);
+                this.rangeRightLabel.setAttribute("y", !left.isdragging && (right.isdragging || this.rangeRightLabel.y === -10)?-10:35);
+            }
+            
         } else {
-            this.rangeLeftLabel.setAttribute("y", left.isdragging?25:35);
-            this.rangeRightLabel.setAttribute("y", right.isdragging?25:35); 
+            this.rangeLeftLabel.setAttribute("y", left.isdragging?15:25);
+            this.rangeRightLabel.setAttribute("y", right.isdragging?15:25); 
         }
-        
+         this.rangeLeftLabel.setAttribute("text", this.leftvalue);
+        this.rangeRightLabel.setAttribute("text", this.rightvalue);
     </method>
     
     <method name="getRangeValues">
@@ -282,6 +318,18 @@
         rightvalue = Math.round(rightvalue/roundsize)*roundsize;
 
         return {left:leftvalue, right:rightvalue};
+    </method>
+
+    <method name="updateRangeValues" args="values">
+        this.leftvalue = values.left;
+        this.rightvalue = values.right;
+        var left  = this.rangeLeft, right = this.rangeRight;
+        var leftx = this.valueToX(values.left);
+        left.setAttribute("x", Math.max(leftx-left.width/2, left.xmin));
+        var rightx = this.valueToX(values.right);
+        right.setAttribute("x", Math.min(rightx-right.width/2, right.xmax));
+        this.updateSpan();
+        this.renderRange();
     </method>
 
 </class> 

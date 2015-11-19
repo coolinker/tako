@@ -2,21 +2,10 @@ var logutil = require("./logutil");
 var ACCOUNT_TYPES = require("./accounttypes");
 
 var LOGIN_ACCOUNTS_NUMBER = 3;
-// var accountAttributes = {
-//     user: "",
-//     password: "",
-//     source: "",
-//     cookieJar: null,
-//     loginTime: null,
-//     loginExtendInterval: null,
-//     loginExtendedTime: null,
-//     locked: false,
-//     interestLevel: 13,
-//     availableBalance: 0,
-//     lastConsumingTime: null
-// }
-var events = require("events");
+
+//var events = require("events");
 var accountQueues = {};
+var queuesMap = {};
 
 exports.consume = consume;
 
@@ -37,21 +26,17 @@ function consume(toBeConsumed) {
     return finished;
 }
 
-// exports.consumeAll = consumeAll;
-// function consumeAll(toBeConsumed) {
-//     var sourceType = ACCOUNT_TYPES[toBeConsumed[0]['source']];
-//     var consumejob = require("./" + sourceType + "/consumejob");
-//     accounts = accountQueues[sourceType];
-//     var consumeIdx = 0;
-//     for (var i = 0; i < accounts.length; i++) {
-//         if (accounts[i].cookieJar !== null) {
-//             consumejob.consume(accounts[i], toBeConsumed[consumeIdx++]);
-//         }
-//         if (consumeIdx >= toBeConsumed.length) break;
-//     }
-// }
-
-function loginAccount(accountInfo) {
+exports.loginAccount = loginAccount;
+function loginAccount(accountInfo, callback) {
+    if (accountInfo.locked) {
+         if (callback) callback();
+        return;
+    }
+    if (!needRelogin(accountInfo)) {
+         if (callback) callback(accountInfo); 
+         return;
+    }
+    
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
     accountInfo.locked = true;
@@ -63,17 +48,31 @@ function loginAccount(accountInfo) {
             accountInfo.loginTime = new Date();
         }
         accountInfo.locked = false;
+        if (callback) callback(accountInfo);
     })
 }
 
-exports.addAccount = addAccount;
+function needRelogin(account) {
+    if (!account.cookieJar) return true;
+    return (new Date() - account.loginTime > account.loginExtendInterval)
+}
 
+exports.getAccount = getAccount;
+function getAccount(accountInfo) {
+    var accounttype = ACCOUNT_TYPES[accountInfo['source']];
+    return queuesMap[accounttype] ? queuesMap[accounttype] [accountInfo.user] : null;
+}
+
+exports.addAccount = addAccount;
 function addAccount(accountInfo) {
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     if (!accountQueues[accounttype]) {
         accountQueues[accounttype] = [];
+        queuesMap[accounttype] = {};
     };
+
     accountQueues[accounttype].push(accountInfo);
+    queuesMap[accounttype] [accountInfo.user] = accountInfo;
 }
 
 exports.updateAccountQueue = updateAccountQueue;
@@ -99,7 +98,7 @@ exports.loopLogin = loopLogin;
 
 function loopLogin() {
     queueLogin();
-    setInterval(queueLogin, 30 * 1000)
+    setInterval(queueLogin, 300 * 1000)
 }
 
 exports.queueLogin = queueLogin;

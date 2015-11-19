@@ -110,10 +110,11 @@ function login_brwoser(account, callback) {
             // captchaAuthorize("PC", user, cookieJar, function(body) {
             captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
                 doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
-                    account.cookieJar = cookieJar;
-                    account.availableBalance = info.availableFund;
-                    account.uid = info.uid;
-
+                    if (info) {                     
+                        account.cookieJar = cookieJar;
+                        account.availableBalance = info.availableFund;
+                        account.uid = info.uid;
+                    }
                     console.log("account.availableBalance:", account.availableBalance, account.uid)
                     callback(cookieJar, info);
                 })

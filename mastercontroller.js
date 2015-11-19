@@ -1,3 +1,4 @@
+var logutil = require("./logutil");
 var rrdtransferloopjob = require("./rrd/transferloopjob");
 var lufaxtransferloopjob = require("./lufax/transferloopjob");
 var JOBS_OBJ = {};
@@ -22,12 +23,27 @@ var CommonAccount = require("./commonaccount");
 this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
 
 exports.addAccountJson = addAccountJson;
+function _addAccountJson(accountJson, callback) {
+    callback({user: "coolinker", loginTime: 1447083301627, availableBalance: 2000});
+}
 
-function addAccountJson(accountJson) {
+exports.getAccountInfo = getAccountInfo;
+function getAccountInfo(accountJson, callback) {
+    accountJson.readyFunding = false;
+    addAccountJson(accountJson, callback)
+}
+
+function addAccountJson(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-    accountqueue.addAccount(accountObj);
+    var acc = accountqueue.getAccount(accountObj);
+    if (!acc) {
+         accountqueue.addAccount(accountObj);
+    } else {
+        accountObj = acc;
+    }
+
     var accType = ACCOUNT_TYPES[accountObj.source];
-    var tjob = JOBS_OBJ[accType]['transferloopjob'];
+    var tjob =accType ? JOBS_OBJ[accType]['transferloopjob'] : null;
     if (tjob && !tjob.isRollingStarted()) {
         tjob.rollNewProductCheck(function(product) {
             if (accountqueue.consume(product)) {
@@ -35,6 +51,8 @@ function addAccountJson(accountJson) {
             }
         });
     }
+     
+     accountqueue.loginAccount(accountObj, callback);
 }
 
 exports.removeAccountJson = removeAccountJson;

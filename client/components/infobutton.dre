@@ -1,0 +1,7 @@
+<class name="infobutton" width="60" height="60" border="5" cornerradius="30" bordercolor="orange">
+    <attribute name="infotype" value="!" type="string" />
+    <text name="t" x="middle" bold="false" color="orange" fontsize="60"></text>
+    <handler event="oninit">
+        this.t.setAttribute("text", this.infotype);
+    </handler>
+</class>

@@ -1,21 +1,27 @@
 var masterController = require("../mastercontroller");
 
+exports.addAccount = addAccount;
+
 function addAccount(params, callback) {
-    callback("addAccount", params)
-    masterController.addAccountJson(params);
-}
+    masterController.addAccountJson(params, function(accountInfo) {
+        var obj = {
+            user: accountInfo.user,
+            loginTime: accountInfo.loginTime.getTime(),
+            availableBalance: accountInfo.availableBalance
+        }
+        callback(JSON.stringify(obj));
+    });
 
-function startWatchingJob(params, callback){
-    var interval = params.interval? Number(params.interval): 15000;
-
-    masterController.startWatchingJob(params.type, interval);
-    console.log("startWatching interval=", interval);
-    callback("startWatching")
 }
-exports.startWatchingJob = startWatchingJob;
+exports.getAccountInfo = getAccountInfo;
+function getAccountInfo(params, callback) {
+    masterController.getAccountInfo(params, function(accountInfo) {
+        var obj = {
+            user: accountInfo.user,
+            loginTime: accountInfo.loginTime.getTime(),
+            availableBalance: accountInfo.availableBalance
+        }
+        callback(JSON.stringify(obj));
+    });
 
-function stopWatchingJob(params, callback){
-    masterController.stopWatchingJob(params.type);
-    callback("stopWatching")
 }
-exports.stopWatchingJob = stopWatchingJob;

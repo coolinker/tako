@@ -1,7 +1,7 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
-var PRODUCE_TO_CONSUME_MIN = 0;
+var PRODUCE_TO_CONSUME_MIN = 2500;
 var CONSUMING_INTERVAL_MIN = 5000;
 
 exports.consume = consume;
@@ -30,8 +30,13 @@ function consume(account, toBeConsumed, callback) {
 function doConsume(account, toBeConsumed, callback) {
     if (toBeConsumed.transferId) {
         var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
+        if (canBuyShares <= 0) {
+            callback(0);
+            return;
+        }
+
         logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
-        simplehttp.POST('http://www.renrendai.com/transfer/buyLoanTransfer.action', {
+        simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
                 form: {
                     "agree-contract": "on",
                     transferId: toBeConsumed.transferIdCode,
@@ -64,26 +69,35 @@ function doConsume(account, toBeConsumed, callback) {
 }
 
 function confirmSpent(transferId, account, callback) {
-    simplehttp.GET('http://www.renrendai.com/transfer/loanTransferDetail.action?transferId=' + transferId, {
+
+    simplehttp.GET('http://www.we.com/transfer/loanTransferDetail.action?transferId=' + transferId, {
             "cookieJar": account.cookieJar
         },
         function(err, request, body) {
+            //<div id="pg-server-message" data-status="0" data-message="您已成功投资16.01元，获得1份债权及折让收益0.0元" data-ispop="true" style="display: none;"></div>
+        
             //   <div id="pg-server-message" data-status="0" data-message="您已成功投资45.47元，获得1份债权及折让收益0.0元" data-ispop="true" style="display: none;"></div>
+            //<div id="pg-server-message" data-status="1" data-message="该债权不能购买" data-ispop="" style="display: none;"></div>
+            var status = htmlparser.getValueFromBody('id="pg-server-message" data-status="', '" data-message', body);
             var spent = Number(htmlparser.getValueFromBody('您已成功投资', '元', body));
             var share = Number(htmlparser.getValueFromBody('元，获得', '份债权及折让收益', body));
-            logutil.log("*************", spent, share)
+            logutil.log("*************", "status", status, spent, share)
             callback(spent);
         });
 }
 
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
-    return Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.5));
-    //return 1;
+    var shares = Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.5));
+    return shares;
 }
 
 function ableToConsume(account, toBeConsumed) {
-    return toBeConsumed.sharesAvailable > 1 && account.interestLevel <= toBeConsumed.interest && account.availableBalance > account.minValidBalance && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
+    var shares = sharesAbleToConsume(account, toBeConsumed);
+    return toBeConsumed.sharesAvailable > 0 && account.interestLevel <= toBeConsumed.interest
+    && shares *  toBeConsumed.pricePerShare >= account.minFundPerProduct && shares *  toBeConsumed.pricePerShare <= account.maxFundPerProduct 
+    && account.availableBalance > account.minValidBalance 
+    && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
 function readyForConsume(account) {

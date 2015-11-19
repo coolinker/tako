@@ -5,7 +5,7 @@
     <attribute name="labelcolor" type="string"/>
     <attribute name="inputtype" value="text" type="string"/>
     <text name="labelView" text="${this.parent.label}" color="${this.parent.labelcolor}"
-        bordercolor="808080" bgcolor="e0e0e0" y="bottom" height="100%" toppadding="10"
+        bordercolor="808080" bgcolor="f0f0f0" y="bottom" height="100%" toppadding="10"
         textalign="${this.parent.labelalign}" width="${this.parent.labelwidth}" fontsize="56"
         topleftcornerradius="${this.parent.topleftcornerradius}"
         bottomleftcornerradius="${this.parent.bottomleftcornerradius}"></text>

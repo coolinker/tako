@@ -1,33 +1,66 @@
-<class name="section" defaultplacement="content" height="auto" topborder="3" bottomborder="3" bordercolor="808080" cornerradius="10" leftpadding="30" rightpadding="30" bottompadding="80">
+<class name="section" defaultplacement="content" height="auto" topborder="1" bottomborder="1" bordercolor="808080" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="50">
     <attribute name="issummarymode" type="boolean" value="false"/>
+    <attribute name="showpreviewbutton" type="boolean" value="true"/>
     <text name="titleText" text="${this.parent.title}" bgcolor="f8f8f8" color="808080" fontsize="60" y="-30"></text>
+    <text color="orange"  clickable="true" x="right" fontsize="40" italic="true" fontsize="60" bold="true">
+        <handler event="oninit">
+            this.updateDisplay();
+        </handler>
+        <handler event="onispreviewmode" reference="this.classroot">
+            this.updateDisplay();
+        </handler>
+
+        <handler event="onclick">
+            this.parent.setAttribute("ispreviewmode", !this.parent.ispreviewmode);
+        </handler>
+
+        <method name="updateDisplay">
+            this.setAttribute("visible", !this.classroot.ispreviewmode ? this.classroot.showpreviewbutton : true);
+            this.setAttribute("text", this.classroot.ispreviewmode ? "↩" : "预览");
+        </method>
+    </text>
     <view name="content" y="80" width="100%">
     </view>
-    <view name="summaryView" y="80" width="100%">
-        <text name="txt">
-
+    <view name="previewView" y="80" width="100%" clip="true">
+        <text name="txt" fontsize="40" color="#808080" multiline="true">
+            
         </text>
+
     </view>
     
-    <handler event="onissummarymode" args="issummary">
-        if (issummary) {
+    <handler event="onispreviewmode" args="ispreview">
+        if (ispreview) {
             this.updateSummary();
-            this.summaryView.setAttribute("height", this.content.height);
-            this.summaryView.animate({attribute:'height', to: this.summaryView.txt.height, duration:300});
+            this.previewView.setAttribute("height", this.content.height);
+            this.updateSummaryHeight();
         } else {
 
         }
-        this.content.setAttribute("visible", !issummary);
-        this.summaryView.setAttribute("visible", issummary);
+        this.content.setAttribute("visible", !ispreview);
+        this.previewView.setAttribute("visible", ispreview);
 
     </handler>
 
+    <method name="updateSummaryHeight">
+        var toh = this.previewView.txt.sprite.platformObject.scrollHeight;
+        var dur = 300;
+        this.previewView.animate({attribute:'height', to: toh , duration:dur});
+    </method>
+
     <method name="updateSummary">
         var smr = this.getSummary();
-        this.summaryView.txt.setAttribute("text", smr);
+        this.setSummaryText(smr);
     </method>
+
+    <method name="setSummaryText" args="smr">
+        this.previewView.txt.sprite.platformObject.innerHTML = smr;
+    </method>
+
     <method name="getSummary">
         //overwrite to return summary content string.    
     </method>
 
+     <method name="waitingSummary">
+        return "..."  
+    </method>
 </class>

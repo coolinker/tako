@@ -3,10 +3,9 @@ var http = require("http"),
     path = require("path"),
     fs = require("fs"),
     apiDispatcher = require("./apidispatcher");
-    port = process.argv[2] || 8000;
+port = process.argv[2] || 8000;
 
 http.createServer(function(request, response) {
-
     var uri = url.parse(request.url).pathname;
     if (uri === "/api" && handleApiRequest(request, response)) {
         return;
@@ -45,22 +44,32 @@ http.createServer(function(request, response) {
 console.log("Static file server running at\n  => http://localhost:" + port + "/\nCTRL + C to shutdown");
 
 function handleApiRequest(request, response) {
-    var query = url.parse(request.url,true).query;
-    
+    var query = url.parse(request.url, true).query;
     var action = query.action;
     // console.log("handleApiRequest", action);
     if (!apiDispatcher[action]) return false;
+    if (request.method == 'POST') {
+        var jsonString = '';
 
-    apiDispatcher[action](query, function(output) {
-
-        response.writeHead(200, {
-            "Content-Type": "application/x-javascript; charset=utf-8"
-            // 'Content-Length': output.length
+        request.on('data', function(data) {
+            jsonString += data;
         });
-        
-        response.write(output);
-        response.end();
-    });
+
+        request.on('end', function() {
+            var postJson = JSON.parse(jsonString);
+            apiDispatcher[action](postJson, function(output) {
+                response.writeHead(200, {
+                    "Content-Type": "application/x-javascript; charset=utf-8",
+                        // 'Content-Length': output.length
+                    "Access-Control-Allow-Origin": "http://192.168.128.92:8080"
+                });
+                response.write(output);
+                response.end();
+            });
+        });
+    }
+
+
 
     return true;
 }

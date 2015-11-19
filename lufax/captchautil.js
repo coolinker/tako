@@ -5,7 +5,7 @@ var ndarray = require("ndarray")
 var savePixels = require("save-pixels")
 var NEED_PRE_CHECK = false;
 
-var imageRepository = require('./captcha/imagerepository').init("./lufax/captcha/data.dat");
+var imageRepository = require('./captcha/imagerepository').init("../lufax/captcha/data.dat");
 var imageUtil = require('./captcha/imageutil');
 
 var imageProcessor = require('./captcha/imageprocessor').config({
@@ -82,6 +82,7 @@ exports.guessCaptchaForLogin = guessCaptchaForLogin;
 function guessCaptchaForLogin(source, cookieJar, callback) {
     getCaptchaBySource(source, cookieJar, function(captchaImage) {
         var captachStr = crackCaptcha(captchaImage);
+        console.log("guessCaptchaForLogin", source, captachStr, captchaImage.width, captchaImage.height, captchaImage.data.length)
         preCheck(captachStr, "source=" + source, cookieJar, function(success) {
             // logutil.log("guessCaptcha", source, captachStr, success);
             if (success) {

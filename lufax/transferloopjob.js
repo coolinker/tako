@@ -156,7 +156,7 @@ function loopNewTransfer_browser(startId, callback) {
                 } finally {
                     if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 10000) {
                         lastDetectTime = new Date();
-                        logutil.log("detectLastProductId", productId)
+                        //logutil.log("detectLastProductId", productId)
                         detectLastProductId(function(lastProductId) {
                             if (lastProductId > productId) {
                                 productId = lastProductId;
