@@ -1,7 +1,7 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
-var PRODUCE_TO_CONSUME_MIN = 2500;
+var PRODUCE_TO_CONSUME_MIN = 2000;
 var CONSUMING_INTERVAL_MIN = 5000;
 
 exports.consume = consume;
@@ -48,11 +48,11 @@ function doConsume(account, toBeConsumed, callback) {
             },
             function(err, request, body) {
                 if (request.statusCode === 302) {
-                    confirmSpent(toBeConsumed.transferId, account, function(spent) {
+                    confirmSpent(toBeConsumed.transferId, account, function(status, spent, shares) {
                         if (!isNaN(spent)) {
                             account.availableBalance -= spent;
                         }
-                        logutil.log("confirmSpent:", toBeConsumed.transferId, spent, account.availableBalance);
+                        logutil.log("confirmSpent:", status, spent, shares, toBeConsumed.transferId, account.availableBalance);
                         if (spent > 0) account.lastConsumingTime = new Date();
                         if (callback) callback(spent);
                         // account.locked = false;
@@ -81,8 +81,7 @@ function confirmSpent(transferId, account, callback) {
             var status = htmlparser.getValueFromBody('id="pg-server-message" data-status="', '" data-message', body);
             var spent = Number(htmlparser.getValueFromBody('您已成功投资', '元', body));
             var share = Number(htmlparser.getValueFromBody('元，获得', '份债权及折让收益', body));
-            logutil.log("*************", "status", status, spent, share)
-            callback(spent);
+            callback(status, spent, share);
         });
 }
 
@@ -94,9 +93,10 @@ function sharesAbleToConsume(account, toBeConsumed) {
 
 function ableToConsume(account, toBeConsumed) {
     var shares = sharesAbleToConsume(account, toBeConsumed);
+    var price = shares *  toBeConsumed.pricePerShare;
     return toBeConsumed.sharesAvailable > 0 && account.interestLevel <= toBeConsumed.interest
-    && shares *  toBeConsumed.pricePerShare >= account.minFundPerProduct && shares *  toBeConsumed.pricePerShare <= account.maxFundPerProduct 
-    && account.availableBalance > account.minValidBalance 
+    && price >= account.minFundPerProduct && price <= account.maxFundPerProduct 
+    && account.availableBalance - price >= account.reservedBalance 
     && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 

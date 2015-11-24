@@ -114,7 +114,7 @@ function ableToConsume(account, toBeConsumed) {
     return (account.consumeHistory[account.source] === undefined || account.consumeHistory[account.source][toBeConsumed.sid] === undefined)
         && toBeConsumed.percentFinished < 100 
         && account.interestLevel <= toBeConsumed.interest 
-        && account.availableBalance > account.minValidBalance
+        && account.availableBalance > account.reservedBalance
         && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 

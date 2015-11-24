@@ -83,7 +83,7 @@ function updateAccountQueue() {
         activeTypes[accountType] = false;
         var accs = accountQueues[accountType];
         for (var i = accs.length - 1; i >= 0; i--) {
-            if (!accs[i].loggedIn() || accs[i].ableToConsume()) {
+            if (/*!accs[i].loggedIn() ||*/ accs[i].ableToConsume()) {
                 activeTypes[accountType] = true;
             } else {
                 accs.splice(i, 1);
@@ -98,7 +98,7 @@ exports.loopLogin = loopLogin;
 
 function loopLogin() {
     queueLogin();
-    setInterval(queueLogin, 300 * 1000)
+    setInterval(queueLogin, 5 * 60 * 1000)
 }
 
 exports.queueLogin = queueLogin;
@@ -119,7 +119,7 @@ function queueLogin() {
                 }
 
                 var letime = acc.loginExtendedTime === null ? acc.loginTime : acc.loginExtendedTime;
-
+                // logutil.log("extend login...", acc.user, now - letime, acc.loginExtendInterval)
                 if (now - letime > acc.loginExtendInterval) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");

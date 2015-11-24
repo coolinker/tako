@@ -15,7 +15,7 @@ CommonAccount.prototype.loginExtendedTime = null;
 CommonAccount.prototype.locked = false;
 CommonAccount.prototype.interestLevel = 100;
 CommonAccount.prototype.availableBalance = 0;
-CommonAccount.prototype.minValidBalance = 10000;
+CommonAccount.prototype.reservedBalance = 10000;
 CommonAccount.prototype.maxFundPerProduct = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
 CommonAccount.prototype.consumeHistory = {};
@@ -33,8 +33,8 @@ CommonAccount.prototype.loggedIn = function (){
 }
 
 CommonAccount.prototype.ableToConsume = function (){
-    // console.log(this.availableBalance, this.minValidBalance, this.source, this.user)
-    return this.cookieJar && this.availableBalance >= this.minValidBalance;
+    // console.log(this.availableBalance, this.reservedBalance, this.source, this.user)
+    return this.cookieJar && this.availableBalance >= this.reservedBalance;
 }
 
 CommonAccount.prototype.lock = function (){

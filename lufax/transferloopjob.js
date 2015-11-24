@@ -36,7 +36,7 @@ function detectLastProductId(callback) {
                 if (!ids) {
                     isDetecting = false;
                     detectLastProductId(callback);
-                    logutil.log("********************detectLastProductId failed", page)
+                    logutil.log("detectLastProductId failed", page)
                 } else {
 
                     var lidstr = ids[ids.length - 1];
@@ -89,7 +89,7 @@ function randomNumber() {
 }
 
 function loopNewTransfer_browser(startId, callback) {
-    if (this.loopjob) {
+    if (me.loopjob) {
         console.log("loopNewTransfer loopjob existed");
         return;
     }
@@ -104,7 +104,7 @@ function loopNewTransfer_browser(startId, callback) {
         timeout: 1.8 * LOOP_INTERVAL,
         httpMethod: "GET",
         urlInjection: function(parallelIndex, url) {
-            if (productId - productIdStart > 100) {
+            if (productId - productIdStart > 500) {
                 logutil.log("***productId rolling", productId);
                 productIdStart = productId;
             }

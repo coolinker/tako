@@ -22,17 +22,13 @@ var CommonAccount = require("./commonaccount");
 
 this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
 
-exports.addAccountJson = addAccountJson;
-function _addAccountJson(accountJson, callback) {
-    callback({user: "coolinker", loginTime: 1447083301627, availableBalance: 2000});
-}
-
 exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(accountJson, callback) {
     accountJson.readyFunding = false;
     addAccountJson(accountJson, callback)
 }
 
+exports.addAccountJson = addAccountJson;
 function addAccountJson(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);

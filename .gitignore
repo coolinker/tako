@@ -4,3 +4,6 @@ testrrd.js
 testlufax.js
 test.js
 log.txt
+server/ca/
+*.pem
+*.csr

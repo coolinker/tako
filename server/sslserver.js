@@ -1,11 +1,17 @@
-var http = require("http"),
+var https = require('https'),
     url = require("url"),
     path = require("path"),
     fs = require("fs"),
     apiDispatcher = require("./apidispatcher");
 port = process.argv[2] || 8000;
 
-http.createServer(function(request, response) {
+var options = {
+    key: fs.readFileSync('server-key.pem'),
+    cert: fs.readFileSync('server-crt.pem'),
+    ca: fs.readFileSync('ca-crt.pem')
+};
+
+https.createServer(options, function(request, response) {
     var uri = url.parse(request.url).pathname;
     if (uri === "/api" && handleApiRequest(request, response)) {
         return;

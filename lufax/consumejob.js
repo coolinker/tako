@@ -24,45 +24,46 @@ securityValid(function(pkey, exp) {
 
 exports.consume = consume;
 function consume(account, toBeConsumed, callback){
-    consume_brwoser(account, toBeConsumed, callback);
+    var finished = consume_brwoser(account, toBeConsumed, callback);
+    return finished;
 }
 
-function consume_mobile(account, toBeConsumed, callback) {
-    //rollInvestCheck(account, product, function() {});
-    if (!ableToConsume(account, toBeConsumed)) return false;
-    account.lock();
-    var productId = toBeConsumed.productId;
-    var cookieJar = account.cookieJar;
-    mobileGetSID(account, productId, function(sid) {
-        logutil.log("mobileGetSID", productId, sid)
-        if (!sid) {
-            account.unlock();
-            return;
-        }
-        var st = new Date();
-        mobileContract(account, productId, sid, function(info) {
-            //if (!info) return;
-            logutil.log("mobileContract duration:", new Date()-st);
-        });
-        setTimeout(function() {
-            var st = new Date();
-            mobileContractConfirm(account, productId, sid, function(sucess) {
-                // mobileInvestmentRequest(account, productId, sid, function(info) {
-                //     account.unlock();
-                // });
-                logutil.log("mobileContractConfirm duration:", new Date()-st);
-            });
-        }, 150)
+// function consume_mobile(account, toBeConsumed, callback) {
+//     //rollInvestCheck(account, product, function() {});
+//     if (!ableToConsume(account, toBeConsumed)) return false;
+//     account.lock();
+//     var productId = toBeConsumed.productId;
+//     var cookieJar = account.cookieJar;
+//     mobileGetSID(account, productId, function(sid) {
+//         logutil.log("mobileGetSID", productId, sid)
+//         if (!sid) {
+//             account.unlock();
+//             return;
+//         }
+//         var st = new Date();
+//         mobileContract(account, productId, sid, function(info) {
+//             //if (!info) return;
+//             logutil.log("mobileContract duration:", new Date()-st);
+//         });
+//         setTimeout(function() {
+//             var st = new Date();
+//             mobileContractConfirm(account, productId, sid, function(sucess) {
+//                 // mobileInvestmentRequest(account, productId, sid, function(info) {
+//                 //     account.unlock();
+//                 // });
+//                 logutil.log("mobileContractConfirm duration:", new Date()-st);
+//             });
+//         }, 150)
 
-        setTimeout(function() {
-            var st = new Date();
-            mobileInvestmentRequest(account, productId, sid, function(info){
-                logutil.log("mobileInvestmentRequest duration:", new Date()-st);
-                account.unlock();
-            });
-        }, 300)
-    })
-}
+//         setTimeout(function() {
+//             var st = new Date();
+//             mobileInvestmentRequest(account, productId, sid, function(info){
+//                 logutil.log("mobileInvestmentRequest duration:", new Date()-st);
+//                 account.unlock();
+//             });
+//         }, 300)
+//     })
+// }
 
 function consume_brwoser(account, toBeConsumed, callback) {
     if (!ableToConsume(account, toBeConsumed)) return false;
@@ -185,7 +186,13 @@ function confirmSpent(productId, account, callback) {
 
 function ableToConsume(account, toBeConsumed) {
     //console.log(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
-    return !account.locked && account.maxFundPerProduct > toBeConsumed.price && account.availableBalance > toBeConsumed.price && account.interestLevel <= toBeConsumed.interest && account.availableBalance > account.minValidBalance && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
+    return !account.locked 
+    && account.maxFundPerProduct >= toBeConsumed.price 
+    && account.minFundPerProduct <= toBeConsumed.price 
+    && account.availableBalance > toBeConsumed.price 
+    && account.availableBalance - toBeConsumed.price > account.reservedBalance 
+    && account.interestLevel <= toBeConsumed.interest 
+    && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
 function mobileHeaders(account) {

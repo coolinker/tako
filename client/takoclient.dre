@@ -9,35 +9,36 @@
             <include href="./components/section.dre"/>
             <include href="./components/labelinput.dre"/>
             <include href="./lupanel.dre"/>
+            <include href="./rrdpanel.dre"/>
             <view width="100%" height="1522">
                 <view name="panels" width="100%" bgcolor="f0f0f0" 
                     height="${this.parent.height-this.parent.buttons.height+1}">
 
                     <lupanel name="lu"></lupanel>
-                    <view name="rrd" width="100%" height="100%" bgcolor="f8f8f8" visible="false">
-                    </view>
+                    <rrdpanel name="rrd"></rrdpanel>
                     <view name="my089" width="100%" height="100%" bgcolor="f8f8f8" visible="false">
                     </view>
                     <view name="kxd" width="100%" height="100%" bgcolor="f8f8f8" visible="false">
                     </view>
                 </view>
-                <view name="buttons" width="100%" height="140" bgcolor="#c0c0c0" border="2"
-                 y="${this.parent.height-this.height}">
-                    <spacedlayout axis="x" inset="2" spacing="5" updateparent="false"></spacedlayout>
-                    <class name="sitebutton" extends="buttonbase"  
-                        y="${this.selected?-5:5}" width="150" height="120" texty="2"
+                <view name="buttons" width="100%" height="130" bgcolor="#e0e0e0" topborder="10"
+                 y="${this.parent.height-this.height-10}">
+                    <spacedlayout axis="x" inset="0" spacing="0" updateparent="false"></spacedlayout>
+                    <class name="sitebutton" extends="buttonbase"  opacity="${this.selected?1:1}"
+                        y="${this.selected?-0:5}" width="150" height="120" texty="2"
                         bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" bordercolor="ffffff"
-                        border="2"  cornerradius="4" leftpadding="11" toppadding="15">
+                        border="0"  cornerradius="0" padding="15">
                         <attribute name="basecolor" type="string"/>
                         <attribute name="textsize"  type="number" value="80"/>
                         <method name="visualize">
                             this.super();
                             this.label.setAttribute("fontsize", this.textsize);
-                            this.label.setAttribute("bold", true);
+                            this.label.setAttribute("bold", false);
                             this.label.setAttribute("fontfamily", '微软雅黑');
                         </method>
                         <handler event="onactivated">
                             this.setAttribute('selected', !this.selected);
+                            <!-- if (this.selected) this.moveToFront(); -->
                         </handler>
                         <handler event="onclick" args="sel">
                             this.parent.selectButton(this);
@@ -45,7 +46,7 @@
                     </class>
                     <sitebutton name="lu" text="陆" selected="true"
                          gradient="['linear', 45, '#1b2a69 40%', '#5556aa']"
-                         basecolor="1b2a69">
+                         basecolor="2b3a79">
                         <!-- //orange1 e25517   orange2 fd8238 
                         //blue1 1b2a69 blue2 5556aa
                         -->

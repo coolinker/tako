@@ -1,9 +1,9 @@
-<class name="lupanel" width="100%" height="100%" bgcolor="f8f8f8" border="2" bordercolor="1b2a69">
+<class name="rrdpanel" width="100%" height="100%" bgcolor="f8f8f8" border="2" bordercolor="1b2a69">
     
     <attribute name="basecolor" value="1b2a69" type="string"/>
-    <attribute name="title" type="string" value="陆金所"/>
-    <view width="100%" height="120" gradient="['linear', 45, '#1b2a69 40%', '#5556aa']" leftpadding="15" toppadding="15" >
-        <text text="${this.parent.parent.title}"  fontsize="80" bold="false" fontfamily="微软雅黑" color="ffffff"></text>
+    <attribute name="title" type="string" value="人人贷"/>
+    <view width="100%" height="120" gradient="['linear', 45, '#80c232 40%', '#a0d272']" leftpadding="15" toppadding="15" >
+        <text text="${this.parent.parent.title}"  fontsize="80" bold="false" color="ffffff"></text>
     </view>
     <view name="scrollp" y="120"  width="100%" height="${this.parent.height-this.y}"  scrollable="true">
          <view name="scrollv" padding="0" width="100%" height="auto">
@@ -14,16 +14,12 @@
                 <labelinput name="user" labelcolor="808080" label="用户名:" labelwidth="250" width="700" 
                     border="1" bordercolor="808080" topleftcornerradius="10" toprightcornerradius="10" x="center"></labelinput>
                 <labelinput name="pwd"  labelcolor="808080" label="密码:" labelwidth="250" width="700"
-                    leftborder="1" rightborder="1" bordercolor="808080" inputtype="password" x="center">
+                    leftborder="1" rightborder="1" bottomborder="1" bordercolor="808080" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password" x="center">
 
                 </labelinput>
-                <labelinput name="jypwd" labelcolor="808080" label="交易密码:" labelwidth="250" width="700"
-                    border="1" bordercolor="808080" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password" x="center"></labelinput>
-                <infobutton ignorelayout="true" x="right"/>
-                <view height="30"/>
-               
+                
                 <text with="ajaxsupport"  text="查看账户信息" color="orange" 
-                    clickable="true" x="${this.parent.jypwd.x}" fontsize="40" italic="true" underline="true"
+                    clickable="true" x="${this.parent.pwd.x}" fontsize="40" italic="true" underline="true"
                     url="https://192.168.128.92:8000/api?action=getAccountInfo">
                     <method name="getParamJson">
                         var user = this.parent.user.getValue();

@@ -66,10 +66,10 @@
              
        </handler>
     </view>
-    <text name="startLabel" fontsize="56" color="808080" fontfamily="roboto"></text>
-    <text name="endLabel"  fontsize="56" color="808080" fontfamily="roboto"></text>
-    <text name="rangeLeftLabel"  fontsize="56" color="808080" fontfamily="roboto"></text>
-    <text name="rangeRightLabel"  fontsize="56" color="808080" fontfamily="roboto"></text>
+    <text name="startLabel" fontsize="40" color="808080" fontfamily="roboto"></text>
+    <text name="endLabel"  fontsize="40" color="808080" fontfamily="roboto"></text>
+    <text name="rangeLeftLabel"  fontsize="40" color="808080" fontfamily="roboto"></text>
+    <text name="rangeRightLabel"  fontsize="40" color="808080" fontfamily="roboto"></text>
     
     <handler event="onwidth" reference="this.rangeLeftLabel" method="updateRangeLabelDisplay"></handler>
     <handler event="onwidth" reference="this.rangeRightLabel" method="updateRangeLabelDisplay"></handler>
@@ -283,13 +283,13 @@
         this.rangeLeftLabel.setAttribute("x", leftLabelX);
         
         this.rangeLeftLabel.setAttribute("bold", left.isdragging?true:false);
-        this.rangeLeftLabel.setAttribute("fontsize", left.isdragging?64:56);
+        this.rangeLeftLabel.setAttribute("fontsize", left.isdragging?64:40);
         if (left.isdragging) this.rangeLeftLabel.moveToFront();
         var rightLabelX = this.rangeRight.x+this.rangeRight.width/2 - this.rangeRightLabel.width/2;
         this.rangeRightLabel.setAttribute("x", rightLabelX);
         
         this.rangeRightLabel.setAttribute("bold", right.isdragging?true:false);
-        this.rangeRightLabel.setAttribute("fontsize", right.isdragging?64:56);
+        this.rangeRightLabel.setAttribute("fontsize", right.isdragging?64:40);
         if (right.isdragging) this.rangeRightLabel.moveToFront();
 
         if (this.rangeLeftLabel.x+this.rangeLeftLabel.width > this.rangeRightLabel.x) {
@@ -302,8 +302,8 @@
             }
             
         } else {
-            this.rangeLeftLabel.setAttribute("y", left.isdragging?15:25);
-            this.rangeRightLabel.setAttribute("y", right.isdragging?15:25); 
+            this.rangeLeftLabel.setAttribute("y", left.isdragging?-5:25);
+            this.rangeRightLabel.setAttribute("y", right.isdragging?-5:25); 
         }
          this.rangeLeftLabel.setAttribute("text", this.leftvalue);
         this.rangeRightLabel.setAttribute("text", this.rightvalue);

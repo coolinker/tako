@@ -17,7 +17,7 @@ function rollNewProductCheck(callback) {
 }
 
 function loopNewTransfer(startId, callback) {
-    if (this.loopjob) {
+    if (me.loopjob) {
         console.log("loopNewTransfer loopjob existed");
         return;
     }
@@ -91,91 +91,92 @@ function loopNewTransfer(startId, callback) {
 
     loopjob.startLooping();
     me.loopjob = loopjob;
+
 }
 
-function _loopNewTransfer(startId, callback) {
-    if (this.loopjob) {
-        console.log("loopNewTransfer loopjob existed");
-        return;
-    }
+// function _loopNewTransfer(startId, callback) {
+//     if (this.loopjob) {
+//         console.log("loopNewTransfer loopjob existed");
+//         return;
+//     }
 
-    var transferId = Number(startId);
-    var transferIdStart = 0;
-    var hasNew = false;
-    var LOOP_INTERVAL = 300;
-    var loopjob = new LoopJob().config({
-        parallelRequests: 2,
-        url: "http://api.we.com/2.0/loantransfer/detail.action",
-        loopInterval: LOOP_INTERVAL,
-        timeout: 1.8 * LOOP_INTERVAL,
-        httpMethod: "POST",
-        // urlInjection: function(parallelIndex, url) {
-        //     return url + "?transferId=" + (transferId + parallelIndex);
-        // },
-        optionsInjection: function(parallelIndex, options) {
-            //options.transferId = (transferId + parallelIndex);
-            if (transferId - transferIdStart > 100) {
-                logutil.log("***transferId rolling", transferId);
-                transferIdStart = transferId;
-            }
-            options.form = {
-                transferId: (transferId + parallelIndex),
-                clientVersion: "30100",
-                version: "2.0"
-            };
+//     var transferId = Number(startId);
+//     var transferIdStart = 0;
+//     var hasNew = false;
+//     var LOOP_INTERVAL = 300;
+//     var loopjob = new LoopJob().config({
+//         parallelRequests: 2,
+//         url: "http://api.we.com/2.0/loantransfer/detail.action",
+//         loopInterval: LOOP_INTERVAL,
+//         timeout: 1.8 * LOOP_INTERVAL,
+//         httpMethod: "POST",
+//         // urlInjection: function(parallelIndex, url) {
+//         //     return url + "?transferId=" + (transferId + parallelIndex);
+//         // },
+//         optionsInjection: function(parallelIndex, options) {
+//             //options.transferId = (transferId + parallelIndex);
+//             if (transferId - transferIdStart > 500) {
+//                 logutil.log("***transferId rolling", transferId);
+//                 transferIdStart = transferId;
+//             }
+//             options.form = {
+//                 transferId: (transferId + parallelIndex),
+//                 clientVersion: "30100",
+//                 version: "2.0"
+//             };
 
-            return options;
-        },
-        responseHandler: function(error, response, body) {
-            if (error) {
-                console.log("loanTransferDetail error:", error)
-            } else if (response.statusCode == 200) {
-                var loanTranfsferVo = JSON.parse(body).data.loanTranfsferVo;
-                var loanVo = JSON.parse(body).data.loanVo;
-                if (loanTranfsferVo) {
-                    var transferObj = {
-                        transferId: Number(loanTranfsferVo.id),
-                        //transferIdCode: transferIdCode,
-                        interest: Number(loanVo.interest),
-                        sharesAvailable: Number(loanTranfsferVo.share),
-                        pricePerShare: Number(loanTranfsferVo.pricePerShare),
-                        discountRatio: loanTranfsferVo.discountRatio,
-                        borrowerLevel: loanVo.borrowerLevel,
-                        source: "www.renrendai.com",
-                        publishTime: new Date(),
-                        producedTime: new Date()
-                    };
-                    hasNew = true;
-                    console.log("transferObj", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable)
-                    callback(transferObj);
+//             return options;
+//         },
+//         responseHandler: function(error, response, body) {
+//             if (error) {
+//                 console.log("loanTransferDetail error:", error)
+//             } else if (response.statusCode == 200) {
+//                 var loanTranfsferVo = JSON.parse(body).data.loanTranfsferVo;
+//                 var loanVo = JSON.parse(body).data.loanVo;
+//                 if (loanTranfsferVo) {
+//                     var transferObj = {
+//                         transferId: Number(loanTranfsferVo.id),
+//                         //transferIdCode: transferIdCode,
+//                         interest: Number(loanVo.interest),
+//                         sharesAvailable: Number(loanTranfsferVo.share),
+//                         pricePerShare: Number(loanTranfsferVo.pricePerShare),
+//                         discountRatio: loanTranfsferVo.discountRatio,
+//                         borrowerLevel: loanVo.borrowerLevel,
+//                         source: "www.renrendai.com",
+//                         publishTime: new Date(),
+//                         producedTime: new Date()
+//                     };
+//                     hasNew = true;
+//                     //console.log("transferObj", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable)
+//                     callback(transferObj);
 
-                    var req = response.request;
-                    var tid = req.__options.transferId;
-                    if (tid >= transferId) {
-                        if (transferObj.interest >= 10 && transferObj.sharesAvailable >= 1) {
-                            logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
-                        }
+//                     var req = response.request;
+//                     var tid = req.__options.transferId;
+//                     if (tid >= transferId) {
+//                         if (transferObj.interest >= 10 && transferObj.sharesAvailable >= 1) {
+//                             logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
+//                         }
 
-                        transferId = tid + 1;
-                    }
-                } else {
-                    if (hasNew) {
-                        hasNew = false;
-                        console.log("-|", transferId, new Date().toLocaleTimeString())
-                    }
+//                         transferId = tid + 1;
+//                     }
+//                 } else {
+//                     if (hasNew) {
+//                         hasNew = false;
+//                         //console.log("-|", transferId, new Date().toLocaleTimeString())
+//                     }
 
-                }
+//                 }
 
-            } else {
-                console.log("?????????????????????????????? statusCode:", response.statusCode)
-            }
+//             } else {
+//                 console.log("?????????????????????????????? statusCode:", response.statusCode)
+//             }
 
-        }
-    });
+//         }
+//     });
 
-    loopjob.startLooping();
-    me.loopjob = loopjob;
-}
+//     loopjob.startLooping();
+//     me.loopjob = loopjob;
+// }
 
 exports.stopRollingNewProductCheck = stopRollingNewProductCheck;
 function stopRollingNewProductCheck() {
