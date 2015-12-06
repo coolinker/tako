@@ -5,12 +5,12 @@
     <attribute name="labelcolor" type="string"/>
     <attribute name="inputtype" value="text" type="string"/>
     <text name="labelView" text="${this.parent.label}" color="${this.parent.labelcolor}"
-        bordercolor="808080" bgcolor="f0f0f0" y="bottom" height="100%" toppadding="10"
-        textalign="${this.parent.labelalign}" width="${this.parent.labelwidth}" fontsize="56"
+        bordercolor="f0f0f0" bgcolor="f0f0f0" y="bottom" height="100%" toppadding="15"
+        textalign="${this.parent.labelalign}" width="${this.parent.labelwidth}" fontsize="40"
         topleftcornerradius="${this.parent.topleftcornerradius}"
         bottomleftcornerradius="${this.parent.bottomleftcornerradius}"></text>
     <inputtext name="inp" x="${this.parent.labelwidth+2}" y="0" width="${this.parent.width-this.parent.labelView.x-this.parent.labelView.width}"
-         fontsize="56" height="80">
+         fontsize="40" height="80">
     </inputtext>
 
     <handler event="oninit">

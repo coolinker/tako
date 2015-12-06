@@ -1,4 +1,4 @@
-<class name="lupanel" width="100%" height="100%" bgcolor="f8f8f8" border="2" bordercolor="1b2a69">
+<class name="lupanel" width="100%" height="100%" bgcolor="ffffff" border="2" bordercolor="1b2a69">
     
     <attribute name="basecolor" value="1b2a69" type="string"/>
     <attribute name="title" type="string" value="陆金所"/>
@@ -7,24 +7,27 @@
     </view>
     <view name="scrollp" y="120"  width="100%" height="${this.parent.height-this.y}"  scrollable="true">
          <view name="scrollv" padding="0" width="100%" height="auto">
-            <spacedlayout axis="y" spacing="30" updateparent="true" inset="80" />
+            <spacedlayout axis="y" spacing="15" updateparent="true" inset="60" />
             
             <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="false">
                 <spacedlayout axis="y" spacing="0" updateparent="true" />
-                <labelinput name="user" labelcolor="808080" label="用户名:" labelwidth="250" width="700" 
-                    border="1" bordercolor="808080" topleftcornerradius="10" toprightcornerradius="10" x="center"></labelinput>
-                <labelinput name="pwd"  labelcolor="808080" label="密码:" labelwidth="250" width="700"
-                    leftborder="1" rightborder="1" bordercolor="808080" inputtype="password" x="center">
+                <labelinput name="user" labelcolor="black" label="用户名:" labelwidth="250" width="700" 
+                    border="2" bordercolor="f0f0f0" topleftcornerradius="10" toprightcornerradius="10" x="center"></labelinput>
+                <labelinput name="pwd"  labelcolor="black" label="密码:" labelwidth="250" width="700"
+                    leftborder="2" rightborder="2" bordercolor="f0f0f0" inputtype="password" x="center">
 
                 </labelinput>
-                <labelinput name="jypwd" labelcolor="808080" label="交易密码:" labelwidth="250" width="700"
-                    border="1" bordercolor="808080" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password" x="center"></labelinput>
+                <labelinput name="jypwd" labelcolor="black" label="交易密码:" labelwidth="250" width="700"
+                    border="2" bordercolor="f0f0f0" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password" x="center"></labelinput>
                 <infobutton ignorelayout="true" x="right"/>
-                <view height="30"/>
+                <view height="10"/>
                
-                <text with="ajaxsupport"  text="查看账户信息" color="orange" 
-                    clickable="true" x="${this.parent.jypwd.x}" fontsize="40" italic="true" underline="true"
+                <text with="ajaxsupport"  text="查看账户信息" color="orange"
+                    clickable="true" fontsize="40" italic="true" underline="true"
                     url="https://192.168.128.92:8000/api?action=getAccountInfo">
+                    <handler event="onwidth">
+                        this.setAttribute("x", this.parent.jypwd.x+this.parent.jypwd.width-this.width)
+                    </handler>
                     <method name="getParamJson">
                         var user = this.parent.user.getValue();
                         var pwd = this.parent.pwd.getValue();
@@ -116,27 +119,37 @@
 
             </section>
             <view name="seperator" height="50"/>
-            <section name="bidSettings" title="投标设置"  width="100%">
-                <spacedlayout axis="y" spacing="100" updateparent="true"  inset="50"/>
+            <section name="bidSettings" title="投标设置"  width="100%" bottompadding="80">
+                <spacedlayout axis="y" spacing="80" updateparent="true"  inset="0"/>
 
-                <calliper name="interest" width="100%" title="标的收益率区间" startvalue="0" endvalue="20"
-                 leftvalue="8" rightvalue="20" roundsize="0.5" minrangevalue="1" unit="%">
-                
+                <fundtypeselectior width="100%" height="auto" data='[{"label":"稳盈-安e ", "types":[["新", false], ["转", true]]}, {"label":"稳盈-安e+", "types":[["新", false], ["转", true]]}]'>
+                    <handler event="onchange" args="item">
+                        console.log("onchange", this.data, item)
+                    </handler>
+                </fundtypeselectior>
+                <calliper name="interest" width="100%" title="标的收益率区间"  unit="%"
+                    rangesliderattributes='{"startvalue": 0, "endvalue": 20, "leftvalue": 8, "rightvalue": 20, "roundsize": 0.5, "minrangevalue": 1}'>
+                    
                 </calliper>
                 
-                <calliper name="price"  width="100%"  title="标的价格区间" startvalue="0" endvalue="5000"
-                    leftvalue="500" rightvalue="1000" roundsize="100" minrangevalue="200" >
+                <calliper name="price"  width="100%"  title="标的价格区间"
+                    rangesliderattributes='{"startvalue": 0, "endvalue": 5000, "leftvalue": 500, "rightvalue": 1000, "roundsize": 100, "minrangevalue": 200}'>
                     <handler event="onrangevalues" args="values">
                         var balance = this.parent.balance
                         balance.updateRangeValues({left:balance.leftvalue, right: balance.leftvalue+values.left});
                     </handler>  
                 </calliper>
 
-                <calliper name="balance" width="100%" title="保留账户余额区间" startvalue="0" endvalue="5000"
-                    leftvalue="0" rightvalue="500" roundsize="100" minrangevalue="100" rangemasteronleft="true" rangerightdraggable="false">
+                <calliper name="balance" width="100%" title="保留账户余额区间" 
+                    rangesliderattributes='{"startvalue": 0, "endvalue": 5000, "leftvalue": 0, "rightvalue": 500, "roundsize": 100, "minrangevalue": 100, "rangemasteronleft":true, "rangerightdraggable":false}'>
                   
                 </calliper>
-
+                <method name="handlePerviewMode" args="ispreview">
+                    console.log("handlePerviewMode", ispreview)
+                    this.content.interest.showSlider(!ispreview);
+                    this.content.price.showSlider(!ispreview);
+                    this.content.balance.showSlider(!ispreview);
+                </method>
                 <method name="getSummary"><![CDATA[
                     var str = "";
                     var interest = this.content.interest;
@@ -151,7 +164,7 @@
                 </method>
             </section>
 
-            <view width="100%" height="auto">
+            <view width="100%" height="150">
                 <method name="showBtn" args="btn">
                     var buttons = this.subviews;
                     for (var i=0; buttons.length>i; i++) {

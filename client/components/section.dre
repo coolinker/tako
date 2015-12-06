@@ -1,7 +1,7 @@
-<class name="section" defaultplacement="content" height="auto" topborder="1" bottomborder="1" bordercolor="808080" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="50">
+<class name="section" defaultplacement="content" height="auto" topborder="1" bottomborder="1" bordercolor="c0c0c0" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="30">
     <attribute name="issummarymode" type="boolean" value="false"/>
     <attribute name="showpreviewbutton" type="boolean" value="true"/>
-    <text name="titleText" text="${this.parent.title}" bgcolor="f8f8f8" color="808080" fontsize="60" y="-30"></text>
+    <text name="titleText" text="${this.parent.title}" bgcolor="ffffff" color="black" fontsize="50" y="-30"></text>
     <text color="orange"  clickable="true" x="right" fontsize="40" italic="true" fontsize="60" bold="true">
         <handler event="oninit">
             this.updateDisplay();
@@ -15,8 +15,8 @@
         </handler>
 
         <method name="updateDisplay">
-            this.setAttribute("visible", !this.classroot.ispreviewmode ? this.classroot.showpreviewbutton : true);
-            this.setAttribute("text", this.classroot.ispreviewmode ? "↩" : "预览");
+            //this.setAttribute("visible", !this.classroot.ispreviewmode ? this.classroot.showpreviewbutton : true);
+            //this.setAttribute("text", this.classroot.ispreviewmode ? "↩" : "预览");
         </method>
     </text>
     <view name="content" y="80" width="100%">
@@ -29,6 +29,10 @@
     </view>
     
     <handler event="onispreviewmode" args="ispreview">
+        this.handlePerviewMode(ispreview);
+    </handler>
+    
+    <method name="handlePerviewMode" args="ispreview">
         if (ispreview) {
             this.updateSummary();
             this.previewView.setAttribute("height", this.content.height);
@@ -39,8 +43,8 @@
         this.content.setAttribute("visible", !ispreview);
         this.previewView.setAttribute("visible", ispreview);
 
-    </handler>
-
+    </method>
+    
     <method name="updateSummaryHeight">
         var toh = this.previewView.txt.sprite.platformObject.scrollHeight;
         var dur = 300;

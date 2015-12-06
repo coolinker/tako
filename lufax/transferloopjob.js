@@ -18,10 +18,12 @@ function detectLastProductId(callback) {
     isDetecting = true;
     var url = 'http://list.lu.com/list/transfer/anyi?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&trade=&isCx=&currentPage=';
     simplehttp.GET(url + 10000, {}, function(error, response, body) {
-        if (!body) return;
-
+        if (!body) {
+            isDetecting = false;
+            detectLastProductId(callback);
+            return;
+        }
         var no = htmlparser.getValueFromBody('<span class="pagination-no current">', '</span>', body);
-
         if (!no) {
             logutil.log("ERROR detectLastProductId");
             isDetecting = false;
@@ -29,16 +31,14 @@ function detectLastProductId(callback) {
         } else {
             var page = Number(no);
             simplehttp.GET(url + page, {}, function(error, response, body) {
-
                 var newlineregexp = /\n/g;
                 var ids = body ? htmlparser.getSubStringsFromBody('productId=', 'target="_blank"', body, newlineregexp) : null;
-
+                
                 if (!ids) {
                     isDetecting = false;
                     detectLastProductId(callback);
                     logutil.log("detectLastProductId failed", page)
                 } else {
-
                     var lidstr = ids[ids.length - 1];
                     var lastPid = htmlparser.getValueFromBody('productId=', '\'', lidstr);
                     callback(Number(lastPid));
@@ -70,19 +70,17 @@ function detectLastPage(callback) {
 }
 
 exports.rollNewProductCheck = rollNewProductCheck;
-
 function rollNewProductCheck(callback) {
     if (isDetecting) return;
     var transfers = [];
     detectLastProductId(function(productId) {
+        console.log("productId=", productId)
         loopNewTransfer_browser(productId, function(product) {
             return callback(product);
         })
 
     })
 }
-
-exports.rollNewProductCheck = rollNewProductCheck;
 
 function randomNumber() {
     return Math.round(Math.random() * 100000);
@@ -104,6 +102,7 @@ function loopNewTransfer_browser(startId, callback) {
         timeout: 1.8 * LOOP_INTERVAL,
         httpMethod: "GET",
         urlInjection: function(parallelIndex, url) {
+
             if (productId - productIdStart > 500) {
                 logutil.log("***productId rolling", productId);
                 productIdStart = productId;
@@ -135,8 +134,8 @@ function loopNewTransfer_browser(startId, callback) {
                                 producedTime: new Date()
                             });
 
-                            if (productObj.amount < 200)
-                            logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
+                            if (productObj.amount < 5000)
+                                logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
 
                         } else {
                             //logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode)
@@ -154,9 +153,10 @@ function loopNewTransfer_browser(startId, callback) {
                     // logutil.log("e", e.stack)
                     // console.log(body)    
                 } finally {
+                    // logutil.log("detectLastProductId", productObj  ? productObj.productId: "no id", catchException)
                     if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 10000) {
                         lastDetectTime = new Date();
-                        //logutil.log("detectLastProductId", productId)
+                        // logutil.log("detectLastProductId-----", productId)
                         detectLastProductId(function(lastProductId) {
                             if (lastProductId > productId) {
                                 productId = lastProductId;

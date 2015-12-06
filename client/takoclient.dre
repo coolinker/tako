@@ -8,12 +8,13 @@
             <include href="./components/ajaxbutton.dre"/>
             <include href="./components/section.dre"/>
             <include href="./components/labelinput.dre"/>
+            <include href="./components/fundtypeselector.dre"/>
             <include href="./lupanel.dre"/>
             <include href="./rrdpanel.dre"/>
+            
             <view width="100%" height="1522">
                 <view name="panels" width="100%" bgcolor="f0f0f0" 
                     height="${this.parent.height-this.parent.buttons.height+1}">
-
                     <lupanel name="lu"></lupanel>
                     <rrdpanel name="rrd"></rrdpanel>
                     <view name="my089" width="100%" height="100%" bgcolor="f8f8f8" visible="false">

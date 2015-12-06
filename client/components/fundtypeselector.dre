@@ -1,0 +1,88 @@
+<class name="fundtypeselectorsubitem" extends="text" leftpadding="11" toppadding="10" border="0" color="ffffff"  cornerradius="40" fontsize="55" 
+        bgcolor="e0e0e0" height="80" width="80" bold="false">
+        <attribute name="selected" value="false" type="boolean"/>
+        <method name="render">
+            if (this.selected) {
+                this.setAttribute("bgcolor", "orange");
+            } else {
+                this.setAttribute("bgcolor", "e0e0e0");
+            }
+        </method>
+        <handler event="ondata" args="data">
+            this.setAttribute("text", data[0])
+            this.setAttribute("selected", data[1]);
+            this.__data = data;
+        </handler>
+        <handler event="onselected">
+            this.render();
+            if (this.__data) {
+                this.__data[1] = this.selected;
+            }
+            this.parent.selectionChagned(this.__data);
+        </handler>
+        <handler event="onclick">
+            this.setAttribute("selected", !this.selected);
+        </handler>
+</class>
+
+<class name="fundtypeselectoritem" height="auto" width="100%" bottomborder="1" bordercolor="black"
+    toppadding="10" bottompadding="10">
+    <resizelayout spacing="10" axis="x" updateparent="true"/>
+    <text name="label" fontsize="40" layouthint='{"weight":1}' y="middle">
+    </text>
+    <replicator name="rep" classname="fundtypeselectorsubitem"/>
+    <handler event="ondata" args="data">
+        this.label.setAttribute("text", data.label);
+        this.rep.setAttribute("data", data.types)
+        this.subnodes[0].update();
+        console.log("------------", this)
+    </handler>
+    <method name="selectionChagned" args="typeChanged">
+        this.parent.classroot.doAfterChange(this.data, typeChanged);
+    </method>
+</class>
+
+<class name="fundtypeselectior" bottompadding="30">
+    <attribute name="title" value="标的类型:" type="string"/>
+    <attribute name="data" value="" type="expression"/><!-- data='[{"label":"稳盈-安e ", "types":[["新", false], ["转", true]]}, {"label":"稳盈-安e+", "types":[["新", false], ["转", true]]}]' -->
+    <text name="titleText" fontsize="40"/>
+    <view name="list" y="50" cornerradius="10" bgcolor="f0f0f0" width="100%" height="auto"
+        toppadding="20" bottompadding="20" leftpadding="50"  rightpadding="40">
+        <spacedlayout axis="y" inset="0" spacing="0" updateparent="true"/>
+        <replicator name="rep" classname="fundtypeselectoritem"/>
+    </view>
+    <!-- <handler event="onchange" args="item">
+        console.log("onchange", this.data, item)
+    </handler> -->
+    <method name="initNode" args="p, attrs">
+        this.super();
+        this.list.rep.setAttribute("data", this.data);
+    </method>
+
+    <method name="doAfterChange" args="itemData, typeChanged">
+        this.updateTitleText();
+    </method>
+
+    <method name="updateTitleText"><![CDATA[
+        var tt = "";
+        for (var i=0; i<this.data.length; i++) {
+            var l = this.data[i].label;
+            var types = this.data[i].types;
+            var s = "";
+            for (var j=0; j<types.length; j++) {
+                if (types[j][1]) {
+                    if (s) s += ", ";
+                    s += types[j][0];
+                }
+            }
+            if (!s) continue;
+            if (tt) tt += ", ";
+            tt += l + "(" + s + ")";
+        }
+        //this.titleText.setAttribute("text", this.title + tt);
+        var titlet = this.title + "<span style='color:orange;font-size: 40px;line-height:1'>" +tt+ "</span>";
+        
+        this.titleText.sprite.platformObject.innerHTML = titlet;
+    ]]>
+    </method>
+</class>
