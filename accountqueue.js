@@ -40,15 +40,15 @@ function loginAccount(accountInfo, callback) {
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
     accountInfo.locked = true;
-    loginjobs.login(accountInfo, function(cookieJar) {
+    loginjobs.login(accountInfo, function(cookieJar, info) {
         accountInfo.cookieJar = cookieJar;
         if (cookieJar === null) {
-            logutil.log("addAccount login failed", accountInfo);
+            logutil.log("addAccount login failed", accountInfo, info);
         } else {
             accountInfo.loginTime = new Date();
         }
         accountInfo.locked = false;
-        if (callback) callback(accountInfo);
+        if (callback) callback(accountInfo, info);
     })
 }
 

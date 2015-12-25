@@ -130,7 +130,7 @@ function loopNewTransfer_browser(startId, callback) {
                                 interest: productObj.interestRateDisplay,
                                 price: productObj.price,
                                 publishTime: productObj.publishedAtDateTime,
-                                source: "www.lufax.com",
+                                source: "www.lu.com",
                                 producedTime: new Date()
                             });
 
@@ -236,7 +236,7 @@ function loopNewTransfer_mobile(startId, callback) {
                                 interest: productObj.intrestRateDisplay,
                                 price: productObj.amount,
                                 publishTime: productObj.publishedAt,
-                                source: "www.lufax.com",
+                                source: "www.lu.com",
                                 producedTime: new Date()
                             });
 

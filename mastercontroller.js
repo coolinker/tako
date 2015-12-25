@@ -1,6 +1,6 @@
 var logutil = require("./logutil");
 var rrdtransferloopjob = require("./rrd/transferloopjob");
-var lufaxtransferloopjob = require("./lufax/transferloopjob");
+var lufaxtransferloopjob = require("./lu/transferloopjob");
 var JOBS_OBJ = {};
 var ACCOUNT_TYPES = require("./accounttypes");
 for (var att in ACCOUNT_TYPES) {

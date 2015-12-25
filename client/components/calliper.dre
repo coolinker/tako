@@ -31,9 +31,16 @@
 
     <method name="showSlider" args="b">
         var to = b? 250: 50;
-        this.animate({attribute:'height', to: to , duration: 100});
+        this.animate({attribute:'height', to: to , duration: 200, motion:'linear'});
     </method>
 
+    <method name="updateRangeValues" args="values">
+        this._slider.updateRangeValues(values);
+    </method>
+
+    <method name="getRangeValues">
+        return this._slider.getRangeValues();
+    </method>
 </class>
 
 <class name="rangeslider" width="500" height="200" bgcolor="f0f0f0" cornerradius="10"

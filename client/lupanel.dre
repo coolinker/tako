@@ -1,7 +1,11 @@
 <class name="lupanel" width="100%" height="100%" bgcolor="ffffff" border="2" bordercolor="1b2a69">
-    
+    <attribute name="accountdao" type="object"/>
     <attribute name="basecolor" value="1b2a69" type="string"/>
     <attribute name="title" type="string" value="陆金所"/>
+    <method name="initNode" args="p, attrs">
+        this.super();
+        this.accountdao = new dr.accountdao(this, {source: "www.lu.com"});        
+    </method>
     <view width="100%" height="120" gradient="['linear', 45, '#1b2a69 40%', '#5556aa']" leftpadding="15" toppadding="15" >
         <text text="${this.parent.parent.title}"  fontsize="80" bold="false" fontfamily="微软雅黑" color="ffffff"></text>
     </view>
@@ -9,112 +13,49 @@
          <view name="scrollv" padding="0" width="100%" height="auto">
             <spacedlayout axis="y" spacing="15" updateparent="true" inset="60" />
             
-            <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="false">
+            <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="true">
                 <spacedlayout axis="y" spacing="0" updateparent="true" />
-                <labelinput name="user" labelcolor="black" label="用户名:" labelwidth="250" width="700" 
-                    border="2" bordercolor="f0f0f0" topleftcornerradius="10" toprightcornerradius="10" x="center"></labelinput>
-                <labelinput name="pwd"  labelcolor="black" label="密码:" labelwidth="250" width="700"
-                    leftborder="2" rightborder="2" bordercolor="f0f0f0" inputtype="password" x="center">
+                <labelinput name="user" labelcolor="black" label="用户名:" labelwidth="220" width="750" 
+                    border="2" bordercolor="f0f0f0" topleftcornerradius="10" toprightcornerradius="10"></labelinput>
+                <labelinput name="pwd"  labelcolor="black" label="密码:" labelwidth="220" width="750"
+                    leftborder="2" rightborder="2" bordercolor="f0f0f0" inputtype="password">
 
                 </labelinput>
-                <labelinput name="jypwd" labelcolor="black" label="交易密码:" labelwidth="250" width="700"
-                    border="2" bordercolor="f0f0f0" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password" x="center"></labelinput>
+                <labelinput name="jypwd" labelcolor="black" label="交易密码:" labelwidth="220" width="750"
+                    border="2" bordercolor="f0f0f0" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password"></labelinput>
                 <infobutton ignorelayout="true" x="right"/>
                 <view height="10"/>
                
-                <text with="ajaxsupport"  text="查看账户信息" color="orange"
-                    clickable="true" fontsize="40" italic="true" underline="true"
-                    url="https://192.168.128.92:8000/api?action=getAccountInfo">
+                <text text="查看账户信息" color="orange"
+                    clickable="true" fontsize="40" italic="true" underline="true">
                     <handler event="onwidth">
                         this.setAttribute("x", this.parent.jypwd.x+this.parent.jypwd.width-this.width)
                     </handler>
-                    <method name="getParamJson">
+
+                    <handler event="onclick">
                         var user = this.parent.user.getValue();
                         var pwd = this.parent.pwd.getValue();
                         var jypwd = this.parent.jypwd.getValue();
-                        var lufaxAcc = {
+                        var acc = {
                             user: user,
-                            source: "www.lufax.com",
+                            source: "www.lu.com",
                             password: pwd,
-                            tradePassword: jypwd
+                            tradepassword: jypwd
                          };
+                        this.classroot.accountdao.reset(acc);
+                        var me = this;
+                        this.classroot.accountdao.updateAccountInfo(function(result){
+                            console.log("onclick----", result)
+                            me.parent.parent.updateSummary();
+                        });
 
-                         return  lufaxAcc;
-                    </method>
-
-                    <method name="validateBeforeSend">
-                        return this.parent.parent.validateInput();
-                    </method>
-
-                    <method name="validationFailed">
-                        //this.parent.showBtn("returnBtn");
                         this.parent.parent.setAttribute("ispreviewmode", true);
-                    </method>
+                    </handler>
 
-                    <method name="beforeSend">
-                        this.parent.parent.setAttribute("ispreviewmode", true);
-                    </method>
-
-                    <method name="afterResponse" args="json"><![CDATA[
-                        var str = "<span style='color:orange;font-size: 80px;line-height:1'>" + json.user+"</span><br>";
-                        str += "可投金额：<span style='color:orange;font-size: 60px;line-height:2'>" + json.availableBalance+"</span>元<br>";
-                        str += "登陆时间："+new Date(json.loginTime).toLocaleString();
-                        this.parent.parent.setSummaryText(str)
-                        this.parent.parent.updateSummaryHeight();
-                    ]]>
-                    </method>
-
-                    <method name="afterResponseError" args="json">
-                        //this.parent.showBtn("returnBtn");
-                        console.log("afterResponseError", json);
-                    </method>
                 </text>
 
-                <method name="validateInput"><![CDATA[
-                    var user = this.content.user.getValue();
-                    var pwd = this.content.pwd.getValue();
-                    var jypwd = this.content.jypwd.getValue();
-                    return user && pwd && jypwd;
-                    ]]>
-                </method>
-
                 <method name="getSummary">
-                    if (this.validateInput()) {
-                        return this.waitingSummary();
-                    } else {
-                        return this.validationSummary();
-                    }
-                </method>
-
-                <method name="validationSummary"><![CDATA[
-                    var user = this.content.user.getValue();
-                    var pwd = this.content.pwd.getValue();
-                    var jypwd = this.content.jypwd.getValue();
-
-                    var str = "";
-                    if (!user) {
-                        str += "<span style='color:red'>*用户名不能为空</span><br>";
-                    } else {
-                        str += "用户名：<span style='color:orange;font-size: 80px;line-height:1'>" + user+"</span><br>";
-                    }
-
-                    if (!pwd) {
-                        str += "<span style='color:red'>*密码不能为空</span><br>";
-                    }
-
-                    if (!jypwd) {
-                        str += "<span style='color:red'>*交易密码不能为空</span><br>";
-                    }
-
-                    return str;
-                ]]>
-                </method>
-
-                <method name="loginSummary" args="loginObj"><![CDATA[
-                    var str  = "";
-                    str = "用户名：<span style='color:orange;font-size: 80px;line-height:1'>" + user+"</span><br>";
-                    return str;
-                    ]]>
+                    return this.classroot.accountdao.getStatusSummary();
                 </method>
 
             </section>
@@ -122,11 +63,12 @@
             <section name="bidSettings" title="投标设置"  width="100%" bottompadding="80">
                 <spacedlayout axis="y" spacing="80" updateparent="true"  inset="0"/>
 
-                <fundtypeselectior width="100%" height="auto" data='[{"label":"稳盈-安e ", "types":[["新", false], ["转", true]]}, {"label":"稳盈-安e+", "types":[["新", false], ["转", true]]}]'>
+                <fundtypeselectior name="fundtype" width="100%" data='[{"label":"稳盈-安e ", "types":[["新", false], ["转", true]]}, {"label":"稳盈-安e+", "types":[["新", false], ["转", true]]}]'>
                     <handler event="onchange" args="item">
                         console.log("onchange", this.data, item)
                     </handler>
                 </fundtypeselectior>
+
                 <calliper name="interest" width="100%" title="标的收益率区间"  unit="%"
                     rangesliderattributes='{"startvalue": 0, "endvalue": 20, "leftvalue": 8, "rightvalue": 20, "roundsize": 0.5, "minrangevalue": 1}'>
                     
@@ -134,22 +76,27 @@
                 
                 <calliper name="price"  width="100%"  title="标的价格区间"
                     rangesliderattributes='{"startvalue": 0, "endvalue": 5000, "leftvalue": 500, "rightvalue": 1000, "roundsize": 100, "minrangevalue": 200}'>
-                    <handler event="onrangevalues" args="values">
-                        var balance = this.parent.balance
-                        balance.updateRangeValues({left:balance.leftvalue, right: balance.leftvalue+values.left});
-                    </handler>  
+                    <method name="handleRangeValues" args="values">
+                        this.super();
+                        if (!this.inited) return;
+                        var balance = this.parent.balance;
+                        var bvalues = balance.getRangeValues();
+                        balance.updateRangeValues({left:bvalues.left, right: bvalues.left+values.left});
+                    </method>  
                 </calliper>
 
                 <calliper name="balance" width="100%" title="保留账户余额区间" 
                     rangesliderattributes='{"startvalue": 0, "endvalue": 5000, "leftvalue": 0, "rightvalue": 500, "roundsize": 100, "minrangevalue": 100, "rangemasteronleft":true, "rangerightdraggable":false}'>
                   
                 </calliper>
-                <method name="handlePerviewMode" args="ispreview">
-                    console.log("handlePerviewMode", ispreview)
+
+                <method name="handlePreviewMode" args="ispreview">
+                    this.content.fundtype.showSelector(!ispreview);
                     this.content.interest.showSlider(!ispreview);
                     this.content.price.showSlider(!ispreview);
                     this.content.balance.showSlider(!ispreview);
                 </method>
+
                 <method name="getSummary"><![CDATA[
                     var str = "";
                     var interest = this.content.interest;
@@ -164,13 +111,91 @@
                 </method>
             </section>
 
-            <view width="100%" height="150">
-                <method name="showBtn" args="btn">
+            <view width="100%" height="180" leftpadding="30" toppadding="30">
+                <!-- <method name="showBtn" args="btn">
                     var buttons = this.subviews;
                     for (var i=0; buttons.length>i; i++) {
                         buttons[i].setAttribute("visible", buttons[i].name === btn);
                     }
-                </method>
+                </method> -->
+
+                <class name="orobutton" height="150" width="360" >
+                    <!--off: 0, ready: 1, on: 2-->
+                    <attribute name="status" value="0" type="number"/>
+                    <attribute name="istransfering" value="false" type="boolean"/>
+                    <view height="80" x="50" y="10" width="${this.parent.width-100}" bgcolor="f0f0f0" border="0" bordercolor="c0c0c0"></view>                    
+                    <view name="left" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" bgcolor="f0f0f0" clickable="true"></view>
+                    <view name="mid" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="middle" bgcolor="f0f0f0" clickable="true"></view>
+                    <view name="right" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="right" bgcolor="f0f0f0" clickable="true"></view>
+                    <view height="78" x="50" y="11" width="${this.parent.width-100}" bgcolor="f0f0f0"></view>
+
+                    <text name="stoptxt" x="10" y="25" text="停止" fontsize="40" color="${this.classroot.status === 0? 'orange' : 'e0e0e0'}"/>
+                    <text name="readytxt" y="25" text="预览" x="middle" fontsize="40" color="${this.classroot.status === 1? 'e0e0e0' : 'e0e0e0'}"/>
+                    <text name="starttxt" y="25" text="开启" x="${this.parent.width-this.width-10}" fontsize="40" color="${this.classroot.status === 2? 'orange' : 'e0e0e0'}"/>
+
+                    <view name="btn"  y="7" x="7" width="86" height="86" cornerradius="43" bgcolor="c0c0c0" border="5" bordercolor="c0c0c0">
+                    </view>
+                    <handler event="onclick" args="event" reference="this.left">
+                        this.doOnClick(this.left);
+                    </handler>
+
+                    <handler event="onclick" args="event" reference="this.mid">
+                        this.doOnClick(this.mid); 
+                    </handler>
+
+                    <handler event="onclick" args="event" reference="this.right">
+                        this.doOnClick(this.right); 
+                    </handler>
+
+                    <handler event="onstatus" args="s">
+                        this.doStatusChanged();
+                    </handler>
+
+                    <method name="doStatusChanged">
+                        if (!this.inited) return;
+                        if (this.status === 0) {
+                            this.btn.setAttribute("bordercolor", "c0c0c0");
+                            this.btn.setAttribute("bgcolor", "c0c0c0");
+                            this.btn.setAttribute("x", 7);
+                        } else if (this.status === 1) {
+                            this.btn.setAttribute("bordercolor", "orange");
+                            this.btn.setAttribute("bgcolor", "c0c0c0");
+                            this.btn.setAttribute("x","middle");
+                        } else if (this.status === 2)  {
+                            this.btn.setAttribute("bordercolor", "orange");
+                            this.btn.setAttribute("bgcolor", "orange");
+                            this.btn.setAttribute("x", this.width-this.btn.width-7);
+                        }
+
+                        if (!this.istransfering) {
+                            this.setAttribute("istransfering", true);
+                            this.animateTransfering();
+                        }
+                    </method>
+                    
+                    <method name="animateTransfering">
+                        var me = this;
+                        this.btn.animate({attribute: 'opacity',relative: false, to: this.btn.opacity===1?0.5:1, duration: 500, callback: function(){
+                            me.animateTransfering();
+                        }})
+                    </method>
+
+                    <method name="doOnClick" args="v"><![CDATA[
+                        if (this.istransfering) return;
+
+                        if (v===this.left && this.status !== 0) this.setAttribute("status", 0);
+                        else if (v===this.mid && this.status === 0) this.setAttribute("status", 1);
+                        else if (v===this.mid && this.status === 2) this.setAttribute("status", 0);
+                        else if (v===this.right && this.status === 0) this.setAttribute("status", 1);
+                        else if (v===this.right && this.status === 1) this.setAttribute("status", 2);
+                    ]]>
+                    </method>
+
+                </class>
+                <text text="投标状态:" fontsize="40" y="30"></text>
+                <orobutton x="middle">
+                </orobutton>
+                <!-- 
                 <ajaxbutton name="returnBtn" text="返回" x="middle" visible="false">
                     <handler event="onclick">
                         this.parent.showBtn("startBidBtn");
@@ -233,7 +258,7 @@
                         this.parent.showBtn("returnBtn");
                         console.log("afterResponseError", json);
                     </method>
-                </ajaxbutton>
+                </ajaxbutton> -->
             </view>
         </view>
     </view>

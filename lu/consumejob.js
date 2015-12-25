@@ -6,7 +6,7 @@ var simplehttp = require('../simplehttp');
 var captchaUtil = require('./captchautil.js');
 var RSAKey = require('./rsa.js');
 
-var LoopJob = require("../loopjob");
+//var LoopJob = require("../loopjob");
 
 var CONSUMING_INTERVAL_MIN = 5000;
 
@@ -121,13 +121,13 @@ function consume_brwoser(account, toBeConsumed, callback) {
 
         });
 
-        logutil.log("investCheck done", new Date() - consumeStart);
+        logutil.log("investCheck done", sid, new Date() - consumeStart);
 
         setTimeout(function() {
             traceOtp(productId, sid, cookieJar, function() {
                 traceOtpDone = true;
             })
-            logutil.log("guessCaptchaForTrading start", new Date() - consumeStart);
+            logutil.log("guessCaptchaForTrading start", sid, new Date() - consumeStart);
             captchaUtil.guessCaptchaForTrading(productId, sid, cookieJar, function(capStr, imgid) {
                 if (!capStr) {
                     logutil.log("guessCaptchaForTrading failed");
@@ -142,7 +142,7 @@ function consume_brwoser(account, toBeConsumed, callback) {
                 }
             })
 
-        }, 100)
+        }, 500)
 
 
 
@@ -336,7 +336,7 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
     simplehttp.POST("https://trading.lu.com/trading/service/trade/trace", {
             "cookieJar": cookieJar,
             "headers": {
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             },
             "form": {
                 sid: sid,
@@ -346,7 +346,7 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             traceTradeFlag = true;
-            logutil.log("****", 2, body, new Date() - tradeTime);
+            logutil.log("****", 2, body, userId, productId, sid, cookieJar, new Date() - tradeTime);
             // if (checkFlag && traceFlag) callback(body);
             syncFun(body);
         });
@@ -356,7 +356,7 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
         simplehttp.POST("https://trading.lu.com/trading/service/trade/trace", {
                 "cookieJar": cookieJar,
                 "headers": {
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
                 },
                 "form": {
                     sid: sid,
@@ -370,14 +370,14 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
                     // if (checkFlag && traceFlag) callback(body);
                 syncFun(body);
             });
-    }, 50)
+    }, 200)
 }
 
 function traceOtp(productId, sid, cookieJar, callback) {
     simplehttp.POST("https://trading.lu.com/trading/service/trade/trace", {
             "cookieJar": cookieJar,
             "headers": {
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             },
             "form": {
                 sid: sid,
@@ -404,7 +404,6 @@ function securityValid(callback) {
 }
 
 function investmentRequest(uid, productId, sid, password, captachStr, imageId, cookieJar, callback) {
-    //simplehttp.POST("https://trading.lu.com/trading/users/" + uid + "/investment-request", {
     simplehttp.POST("https://trading.lu.com/trading/investment-request", {
             "cookieJar": cookieJar,
             "form": {

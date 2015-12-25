@@ -5,7 +5,7 @@ var ndarray = require("ndarray")
 var savePixels = require("save-pixels")
 var NEED_PRE_CHECK = false;
 
-var imageRepository = require('./captcha/imagerepository').init("../lufax/captcha/data.dat");
+var imageRepository = require('./captcha/imagerepository').init("../lu/captcha/data.dat");
 var imageUtil = require('./captcha/imageutil');
 
 var imageProcessor = require('./captcha/imageprocessor').config({

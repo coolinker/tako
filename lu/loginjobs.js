@@ -107,22 +107,21 @@ function login_brwoser(account, callback) {
             rsakey.setPublic(publicKey, rsaExponent);
             var cncryptPassword = rsakey.encrypt(password);
 
-            // captchaAuthorize("PC", user, cookieJar, function(body) {
             captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
                 doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
-                    if (info) {                     
+
+                    if (info.uid) {
                         account.cookieJar = cookieJar;
                         account.availableBalance = info.availableFund;
                         account.uid = info.uid;
+                        callback(cookieJar, info);
+                    } else {                     
+                        callback(null, info);
                     }
-                    console.log("account.availableBalance:", account.availableBalance, account.uid)
-                    callback(cookieJar, info);
+                   // console.log("account.availableBalance:", account.availableBalance, account.uid, info)
+                    
                 })
             })
-
-            // })
-
-
         });
 }
 
@@ -152,9 +151,9 @@ function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://user.lu.com");
-            logutil.log("login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, cookie_string);
+            logutil.log("doLogin -> login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, cookie_string, body);
             if (cookie_string.indexOf("lufaxSID") < 0) {
-                callback(null);
+                callback(JSON.parse(body));
             } else {
                 getUserInfo(cookieJar, callback);
             }

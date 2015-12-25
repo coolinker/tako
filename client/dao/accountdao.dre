@@ -1,0 +1,140 @@
+<class name="accountdao" extends="node">
+    <attribute name="user" type="string"/>
+    <attribute name="password" type="string"/>
+    <attribute name="tradepassword" type="string"/>
+    <attribute name="source" type="string"/>
+    <attribute name="availablebalance" type="number"/>
+    <attribute name="lastloggedintime" type="object"/>
+    <attribute name="status"  type="string"/>
+    <method name="reset" args="acc">
+        this.user = this.password = this.tradepassword = this.source = this.availablebalance = this.lastloggedintime = this.status = undefined;
+        this.isloading = false;
+        this.user = acc.user;
+        this.password = acc.password;
+        this.tradepassword = acc.tradepassword;
+        this.source = acc.source;
+    </method>
+
+    <method name="getStatusSummary">
+        if (this.status === "invalid") {
+            return this.getLoginValidatingSummary();
+        } else if (this.status === "loading") {
+            return "loading";
+        } else if (this.status === "successful") {
+            return this.getAccountSummary();
+        } else if (this.status === "NOT_EXIST_USERNAME" || this.status === "NO_MATCH_USERNAME_PASSWORD") {
+            return this.getStatusObjSummary();
+        } else {
+            return "Error!";
+        }
+    </method>
+    <!--
+        info: {
+                            user: user,
+                            source: "www.lufax.com",
+                            password: pwd,
+                            tradePassword: jypwd
+                         };
+
+    -->
+    <method name="updateAccountInfo" args="callback">
+        if (!this.validateLoginInfo()) {
+            this.status = "invalid";
+            callback(this)
+        } else {
+            this.status = "loading";
+            var me = this;
+            var params = {
+                user: this.user, 
+                password: this.password,
+                tradePassword: this.tradepassword,
+                source: this.source
+                };
+            this.sendUpdateAccountInfo(params, function (status, resJson) {
+                if (status === 200) {
+                    if (resJson.resultId === "00") {
+                        me.status = "successful";
+                        me.lastloggedintime = new Date(resJson.loginTime);
+                        me.availablebalance = resJson.availableBalance;
+                    } else {
+                        me.status = resJson.resultMsg;
+                        me.statusObj = resJson;
+                    }
+                    
+                } else {
+                    me.status = status;
+                }
+                callback(me);
+        });
+        }
+    </method>
+    <method name="getStatusObjSummary"><![CDATA[
+    var str = "<span style='color:red'>"+this.statusObj.failedMessage+"</span><br>";
+    return str;
+    ]]>
+    </method>
+
+    <method name="getLoginValidatingSummary"><![CDATA[
+        var user = this.user;
+        var pwd = this.password;
+        var jypwd = this.tradePassword;
+
+        var str = "";
+        if (!user) {
+            str += "<span style='color:red'>*用户名不能为空</span><br>";
+        } else {
+            str += "用户名：<span style='color:orange;font-size: 80px;line-height:1'>" + user+"</span><br>";
+        }
+
+        if (!pwd) {
+            str += "<span style='color:red'>*密码不能为空</span><br>";
+        }
+
+        if (!jypwd) {
+            str += "<span style='color:red'>*交易密码不能为空</span><br>";
+        }
+
+        return str;
+        ]]>
+    </method>
+
+    <method name="getAccountSummary"><![CDATA[
+        var str = "<span style='color:orange;font-size: 80px;line-height:1'>" + this.user+"</span><br>";
+        str += "可投金额：<span style='color:orange;font-size: 60px;line-height:2'>" + this.availablebalance+"</span>元<br>";
+        str += "登陆时间："+new Date(this.lastloggedintime).toLocaleString();
+        return str;
+    ]]>
+    </method>
+
+    <method name="validateLoginInfo">
+        var user = this.user;
+        var pwd = this.password;
+        var jypwd = this.tradepassword;
+
+        return user && pwd && jypwd;
+    </method>
+
+    <method name="sendUpdateAccountInfo" args="info, callback">
+        var req = this.getHttpRequest(callback);
+        req.open("POST", "https://192.168.0.125/api?action=getAccountInfo", true);
+        req.send(JSON.stringify(info));
+    </method>
+    
+    <method name="getHttpRequest" args="callback">
+        var me = this;
+        var req = new XMLHttpRequest(); 
+        req.onreadystatechange =  function () { 
+            if (req.readyState === 4) {
+                callback(req.status, JSON.parse(req.responseText));
+                <!-- if (req.status===200) {
+                    me.handleResponse(JSON.parse(req.responseText));
+                } else {
+                    me.handleResponseError(req.status);
+                } -->
+            
+            } 
+        }; 
+        return req;
+    </method>
+
+</class>

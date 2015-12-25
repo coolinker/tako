@@ -9,6 +9,7 @@
             <include href="./components/section.dre"/>
             <include href="./components/labelinput.dre"/>
             <include href="./components/fundtypeselector.dre"/>
+            <include href="./dao/accountdao.dre"/>
             <include href="./lupanel.dre"/>
             <include href="./rrdpanel.dre"/>
             
@@ -26,8 +27,8 @@
                  y="${this.parent.height-this.height-10}">
                     <spacedlayout axis="x" inset="0" spacing="0" updateparent="false"></spacedlayout>
                     <class name="sitebutton" extends="buttonbase"  opacity="${this.selected?1:1}"
-                        y="${this.selected?-0:5}" width="150" height="120" texty="2"
-                        bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" bordercolor="ffffff"
+                        y="${this.selected?-0:5}" width="150" height="120" texty="2" focusembellishment="false"
+                        bgcolor="ffffff" textcolor="ffffff" defaultcolor="ffffff" selectcolor="000000"
                         border="0"  cornerradius="0" padding="15">
                         <attribute name="basecolor" type="string"/>
                         <attribute name="textsize"  type="number" value="80"/>
