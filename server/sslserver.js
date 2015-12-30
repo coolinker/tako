@@ -53,7 +53,7 @@ var sslserver = https.createServer(options, function(req, res) {
         console.log("443 port", uri)
         //proxy.web(req, res);
         res.writeHead(301,
-          {Location: 'http://'+serverIP+'/index.html'}
+          {Location: 'http://'+serverIp+'/index.html'}
         );
         res.end();
     }
