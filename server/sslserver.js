@@ -4,9 +4,10 @@ var https = require('https'),
     path = require("path"),
     fs = require("fs"),
     apiDispatcher = require("./apidispatcher");
-port = process.argv[2] || 80;
+port = process.argv[3] || 80,
+serverIp = process.argv[2] || "localhost";
+
 var httpProxy = require('http-proxy');
-var serverIP = "192.168.0.125";
 
 var options = {
     key: fs.readFileSync('server-key.pem'),
@@ -94,7 +95,7 @@ var sslserver = https.createServer(options, function(req, res) {
 //     });
 // }).listen(parseInt(port, 10));
 
-console.log("Static file server running at\n  => http://localhost:" + port + "/\nCTRL + C to shutdown");
+console.log("Static file server running at\n  => http://"+serverIp+":" + port + "/\nCTRL + C to shutdown");
 
 function handleApiRequest(request, response) {
     var query = url.parse(request.url, true).query;
