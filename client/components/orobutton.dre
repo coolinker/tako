@@ -1,0 +1,75 @@
+<class name="orobutton" height="150" width="360" >
+    <!--off: 0, ready: 1, on: 2-->
+    <attribute name="status" value="0" type="number"/>
+    <attribute name="istransfering" value="false" type="boolean"/>
+    <view height="80" x="50" y="10" width="${this.parent.width-100}" bgcolor="f0f0f0" border="0" bordercolor="c0c0c0"></view>                    
+    <view name="left" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" bgcolor="f0f0f0" clickable="true"></view>
+    <view name="mid" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="middle" bgcolor="f0f0f0" clickable="true"></view>
+    <view name="right" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="right" bgcolor="f0f0f0" clickable="true"></view>
+    <view height="78" x="50" y="11" width="${this.parent.width-100}" bgcolor="f0f0f0"></view>
+
+    <text name="stoptxt" x="10" y="25" text="停止" fontsize="40" color="${this.classroot.status === 0? 'e0e0e0' : 'e0e0e0'}"/>
+    <text name="readytxt" y="25" text="预览" x="middle" fontsize="40" color="${this.classroot.status === 1? 'e0e0e0' : 'e0e0e0'}"/>
+    <text name="starttxt" y="25" text="开启" x="${this.parent.width-this.width-10}" fontsize="40" color="${this.classroot.status === 2? 'e0e0e0' : 'e0e0e0'}"/>
+
+    <view name="btn"  y="7" x="7" width="86" height="86" cornerradius="43" bgcolor="c0c0c0" border="5" bordercolor="c0c0c0">
+    </view>
+    <handler event="onclick" args="event" reference="this.left">
+        this.doOnClick(this.left);
+    </handler>
+
+    <handler event="onclick" args="event" reference="this.mid">
+        this.doOnClick(this.mid); 
+    </handler>
+
+    <handler event="onclick" args="event" reference="this.right">
+        this.doOnClick(this.right); 
+    </handler>
+
+    <handler event="onstatus" args="s">
+        this.updateUIStatus();
+    </handler>
+
+    <method name="updateUIStatus">
+        if (!this.inited) return;
+        if (this.status === 0) {
+            this.btn.setAttribute("bordercolor", "c0c0c0");
+            this.btn.setAttribute("bgcolor", "c0c0c0");
+            this.btn.setAttribute("x", 7);
+        } else if (this.status === 1) {
+            this.btn.setAttribute("bordercolor", "orange");
+            this.btn.setAttribute("bgcolor", "c0c0c0");
+            this.btn.setAttribute("x","middle");
+        } else if (this.status === 2)  {
+            this.btn.setAttribute("bordercolor", "orange");
+            this.btn.setAttribute("bgcolor", "orange");
+            this.btn.setAttribute("x", this.width-this.btn.width-7);
+        }
+
+        if (!this.istransfering) {
+            this.setAttribute("istransfering", true);
+            this.animateTransfering();
+        }
+    </method>
+    
+    <method name="animateTransfering">
+        var me = this;
+        this.btn.animate({attribute: 'opacity',relative: false, to: this.btn.opacity===1?0.5:1, duration: 300, motion: "linear", callback: function(){
+            if (me.istransfering || me.btn.opacity != 1) {
+                me.animateTransfering();
+            }
+        }})
+    </method>
+
+    <method name="doOnClick" args="v"><![CDATA[
+        if (this.istransfering) return;
+
+        if (v===this.left && this.status !== 0) this.setAttribute("status", 0);
+        else if (v===this.mid && this.status === 0) this.setAttribute("status", 1);
+        else if (v===this.mid && this.status === 2) this.setAttribute("status", 0);
+        else if (v===this.right && this.status === 0) this.setAttribute("status", 1);
+        else if (v===this.right && this.status === 1) this.setAttribute("status", 2);
+    ]]>
+    </method>
+
+</class>

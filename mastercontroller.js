@@ -14,7 +14,6 @@ for (var att in ACCOUNT_TYPES) {
     }
 }
 
-
 var accountqueue = require("./accountqueue");
 accountqueue.loopLogin();
 
@@ -24,12 +23,40 @@ this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
 
 exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(accountJson, callback) {
-    accountJson.readyFunding = false;
-    addAccountJson(accountJson, callback)
+    var accountObj = addAccountJson(accountJson);
+    accountqueue.loginAccount(accountObj, function(result){
+        console.log("getAccountInfo result", result);
+        callback(result);
+    });
+}
+
+exports.startAccountBidding = startAccountBidding;
+function startAccountBidding(accountJson, callback) {
+    var accountObj = addAccountJson(accountJson)
+    accountObj.startedBidding = true;
+    accountqueue.loginAccount(accountObj, function(result){
+        callback(result);
+        if (accountObj.cookieJar) {
+            startNewProductCheck(accountObj.source);
+        }
+    });
+}
+
+exports.stopAccountBidding = stopAccountBidding;
+function stopAccountBidding(accountJson, callback) {
+    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
+    var acc = accountqueue.getAccount(accountObj);
+    if (!acc) {
+        logutil.log("stopAccountBidding", "account "+accountObj.user+" doesn't existed");
+    } else {
+        acc.startedBidding = false;    
+    }
+    callback({status:"successful"});
+    //accountqueue.logoutAccount(accountObj, callback);
 }
 
 exports.addAccountJson = addAccountJson;
-function addAccountJson(accountJson, callback) {
+function addAccountJson(accountJson) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
     if (!acc) {
@@ -38,21 +65,25 @@ function addAccountJson(accountJson, callback) {
         accountObj = acc;
     }
 
-    var accType = ACCOUNT_TYPES[accountObj.source];
+
+    
+    return accountObj;
+}
+
+function startNewProductCheck(source){
+    var accType = ACCOUNT_TYPES[source];
     var tjob =accType ? JOBS_OBJ[accType]['transferloopjob'] : null;
     if (tjob && !tjob.isRollingStarted()) {
+        console.log("--------------------startNewProductCheck")
         tjob.rollNewProductCheck(function(product) {
             if (accountqueue.consume(product)) {
                 //tjob.pauseNewTransferLoop(2000);
             }
         });
     }
-     
-     accountqueue.loginAccount(accountObj, callback);
 }
 
 exports.removeAccountJson = removeAccountJson;
-
 function removeAccountJson(accountJson) {
     accountqueue.inactive(accountJson.user, accountJson.password, accountJson.source);
 }

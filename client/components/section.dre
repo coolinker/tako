@@ -22,7 +22,7 @@
     <view name="content" y="80" width="100%">
     </view>
 
-    <view name="previewView" y="80" width="100%" clip="true" hight="auto" bottompadding="50">
+    <view name="previewView" y="80" width="100%" clip="true" hight="auto" bottompadding="30">
         <text name="txt" fontsize="40" color="#808080" multiline="true" width="100%">
             
         </text>
@@ -54,13 +54,16 @@
     <method name="aniUpdateHeight">
         var toh = this.bottompadding + (this.ispreviewmode ? (this.previewView.y+this.previewView.bottompadding+this.previewView.txt.sprite.platformObject.scrollHeight) : (this.content.y+this.content.height));
         var dur = 300;
-        this.animate({attribute:'height', to: toh , duration:dur, motion:"linear"});
+        <!-- if (this._lastAni) this._lastAni.stop(); -->
+        this._lastAni = this.animate({attribute:'height', to: toh , duration:dur, motion:"linear"});
     </method>
 
     <method name="updateSummary">
         var smr = this.getSummary();
         this.setSummaryText(smr);
-        this.aniUpdateHeight();
+        if (this.ispreviewmode) {
+            this.aniUpdateHeight();
+        }
     </method>
 
     <method name="setSummaryText" args="smr">

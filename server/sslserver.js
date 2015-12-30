@@ -6,7 +6,7 @@ var https = require('https'),
     apiDispatcher = require("./apidispatcher");
 port = process.argv[2] || 80;
 var httpProxy = require('http-proxy');
-var serverIP = "192.168.128.93";
+var serverIP = "192.168.0.125";
 
 var options = {
     key: fs.readFileSync('server-key.pem'),

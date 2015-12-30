@@ -94,8 +94,8 @@ function sharesAbleToConsume(account, toBeConsumed) {
 function ableToConsume(account, toBeConsumed) {
     var shares = sharesAbleToConsume(account, toBeConsumed);
     var price = shares *  toBeConsumed.pricePerShare;
-    return toBeConsumed.sharesAvailable > 0 && account.interestLevel <= toBeConsumed.interest
-    && price >= account.minFundPerProduct && price <= account.maxFundPerProduct 
+    return toBeConsumed.sharesAvailable > 0 && account.interestLevelMin <= toBeConsumed.interest
+    && price >= account.pricePerBidMin && price <= account.pricePerBidMax 
     && account.availableBalance - price >= account.reservedBalance 
     && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }

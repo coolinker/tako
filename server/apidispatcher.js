@@ -13,20 +13,25 @@ function addAccount(params, callback) {
     });
 
 }
+
 exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(params, callback) {
-    masterController.getAccountInfo(params, function(accountInfo, responseInfo) {
-        if (!accountInfo.cookieJar) {
-            callback(JSON.stringify(responseInfo));
-        } else {
-            var obj = {
-                resultId: '00',
-                user: accountInfo.user,
-                loginTime: accountInfo.loginTime.getTime(),
-                availableBalance: accountInfo.availableBalance
-            }
-            callback(JSON.stringify(obj));    
-        }    
+    masterController.getAccountInfo(params, function(responseInfo) {        
+            callback(JSON.stringify(responseInfo));    
     });
 
+}
+
+exports.startAccountBidding = startAccountBidding;
+function startAccountBidding(params, callback) {
+    masterController.startAccountBidding(params, function(responseInfo) {        
+            callback(JSON.stringify(responseInfo));    
+    });
+}
+
+exports.stopAccountBidding = stopAccountBidding;
+function stopAccountBidding(params, callback) {
+    masterController.stopAccountBidding(params, function(responseInfo) {        
+            callback(JSON.stringify(responseInfo));    
+    });
 }

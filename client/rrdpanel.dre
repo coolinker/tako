@@ -183,12 +183,12 @@
                             source: "www.lufax.com",
                             password: pwd,
                             tradePassword: jypwd,
-                            interestLevel: interestValues.left/100,
+                            interestLevelMin: interestValues.left/100,
                             inerestMin:  interestValues.left/100,
                             interestMax: interestValues.right/100,
                             reservedBalance: balanceValues.left,
-                            minFundPerProduct: priceValues.left,
-                            maxFundPerProduct: priceValues.right
+                            pricePerBidMin: priceValues.left,
+                            pricePerBidMax: priceValues.right
                          };
 
                          return  lufaxAcc;

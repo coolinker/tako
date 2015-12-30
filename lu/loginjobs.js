@@ -95,7 +95,7 @@ function login_brwoser(account, callback) {
     var cookieJar = request.jar();
     var rsakey = new RSAKey();
 
-    // logutil.log("login...", user);
+    //logutil.log("login...", user);
 
     simplehttp.GET('https://user.lu.com/user/login', {
             "cookieJar": cookieJar
@@ -114,9 +114,11 @@ function login_brwoser(account, callback) {
                         account.cookieJar = cookieJar;
                         account.availableBalance = info.availableFund;
                         account.uid = info.uid;
-                        callback(cookieJar, info);
+                        account.loginTime = new Date();
+                        callback(account.JSONInfo());
                     } else {                     
-                        callback(null, info);
+                        account.cookieJar = null;
+                        callback(info);
                     }
                    // console.log("account.availableBalance:", account.availableBalance, account.uid, info)
                     

@@ -187,11 +187,11 @@ function confirmSpent(productId, account, callback) {
 function ableToConsume(account, toBeConsumed) {
     //console.log(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
     return !account.locked 
-    && account.maxFundPerProduct >= toBeConsumed.price 
-    && account.minFundPerProduct <= toBeConsumed.price 
+    && account.pricePerBidMax >= toBeConsumed.price 
+    && account.pricePerBidMin <= toBeConsumed.price 
     && account.availableBalance > toBeConsumed.price 
     && account.availableBalance - toBeConsumed.price > account.reservedBalance 
-    && account.interestLevel <= toBeConsumed.interest 
+    && account.interestLevelMin <= toBeConsumed.interest 
     && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 

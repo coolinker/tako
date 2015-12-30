@@ -102,7 +102,6 @@ function loopNewTransfer_browser(startId, callback) {
         timeout: 1.8 * LOOP_INTERVAL,
         httpMethod: "GET",
         urlInjection: function(parallelIndex, url) {
-
             if (productId - productIdStart > 500) {
                 logutil.log("***productId rolling", productId);
                 productIdStart = productId;
@@ -143,6 +142,7 @@ function loopNewTransfer_browser(startId, callback) {
 
                         if (productObj.productId >= productId) {
                             productId = productObj.productId + 1;
+                            //console.log("------", productId, productObj.price, productObj.interestRateDisplay)
                         }
 
                     } else {

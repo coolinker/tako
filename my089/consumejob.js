@@ -107,13 +107,13 @@ function recordConsumeHIstory(account, toBeConsumed){
 }
 
 function fundAbleToConsume(account, maxValidFund) {
-    return Math.min(account.maxFundPerProduct, maxValidFund);
+    return Math.min(account.pricePerBidMax, maxValidFund);
 }
 
 function ableToConsume(account, toBeConsumed) {
     return (account.consumeHistory[account.source] === undefined || account.consumeHistory[account.source][toBeConsumed.sid] === undefined)
         && toBeConsumed.percentFinished < 100 
-        && account.interestLevel <= toBeConsumed.interest 
+        && account.interestLevelMin <= toBeConsumed.interest 
         && account.availableBalance > account.reservedBalance
         && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
