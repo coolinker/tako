@@ -296,12 +296,16 @@ function randomNumber() {
 }
 
 function investCheck(userId, productId, cookieJar, callback) {
-    simplehttp.POST("https://list.lu.com/list/service/users/" + userId + "/products/" + productId + "/invest-check", {
+    
+    //simplehttp.POST("https://list.lu.com/list/service/users/" + userId + "/products/" + productId + "/invest-check", {
+    simplehttp.POST("https://list.lu.com/list/invest-check", {
             "cookieJar": cookieJar,
             "headers": {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
             "form": {
+                "productId": productId,
+                isCheckSQ: 1,
                 source: 0
             }
         },
@@ -309,7 +313,7 @@ function investCheck(userId, productId, cookieJar, callback) {
             try {
                 var info = JSON.parse(body);
                 if (!info.sid) {
-                    logutil.log("investCheck failed", body);
+                    logutil.log("investCheck failed==", body);
                 }
                 callback(info.sid);
             } catch (e) {

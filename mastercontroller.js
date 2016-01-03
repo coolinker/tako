@@ -75,7 +75,7 @@ function startNewProductCheck(source){
     var accType = ACCOUNT_TYPES[source];
     var tjob =accType ? JOBS_OBJ[accType]['transferloopjob'] : null;
     if (tjob && !tjob.isRollingStarted()) {
-        console.log("--------------------startNewProductCheck")
+        console.log("--------------------startNewProductCheck", accType)
         tjob.rollNewProductCheck(function(product) {
             if (accountqueue.consume(product)) {
                 //tjob.pauseNewTransferLoop(2000);
