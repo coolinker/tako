@@ -26,7 +26,7 @@ function getAccountInfo(accountJson, callback) {
     var accountObj = addAccountJson(accountJson);
     accountqueue.loginAccount(accountObj, function(result){
         console.log("getAccountInfo result", result);
-        callback(result);
+        if (callback) callback(result);
     });
 }
 
@@ -35,7 +35,8 @@ function startAccountBidding(accountJson, callback) {
     var accountObj = addAccountJson(accountJson)
     accountObj.startedBidding = true;
     accountqueue.loginAccount(accountObj, function(result){
-        callback(result);
+        if (callback) callback(result);
+
         if (accountObj.cookieJar) {
             startNewProductCheck(accountObj.source);
         }

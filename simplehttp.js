@@ -41,7 +41,7 @@ function image(url, options, callback) {
             return
         }
         
-        pixelsUtil.doParse(type, body, callback)
+        pixelsUtil(body, type, callback)
         
     })
 }

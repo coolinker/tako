@@ -115,7 +115,7 @@ function handleApiRequest(request, response) {
                 response.writeHead(200, {
                     "Content-Type": "application/x-javascript; charset=utf-8",
                         // 'Content-Length': output.length
-                    "Access-Control-Allow-Origin": "http://" + serverIP
+                    "Access-Control-Allow-Origin": "http://" + serverIp
                 });
                 response.write(output);
                 response.end();
