@@ -51,6 +51,7 @@ function loopNewTransfer(startId, callback) {
                 } else {
                     var sharesAvailable = Number(htmlparser.getValueFromBody('data-shares="', '">', body));
                     var interest = Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body));
+                    interest = interest/100;
                     var price = Number(htmlparser.getValueFromBody('data-amount-per-share="', '">', body));
                     //var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
                     var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);

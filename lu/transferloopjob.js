@@ -16,7 +16,7 @@ var rollingIntervalObj;
 function detectLastProductId(callback) {
     if (isDetecting) return;
     isDetecting = true;
-    var url = 'http://list.lu.com/list/transfer/anyi?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&trade=&isCx=&currentPage=';
+    var url = 'http://list.lu.com/list/transfer/anyi?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&trade=&isCx=&orderType=publishAt&orderAsc=true&currentPage=';
     simplehttp.GET(url + 10000, {}, function(error, response, body) {
         if (!body) {
             isDetecting = false;
