@@ -22,58 +22,73 @@ var CommonAccount = require("./commonaccount");
 this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
 
 exports.getAccountInfo = getAccountInfo;
+
 function getAccountInfo(accountJson, callback) {
-    var accountObj = addAccountJson(accountJson);
-    accountqueue.loginAccount(accountObj, function(result){
+    // var accountObj = addAccountJson(accountJson);
+    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
+    accountqueue.loginAccount(accountObj, function(result) {
         console.log("getAccountInfo result", result);
+        if (accountObj.cookieJar) {
+            accountqueue.addAccount(accountObj);
+        }
         if (callback) callback(result);
+
     });
 }
 
 exports.startAccountBidding = startAccountBidding;
-function startAccountBidding(accountJson, callback) {
-    var accountObj = addAccountJson(accountJson)
-    accountObj.startedBidding = true;
-    accountqueue.loginAccount(accountObj, function(result){
-        if (callback) callback(result);
 
-        if (accountObj.cookieJar) {
-            startNewProductCheck(accountObj.source);
+function startAccountBidding(accountJson, callback) {
+    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
+    var acc = accountqueue.getAccount(accountObj);
+    var result = {action: "startAccountBidding"};
+    if (acc) {
+        acc.startedBidding = true;
+        if (acc.cookieJar) {
+            startNewProductCheck(acc.source);
         }
-    });
+        result.resultMsg = "SUCCEED";
+    } else {
+        result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
+    }
+
+    if (callback) callback(result);
 }
 
 exports.stopAccountBidding = stopAccountBidding;
+
 function stopAccountBidding(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
     if (!acc) {
-        logutil.log("stopAccountBidding", "account "+accountObj.user+" doesn't existed");
+        logutil.log("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
     } else {
-        acc.startedBidding = false;    
+        acc.startedBidding = false;
     }
-    callback({status:"successful"});
+    callback({
+        action: "stopAccountBidding", 
+        resultMsg: "SUCCEED"
+    });
     //accountqueue.logoutAccount(accountObj, callback);
 }
 
 exports.addAccountJson = addAccountJson;
+
 function addAccountJson(accountJson) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
     if (!acc) {
-         accountqueue.addAccount(accountObj);
+        accountqueue.addAccount(accountObj);
     } else {
         accountObj = acc;
     }
 
-
-    
     return accountObj;
 }
 
-function startNewProductCheck(source){
+function startNewProductCheck(source) {
     var accType = ACCOUNT_TYPES[source];
-    var tjob =accType ? JOBS_OBJ[accType]['transferloopjob'] : null;
+    var tjob = accType ? JOBS_OBJ[accType]['transferloopjob'] : null;
     if (tjob && !tjob.isRollingStarted()) {
         console.log("--------------------startNewProductCheck", accType)
         tjob.rollNewProductCheck(function(product) {
@@ -85,6 +100,7 @@ function startNewProductCheck(source){
 }
 
 exports.removeAccountJson = removeAccountJson;
+
 function removeAccountJson(accountJson) {
     accountqueue.inactive(accountJson.user, accountJson.password, accountJson.source);
 }

@@ -1,8 +1,8 @@
-<class name="section" defaultplacement="content" topborder="1" bottomborder="1" bordercolor="c0c0c0" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="30" height="auto">
+<class name="section" defaultplacement="content" topborder="1" bottomborder="1" bordercolor="c0c0c0" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="30" height="auto" bgcolor="ffffff">
     <attribute name="issummarymode" type="boolean" value="false"/>
     <attribute name="showpreviewbutton" type="boolean" value="true"/>
-    <text name="titleText" text="${this.parent.title}" bgcolor="ffffff" color="black" fontsize="50" y="-30"></text>
-    <text color="orange"  clickable="true" x="right" fontsize="40" italic="true" fontsize="60" bold="true">
+    <text name="titleText" text="${this.parent.title}"  color="black" fontsize="50" y="-30" bgcolor="#ffffff"></text>
+    <text color="orange"  clickable="true" x="right" fontsize="40" italic="true" fontsize="60" bold="true" visible="false">
         <handler event="oninit">
             this.updateDisplay();
         </handler>
@@ -15,20 +15,19 @@
         </handler>
 
         <method name="updateDisplay">
-            this.setAttribute("visible", !this.classroot.ispreviewmode ? this.classroot.showpreviewbutton : true);
-            this.setAttribute("text", this.classroot.ispreviewmode ? "↩" : "预览");
+            //this.setAttribute("visible", !this.classroot.ispreviewmode ? this.classroot.showpreviewbutton : true);
+            //this.setAttribute("text", this.classroot.ispreviewmode ? "↩" : "预览");
         </method>
     </text>
     <view name="content" y="80" width="100%">
     </view>
 
-    <view name="previewView" y="80" width="100%" clip="true" hight="auto" bottompadding="30">
+    <view name="previewView" y="80" width="100%" clip="true" hight="auto" bottompadding="60">
         <text name="txt" fontsize="40" color="#808080" multiline="true" width="100%">
-            
         </text>
-        <handler event="onclick">
+        <!-- <handler event="onclick">
             this.classroot.setAttribute("ispreviewmode", false);
-        </handler>
+        </handler> -->
     </view>
 
     <handler event="oninit">
@@ -53,7 +52,7 @@
     
     <method name="aniUpdateHeight">
         var toh = this.bottompadding + (this.ispreviewmode ? (this.previewView.y+this.previewView.bottompadding+this.previewView.txt.sprite.platformObject.scrollHeight) : (this.content.y+this.content.height));
-        var dur = 300;
+        var dur = 200;
         <!-- if (this._lastAni) this._lastAni.stop(); -->
         this._lastAni = this.animate({attribute:'height', to: toh , duration:dur, motion:"linear"});
     </method>

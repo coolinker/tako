@@ -3,7 +3,7 @@ var https = require('https'),
     url = require("url"),
     path = require("path"),
     fs = require("fs"),
-    apiDispatcher = require("./apidispatcher");
+    apiDispatcher = require("./apidispatcher"),
 port = process.argv[3] || 80,
 serverIp = process.argv[2] || "localhost";
 

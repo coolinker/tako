@@ -27,7 +27,6 @@ function consume(toBeConsumed) {
 }
 
 exports.loginAccount = loginAccount;
-
 function loginAccount(accountInfo, callback) {
     if (accountInfo.locked) {
         if (callback) callback();
@@ -45,7 +44,7 @@ function loginAccount(accountInfo, callback) {
     loginjobs.login(accountInfo, function(info) {
         accountInfo.locked = false;
         if (accountInfo.cookieJar === null) {
-            logutil.log("addAccount login failed", accountInfo, info);
+            logutil.log("Account login failed", accountInfo.user, info.resultMsg);
         }
 
         if (callback) callback(info);
@@ -67,15 +66,34 @@ function getAccount(accountInfo) {
 
 exports.addAccount = addAccount;
 
-function addAccount(accountInfo) {
-    var accounttype = ACCOUNT_TYPES[accountInfo['source']];
+function addAccount(account) {
+    var acc = getAccount(account);
+    if (acc) {
+        removeAccount(acc);
+    }
+
+    var accounttype = ACCOUNT_TYPES[account['source']];
     if (!accountQueues[accounttype]) {
         accountQueues[accounttype] = [];
         queuesMap[accounttype] = {};
     };
 
-    accountQueues[accounttype].push(accountInfo);
-    queuesMap[accounttype][accountInfo.user] = accountInfo;
+    accountQueues[accounttype].push(account);
+    queuesMap[accounttype][account.user] = account;
+    logutil.log("Account added in queue", account.user)
+}
+
+function removeAccount(account) {
+    var accounttype = ACCOUNT_TYPES[account['source']];
+    var arr = accountQueues[accounttype];
+    for (var i=0; i<arr.length; i++) {
+        if (arr[i].user === account.user) {
+            arr.splice(i, 1);
+            break;
+        }
+    }
+    delete queuesMap[accounttype][account.user];
+    logutil.log("remove Account", accounttype, account.user)
 }
 
 exports.updateAccountQueue = updateAccountQueue;

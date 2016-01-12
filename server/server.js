@@ -4,8 +4,9 @@ var http = require("http"),
     url = require("url"),
     path = require("path"),
     fs = require("fs"),
-    apiDispatcher = require("./apidispatcher");
-port = process.argv[2] || 8000;
+    apiDispatcher = require("./apidispatcher"),
+    port = process.argv[3] || 80,
+    serverIp = process.argv[2] || "localhost";
 
 var proxy = httpProxy.createProxyServer({
     target: {
@@ -33,7 +34,8 @@ server.on('upgrade', function(req, socket, head) {
     proxy.ws(req, socket, head);
 });
 
-console.log("Static file server running at\n  => http://localhost:" + port + "/\nCTRL + C to shutdown");
+
+console.log("Static file server running at\n  => http://"+serverIp+":" + port + "/\nCTRL + C to shutdown");
 
 function handleApiRequest(request, response) {
     var query = url.parse(request.url, true).query;
@@ -52,8 +54,8 @@ function handleApiRequest(request, response) {
             apiDispatcher[action](postJson, function(output) {
                 response.writeHead(200, {
                     "Content-Type": "application/x-javascript; charset=utf-8",
-                    // 'Content-Length': output.length
-                    "Access-Control-Allow-Origin": "http://192.168.128.92:8080"
+                        // 'Content-Length': output.length
+                    "Access-Control-Allow-Origin": "http://" + serverIp
                 });
                 response.write(output);
                 response.end();

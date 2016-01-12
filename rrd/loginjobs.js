@@ -35,6 +35,7 @@ function login(account, callback) {
                     callback(cookieJar);
                 })                
             } else {
+                console.log("body------:", body)
                 callback(null);
             }
         });

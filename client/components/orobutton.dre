@@ -1,19 +1,82 @@
-<class name="orobutton" height="150" width="360" >
+<class name="orobutton" height="auto" width="360" >
+    <include href="./touchdraggable.dre"/>
     <!--off: 0, ready: 1, on: 2-->
     <attribute name="status" value="0" type="number"/>
     <attribute name="istransfering" value="false" type="boolean"/>
-    <view height="80" x="50" y="10" width="${this.parent.width-100}" bgcolor="f0f0f0" border="0" bordercolor="c0c0c0"></view>                    
-    <view name="left" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" bgcolor="f0f0f0" clickable="true"></view>
-    <view name="mid" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="middle" bgcolor="f0f0f0" clickable="true"></view>
-    <view name="right" y="0" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="right" bgcolor="f0f0f0" clickable="true"></view>
-    <view height="78" x="50" y="11" width="${this.parent.width-100}" bgcolor="f0f0f0"></view>
+    <attribute name="btncolor" value="#ffffff" type="string"/>
+    <view height="80" x="50" y="60" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}" border="0" bordercolor="c0c0c0"></view>                    
+    <view name="left" y="50" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" bgcolor="${this.parent.btncolor}" clickable="true"></view>
+    <view name="mid" y="50" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="middle" bgcolor="${this.parent.btncolor}" clickable="true"></view>
+    <view name="right" y="50" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="right" bgcolor="${this.parent.btncolor}" clickable="true"></view>
+    <view height="78" x="50" y="61" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}"></view>
 
-    <text name="stoptxt" x="10" y="25" text="停止" fontsize="40" color="${this.classroot.status === 0? 'e0e0e0' : 'e0e0e0'}"/>
-    <text name="readytxt" y="25" text="预览" x="middle" fontsize="40" color="${this.classroot.status === 1? 'e0e0e0' : 'e0e0e0'}"/>
-    <text name="starttxt" y="25" text="开启" x="${this.parent.width-this.width-10}" fontsize="40" color="${this.classroot.status === 2? 'e0e0e0' : 'e0e0e0'}"/>
+    <text name="stoptxt" x="10" y="75" text="退出" fontsize="40" color="e0e0e0"/>
+    <text name="readytxt" y="75" text="登陆" x="middle" fontsize="40" color="e0e0e0"/>
+    <text name="starttxt" y="75" text="投标" x="${this.parent.width-this.width-10}" fontsize="40" color="e0e0e0"/>
 
-    <view name="btn"  y="7" x="7" width="86" height="86" cornerradius="43" bgcolor="c0c0c0" border="5" bordercolor="c0c0c0">
+    <view name="btn"  with="touchdraggable" dragaxis="x"
+        y="57" x="7" width="86" height="86" cornerradius="43" bgcolor="c0c0c0" border="10" bordercolor="c0c0c0">
+        <view x="middle" y="middle" width="30" height="30"  gradient="['linear', 90,'#c0c0c0 10%', '#d0d0d0 20%', '#b0b0b0 35%', '#d0d0d0 50%', '#b0b0b0 65%', '#d0d0d0 80%', '#b0b0b0 90%', '#c0c0c0']">
+        </view>
+
+        <method name="__doTouchStart" args="event">
+            this.super();
+            this.classroot.stoptxt.animate({attribute:'y', to: 0 , duration:300, motion:"easyout"});
+            this.classroot.readytxt.animate({attribute:'y', to: 0 , duration:300, motion:"easyout"});
+            this.classroot.starttxt.animate({attribute:'y', to: 0 , duration:300, motion:"easyout"});
+            this.updateText();
+        </method>
+        
+        <method name="__doTouchEnd" args="event">
+            this.super();
+            this.classroot.stoptxt.animate({attribute:'y', to: 75 , duration:300, motion:"easyout"});
+            this.classroot.readytxt.animate({attribute:'y', to: 75 , duration:300, motion:"easyout"});
+            this.classroot.starttxt.animate({attribute:'y', to: 75, duration:300, motion:"easyout"});
+            this.updateText();
+        </method>
+        
+        <method name="updateText">
+            var s = this.xToStatus(this.x);
+            this.classroot.stoptxt.setAttribute("bold", s===0);
+            this.classroot.readytxt.setAttribute("bold", s===1);
+            this.classroot.starttxt.setAttribute("bold", s===2);
+        </method>
+
+        <method name="xToStatus" args="x">
+            var pw = this.parent.width;
+            var midx = x+this.width/2;
+            var s = 0;
+            if (midx < pw/3) s = 0;
+            else if (midx < 2*pw/3) s = 1;
+            else  s = 2;
+            return s;
+        </method>
+        
+        <method name="updatePosition" args="x, y">
+            if (!this.disabled) {
+              var s = this.xToStatus(x);
+              if (s === 0) this.setAttribute('x', 7);
+              else if (s === 1) this.setAttribute('x', "middle");
+              else  this.setAttribute('x', this.parent.width-this.width-7);
+              this.updateText();
+            }
+        </method>
+
+        <handler event="onisdragging" args="dragging">
+            if (dragging) {
+
+            } else {
+                var pw = this.parent.width;
+                var midx = this.x+this.width/2;
+
+                if (midx < pw/3) this.parent.doOnDrag(0);
+                else if (midx < 2*pw/3) this.parent.doOnDrag(1); 
+                else  this.parent.doOnDrag(2); 
+            }
+        </handler>
     </view>
+
+<!-- 
     <handler event="onclick" args="event" reference="this.left">
         this.doOnClick(this.left);
     </handler>
@@ -24,22 +87,24 @@
 
     <handler event="onclick" args="event" reference="this.right">
         this.doOnClick(this.right); 
-    </handler>
+    </handler> -->
 
     <handler event="onstatus" args="s">
         this.updateUIStatus();
     </handler>
-
+    
     <method name="updateUIStatus">
         if (!this.inited) return;
         if (this.status === 0) {
             this.btn.setAttribute("bordercolor", "c0c0c0");
             this.btn.setAttribute("bgcolor", "c0c0c0");
             this.btn.setAttribute("x", 7);
+            this.readytxt.setAttribute("text", "登陆");
         } else if (this.status === 1) {
             this.btn.setAttribute("bordercolor", "orange");
             this.btn.setAttribute("bgcolor", "c0c0c0");
             this.btn.setAttribute("x","middle");
+            this.readytxt.setAttribute("text", "暂停");
         } else if (this.status === 2)  {
             this.btn.setAttribute("bordercolor", "orange");
             this.btn.setAttribute("bgcolor", "orange");
@@ -61,14 +126,15 @@
         }})
     </method>
 
-    <method name="doOnClick" args="v"><![CDATA[
+    <method name="doOnDrag" args="v"><![CDATA[
         if (this.istransfering) return;
 
-        if (v===this.left && this.status !== 0) this.setAttribute("status", 0);
-        else if (v===this.mid && this.status === 0) this.setAttribute("status", 1);
-        else if (v===this.mid && this.status === 2) this.setAttribute("status", 0);
-        else if (v===this.right && this.status === 0) this.setAttribute("status", 1);
-        else if (v===this.right && this.status === 1) this.setAttribute("status", 2);
+        if (v===0 && this.status !== 0) this.setAttribute("status", 0);
+        else if (v===1 && this.status === 0) this.setAttribute("status", 1);
+        else if (v===1 && this.status === 2) this.setAttribute("status", 1);
+        else if (v===2 && this.status === 0) this.setAttribute("status", 1);
+        else if (v===2 && this.status === 1) this.setAttribute("status", 2);
+
     ]]>
     </method>
 

@@ -21,6 +21,11 @@
         this.titleTxt.setAttribute("text", this.title);
         this._slider = new dr.rangeslider(this,  this.rangesliderattributes);
         this.listenTo( this._slider, "onrangevalues", "handleRangeValues")
+        this.listenTo( this._slider, "onvaluechangedafterdragging", "handleValueChangedAfterDragging")
+    </method>
+
+    <method name="handleValueChangedAfterDragging" args="vs">
+        //override to get values;
     </method>
 
     <method name="handleRangeValues" args="values"><![CDATA[
@@ -41,6 +46,7 @@
     <method name="getRangeValues">
         return this._slider.getRangeValues();
     </method>
+
 </class>
 
 <class name="rangeslider" width="500" height="200" bgcolor="f0f0f0" cornerradius="10"
@@ -200,9 +206,15 @@
         this.updateRangeLabelDisplay();
         if (dragging) {
             this.updateSpan();
+            this._valueOnDragging = this.getRangeValues();
         } else {
             this.adjustLeftRightPositions();
+            var vs = this.getRangeValues();
+            var valueChangedAfterDragging = this._valueOnDragging.left !== vs.left || this._valueOnDragging.right !== vs.right;
+            if (valueChangedAfterDragging) this.sendEvent('onvaluechangedafterdragging', vs);
         }
+        
+        
     </method>
     
     <method name="updateSpan">

@@ -1,5 +1,4 @@
 <class name="accountdao" extends="node">
-    <attribute name="host" type="string" value="https://192.168.0.125"/>
     <attribute name="user" type="string"/>
     <attribute name="password" type="string"/>
     <attribute name="tradepassword" type="string"/>
@@ -36,20 +35,26 @@
         this.setAttributes(attrs);
     </method>
 
+    <method name="update" args="attrs">
+        this.setAttributes(attrs);
+    </method>
+
     <method name="getStatusSummary">
         console.log("getStatusSummary", this.status, this.action)
         if (this.status === "invalid") {
             return this.getLoginValidatingSummary();
         } else if (this.status === "loading") {
-            return "loading";
+            return <![CDATA["<span style='color:#f0f0f0;font-size: 40px'>加载中...</span><br>";]]>
         } else if (this.status === "successful") {
             return this.getAccountSummary();
-        } else if (this.status === "NOT_EXIST_USERNAME" || this.status === "NO_MATCH_USERNAME_PASSWORD") {
+        } else if (this.status === "failed") {
             return this.getStatusObjSummary();
         } else {
+            console.log("this.status:", this.status)
             return "Error!";
         }
     </method>
+
     <method name="toJSON">
         var json = {
             user: this.user, 
@@ -63,6 +68,10 @@
             pricePerBidMax: this.priceperbidmax
             };
             return json;
+    </method>
+    
+    <method name="isAccountBiddingStarted">
+        return this.action === "startAccountBidding";
     </method>
 
     <method name="startAccountBidding" args="callback">
@@ -126,6 +135,7 @@
             var params = this.toJSON();
 
             this.sendUpdateAccountInfo(params, function (status, resJson) {
+                me.statusObj = null;
                 if (status === 200) {
                     if (resJson.user) {
                         me.setAttribute("status", "successful");
@@ -133,7 +143,7 @@
                         me.availablebalance = resJson.availableBalance;
                     } else {
                     //{"resultId":"01","resultMsg":"NOT_EXIST_USERNAME","failedMessage":"用户名不存在","sessionId":"","lockHour":"4","lockCount":"5","failedCount":"0","userName":"coolinker1"}
-                        me.setAttribute("status", resJson.resultMsg);
+                        me.setAttribute("status", "failed");
                         me.statusObj = resJson;
                     }
                     
@@ -187,27 +197,31 @@
     <method name="validateLoginInfo">
         var user = this.user;
         var pwd = this.password;
-        var jypwd = this.tradepassword;
+        //var jypwd = this.tradepassword;
 
-        return user && pwd && jypwd;
+        return user && pwd;// && jypwd;
     </method>
 
+    <method name="getApiUrl" args="action">
+        var host = window.location.host;
+        return "https://"+host+"/api?action="+action;
+    </method>
 
     <method name="sendStartAccountBidding" args="info, callback">
         var req = this.getHttpRequest(callback);
-        req.open("POST", this.host+"/api?action=startAccountBidding", true);
+        req.open("POST", this.getApiUrl("startAccountBidding"), true);
         req.send(JSON.stringify(info));
     </method>
 
     <method name="sendStopAccountBidding" args="info, callback">
         var req = this.getHttpRequest(callback);
-        req.open("POST", this.host+"/api?action=stopAccountBidding", true);
+        req.open("POST",  this.getApiUrl("stopAccountBidding"), true);
         req.send(JSON.stringify(info));
     </method>
 
     <method name="sendUpdateAccountInfo" args="info, callback">
         var req = this.getHttpRequest(callback);
-        req.open("POST", this.host+"/api?action=getAccountInfo", true);
+        req.open("POST", this.getApiUrl("getAccountInfo"), true);
         req.send(JSON.stringify(info));
     </method>
     
