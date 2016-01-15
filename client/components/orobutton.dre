@@ -14,9 +14,9 @@
     <text name="readytxt" y="75" text="登陆" x="middle" fontsize="40" color="e0e0e0"/>
     <text name="starttxt" y="75" text="投标" x="${this.parent.width-this.width-10}" fontsize="40" color="e0e0e0"/>
 
-    <view name="btn"  with="touchdraggable" dragaxis="x"
-        y="57" x="7" width="86" height="86" cornerradius="43" bgcolor="c0c0c0" border="10" bordercolor="c0c0c0">
-        <view x="middle" y="middle" width="30" height="30"  gradient="['linear', 90,'#c0c0c0 10%', '#d0d0d0 20%', '#b0b0b0 35%', '#d0d0d0 50%', '#b0b0b0 65%', '#d0d0d0 80%', '#b0b0b0 90%', '#c0c0c0']">
+    <view name="btn"  with="touchdraggable" dragaxis="x" gradient="['radial', 'farthest-corner', '#8586da', '#1b2a69']" 
+        y="57" x="7" width="86" height="86" cornerradius="43" border="0" bordercolor="c0c0c0">
+        <view x="middle" y="middle" width="30" height="30"  gradient="['linear', 90,'rgba(192,192,192,0) 10%', 'rgba(224,224,224,0.8)  15%', 'rgba(192,192,192,0.3) 20%', 'rgba(192,192,192,0) 40%',  'rgba(224,224,224,0.8)  45%', 'rgba(192,192,192,0.3) 50%', 'rgba(192,192,192,0) 70%', 'rgba(224,224,224,0.8) 75%', 'rgba(192,192,192,0.3) 80%',  'rgba(192,192,192,0) 100%']">
         </view>
 
         <method name="__doTouchStart" args="event">
