@@ -10,6 +10,8 @@
             <include href="./components/section.dre"/>
             <include href="./components/labelinput.dre"/>
             <include href="./components/fundtypeselector.dre"/>
+            <include href="./components/anitext.dre"/>
+            <include href="./components/messageboard.dre"/>
             <include href="./dao/accountdao.dre"/>
             <include href="./lupanel.dre"/>
             <include href="./rrdpanel.dre"/>

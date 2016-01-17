@@ -44,7 +44,7 @@
         if (this.status === "invalid") {
             return this.getLoginValidatingSummary();
         } else if (this.status === "loading") {
-            return <![CDATA["<span style='color:#f0f0f0;font-size: 40px'>加载中...</span><br>";]]>
+            return <![CDATA["<span style='color:#404040;font-size: 40px'>加载中...</span><br>";]]>
         } else if (this.status === "successful") {
             return this.getAccountSummary();
         } else if (this.status === "failed") {
@@ -188,7 +188,7 @@
 
     <method name="getAccountSummary"><![CDATA[
         var str = "<span style='color:orange;font-size: 80px;line-height:1'>" + this.user+"</span><br>";
-        str += "可投金额：<span style='color:orange;font-size: 60px;line-height:2'>" + this.availablebalance+"</span>元<br>";
+        str += "可投金额：<span style='color:orange;'>" + this.availablebalance+"</span>元<br>";
         str += "登陆时间："+new Date(this.lastloggedintime).toLocaleString();
         return str;
     ]]>

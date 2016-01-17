@@ -43,6 +43,7 @@ function startAccountBidding(accountJson, callback) {
     var acc = accountqueue.getAccount(accountObj);
     var result = {action: "startAccountBidding"};
     if (acc) {
+        acc.config(accountJson);
         acc.startedBidding = true;
         if (acc.cookieJar) {
             startNewProductCheck(acc.source);

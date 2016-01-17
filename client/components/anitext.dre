@@ -1,0 +1,27 @@
+<class name="anitext" extends="text">
+    <attribute name="anipercent" type="number"/>
+    <attribute name="displaytext" type="string"/>
+
+    <method name="aniShow" args="text, dur">
+        if (text) this.displaytext = text;
+        if (!dur) dur = 800;
+        return this.animate({attribute: 'anipercent', from:0, to:1, duration:dur, motion: 'easyout'});
+    </method>
+    
+    <handler event="oninit">
+        if (this.displaytext) {
+            var me = this;
+            setTimeout(function(){
+                me.aniShow();
+            }, 2000)
+            
+        }
+    </handler>
+
+    <handler event="onanipercent" args="per">
+        var len = Math.round(this.displaytext ? this.displaytext.length * per : 0);
+        var txt = this.displaytext.substr(0, len);
+        this.setAttribute("text", txt);
+    </handler>
+
+</class>

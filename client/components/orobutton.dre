@@ -4,21 +4,23 @@
     <attribute name="status" value="0" type="number"/>
     <attribute name="istransfering" value="false" type="boolean"/>
     <attribute name="btncolor" value="#ffffff" type="string"/>
-    <view height="80" x="50" y="60" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}" border="0" bordercolor="c0c0c0"></view>                    
-    <view name="left" y="50" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" bgcolor="${this.parent.btncolor}" clickable="true"></view>
-    <view name="mid" y="50" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="middle" bgcolor="${this.parent.btncolor}" clickable="true"></view>
-    <view name="right" y="50" height="100" width="100" cornerradius="50" border="0"  bordercolor="c0c0c0" x="right" bgcolor="${this.parent.btncolor}" clickable="true"></view>
-    <view height="78" x="50" y="61" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}"></view>
+    <!-- <view height="80" x="50" y="60" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}" border="0" bordercolor="c0c0c0"></view>                     -->
+    <view height="10" x="50" y="95" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}" border="1" bordercolor="c0c0c0"></view>
+    <view name="left" y="50" height="100" width="100" cornerradius="50" border="1"  bordercolor="c0c0c0" bgcolor="${this.parent.btncolor}" clickable="true"></view>
+    <view name="mid" y="50" height="100" width="100" cornerradius="50" border="1"  bordercolor="c0c0c0" x="middle" bgcolor="${this.parent.btncolor}" clickable="true"></view>
+    <view name="right" y="50" height="100" width="100" cornerradius="50" border="1"  bordercolor="c0c0c0" x="right" bgcolor="${this.parent.btncolor}" clickable="true"></view>
+    <view height="7" x="50" y="96" width="${this.parent.width-100}" bgcolor="${this.parent.btncolor}"></view>
 
     <text name="stoptxt" x="10" y="75" text="退出" fontsize="40" color="e0e0e0"/>
-    <text name="readytxt" y="75" text="登陆" x="middle" fontsize="40" color="e0e0e0"/>
+    <text name="readytxt" y="75" text="登录" x="middle" fontsize="40" color="e0e0e0"/>
     <text name="starttxt" y="75" text="投标" x="${this.parent.width-this.width-10}" fontsize="40" color="e0e0e0"/>
 
-    <view name="btn"  with="touchdraggable" dragaxis="x" gradient="['radial', 'farthest-corner', '#8586da', '#1b2a69']" 
+<!-- gradient="['radial', 'farthest-corner', 'rgba(255,128,0,1)', 'orange']"  -->
+    <view name="btn"  with="touchdraggable" dragaxis="x"  bgcolor="orange"
         y="57" x="7" width="86" height="86" cornerradius="43" border="0" bordercolor="c0c0c0">
-        <view x="middle" y="middle" width="30" height="30"  gradient="['linear', 90,'rgba(192,192,192,0) 10%', 'rgba(224,224,224,0.8)  15%', 'rgba(192,192,192,0.3) 20%', 'rgba(192,192,192,0) 40%',  'rgba(224,224,224,0.8)  45%', 'rgba(192,192,192,0.3) 50%', 'rgba(192,192,192,0) 70%', 'rgba(224,224,224,0.8) 75%', 'rgba(192,192,192,0.3) 80%',  'rgba(192,192,192,0) 100%']">
-        </view>
-
+        <!-- <view x="middle" y="middle" width="30" height="30"  gradient="['linear', 90,'rgba(152,152,152,0) 10%', 'rgba(224,224,224,0.8)  15%', 'rgba(152,152,152,0.3) 20%', 'rgba(152,152,152,0) 40%',  'rgba(224,224,224,0.8)  45%', 'rgba(152,152,152,0.3) 50%', 'rgba(152,152,152,0) 70%', 'rgba(224,224,224,0.8) 75%', 'rgba(152,152,152,0.3) 80%',  'rgba(152,152,152,0) 100%']">
+        </view> -->
+        <text name="arrow" bold="true" x="middle" y="middle" text=">>" fontsize="60" color="ff9010"/>
         <method name="__doTouchStart" args="event">
             this.super();
             this.classroot.stoptxt.animate({attribute:'y', to: 0 , duration:300, motion:"easyout"});
@@ -93,28 +95,32 @@
         this.updateUIStatus();
     </handler>
     
-    <method name="updateUIStatus">
+    <method name="updateUIStatus"><![CDATA[
         if (!this.inited) return;
         if (this.status === 0) {
-            this.btn.setAttribute("bordercolor", "c0c0c0");
-            this.btn.setAttribute("bgcolor", "c0c0c0");
+            this.btn.setAttribute("bordercolor", "orange");
+            this.btn.setAttribute("bgcolor", "orange");
             this.btn.setAttribute("x", 7);
+            this.btn.arrow.setAttribute("text", ">>");
             this.readytxt.setAttribute("text", "登陆");
         } else if (this.status === 1) {
             this.btn.setAttribute("bordercolor", "orange");
-            this.btn.setAttribute("bgcolor", "c0c0c0");
+            this.btn.setAttribute("bgcolor", "orange");
             this.btn.setAttribute("x","middle");
+            this.btn.arrow.setAttribute("text", "<>");
             this.readytxt.setAttribute("text", "暂停");
         } else if (this.status === 2)  {
             this.btn.setAttribute("bordercolor", "orange");
             this.btn.setAttribute("bgcolor", "orange");
             this.btn.setAttribute("x", this.width-this.btn.width-7);
+            this.btn.arrow.setAttribute("text", "<<");
         }
 
         if (!this.istransfering) {
             this.setAttribute("istransfering", true);
             this.animateTransfering();
         }
+        ]]>
     </method>
     
     <method name="animateTransfering">

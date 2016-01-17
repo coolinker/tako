@@ -2,10 +2,10 @@
     <attribute name="rangesliderattributes" value="" type="object"/>
      <attribute name="title" value="untitled" type="string"/>
     <attribute name="unit" value="元" type="string"/>
-    <text name="titleTxt" fontsize="40" color="black"  rightborder="0" leftborder="0" cornerradius="10" 
+    <text name="titleTxt" fontsize="40" color="404040"  rightborder="0" leftborder="0" cornerradius="10" 
         bordercolor="808080">
     </text>
-    <text name="unitLabel" x="right" fontsize="40" fontfamily="roboto" color="black"
+    <text name="unitLabel" x="right" fontsize="40" fontfamily="roboto" color="404040"
         rightborder="0" leftborder="0" cornerradius="10" bordercolor="808080">
     </text>
 
@@ -29,7 +29,8 @@
     </method>
 
     <method name="handleRangeValues" args="values"><![CDATA[
-        var titlet = this.title + ":<span style='color:orange;font-size: 45px;line-height:1'>" + values.left + this.unit+ " ~ " + values.right+ this.unit + "</span>";
+        var titlet = this.title + ":<span style='color:orange;'>" + values.left + this.unit+ " ~ " + values.right+ this.unit + "</span>";
+        //var titlet = this.title +": "+ values.left + this.unit+ " ~ " + values.right+ this.unit 
         this.titleTxt.sprite.platformObject.innerHTML = titlet;
         ]]>
     </method>
@@ -49,7 +50,7 @@
 
 </class>
 
-<class name="rangeslider" width="500" height="200" bgcolor="f0f0f0" cornerradius="10"
+<class name="rangeslider" width="500" height="200" bgcolor="e8e8e8" cornerradius="10"
     bordercolor="f0f0f0" border="1" leftpadding="50" rightpadding="50" toppadding="0" clip="true">
     <include href="./touchdraggable.dre"/>
     <attribute name="startvalue" value="0" type="number"/>
@@ -98,10 +99,10 @@
              
        </handler>
     </view>
-    <text name="startLabel" fontsize="40" color="808080" fontfamily="roboto"></text>
-    <text name="endLabel"  fontsize="40" color="808080" fontfamily="roboto"></text>
-    <text name="rangeLeftLabel"  fontsize="40" color="808080" fontfamily="roboto"></text>
-    <text name="rangeRightLabel"  fontsize="40" color="808080" fontfamily="roboto"></text>
+    <text name="startLabel" fontsize="40" color="404040" fontfamily="roboto"></text>
+    <text name="endLabel"  fontsize="40" color="404040" fontfamily="roboto"></text>
+    <text name="rangeLeftLabel"  fontsize="40" color="404040" fontfamily="roboto"></text>
+    <text name="rangeRightLabel"  fontsize="40" color="404040" fontfamily="roboto"></text>
     
     <handler event="onwidth" reference="this.rangeLeftLabel" method="updateRangeLabelDisplay"></handler>
     <handler event="onwidth" reference="this.rangeRightLabel" method="updateRangeLabelDisplay"></handler>

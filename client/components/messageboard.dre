@@ -1,0 +1,39 @@
+<class name="messageboard" border="0" bordercolor="f8f8f8" leftpadding="10" gradient="['linear', 155, 'rgba(160,160,160, 0.1) 0%', 'rgba(160,160,160, 0.2) 50%',  'rgba(160,160,160, 0.1) 100%']" cornerradius="5">
+    <attribute name="messagequeue" type="expression" value="[]"/>
+    <attribute name="shifting" type="boolean" value="false"/>
+    <!--view width="100%" height="100%" bgcolor="d0d0d0" opacity="0.3"  cornerradius="5"/-->
+    <text name="lastmsg" x="0" y="5" color="d0d0d0" fontsize="30" italic="true" opacity="0.3"/>
+    <anitext  name="msg" x="0" y="${this.parent.height-this.height}" color="e8e8e8" fontsize="40" italic="true"/>
+    <handler event="oninit">
+        if (this.messagequeue.length>0) {
+            var me = this;
+            setTimeout(function(){
+                me.nextMessage();
+            }, 3000)
+            
+            
+        }
+    </handler>
+     <method name="pushMessage" args="msg">
+        this.messagequeue.push(msg);
+        if (!this.shifting) {
+            this.nextMessage();
+        }    
+     </method>
+
+     <method name="nextMessage">
+        this.shifting = true;
+        var msg = this.messagequeue.shift();
+        if (msg) {
+            this.lastmsg.setAttribute("text", this.msg.displaytext);
+            var me = this;
+            this.msg.aniShow(msg).next(function(){
+                me.nextMessage();
+            });
+        } else {
+            this.shifting = false;
+        }
+     </method>
+
+
+</class>

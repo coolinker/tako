@@ -27,13 +27,15 @@ CommonAccount.prototype.consumeHistory = {};
 CommonAccount.prototype.startedBidding = false; 
 CommonAccount.prototype.config = function (obj){
     for (var att in obj) {
-        if (att === "test") continue;
         this[att] = obj[att];
     }
     return this;
 };
 
-
+// CommonAccount.prototype.updateBidingParams = function (obj){
+//     if (obj.interestLevelMin !== undefined) this.interestLevelMin = 
+//     return this;
+// };
 CommonAccount.prototype.loggedIn = function (){
     return !!this.cookieJar;
 }

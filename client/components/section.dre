@@ -1,7 +1,7 @@
-<class name="section" defaultplacement="content" topborder="1" bottomborder="1" bordercolor="c0c0c0" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="30" height="auto" bgcolor="ffffff">
+<class name="section" defaultplacement="content" topborder="1" bottomborder="1" bordercolor="c0c0c0" cornerradius="0" leftpadding="30" rightpadding="30" bottompadding="30" height="auto" bgcolor="fbfbfb">
     <attribute name="issummarymode" type="boolean" value="false"/>
     <attribute name="showpreviewbutton" type="boolean" value="true"/>
-    <text name="titleText" text="${this.parent.title}"  color="black" fontsize="50" y="-30" bgcolor="#ffffff"></text>
+    <text name="titleText" text="${this.parent.title}"  color="404040" fontsize="50" y="-30" bgcolor="fbfbfb"></text>
     <text color="orange"  clickable="true" x="right" fontsize="40" italic="true" fontsize="60" bold="true" visible="false">
         <handler event="oninit">
             this.updateDisplay();
@@ -19,11 +19,11 @@
             //this.setAttribute("text", this.classroot.ispreviewmode ? "↩" : "预览");
         </method>
     </text>
-    <view name="content" y="80" width="100%">
+    <view name="content" y="60" width="100%">
     </view>
 
-    <view name="previewView" y="80" width="100%" clip="true" hight="auto" bottompadding="60">
-        <text name="txt" fontsize="40" color="#808080" multiline="true" width="100%">
+    <view name="previewView" y="60" width="100%" clip="true" hight="auto" bottompadding="60">
+        <text name="txt" fontsize="40" color="#404040" multiline="true" width="100%">
         </text>
         <!-- <handler event="onclick">
             this.classroot.setAttribute("ispreviewmode", false);

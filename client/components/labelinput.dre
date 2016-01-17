@@ -2,10 +2,10 @@
     <attribute name="label" type="string"/>
     <attribute name="labelwidth" type="number"/>
     <attribute name="labelalign" type="string" value="right"/>
-    <attribute name="labelcolor" type="string"/>
+    <attribute name="labelcolor" type="string" value="404040"/>
     <attribute name="inputtype" value="text" type="string"/>
     <text name="labelView" text="${this.parent.label}" color="${this.parent.labelcolor}"
-        bordercolor="f0f0f0" bgcolor="f0f0f0" y="bottom" height="100%" toppadding="30"
+        bordercolor="f0f0f0" bgcolor="e8e8e8" y="bottom" height="100%" toppadding="30"
         textalign="${this.parent.labelalign}" width="${this.parent.labelwidth}" fontsize="40"
         topleftcornerradius="${this.parent.topleftcornerradius}"
         bottomleftcornerradius="${this.parent.bottomleftcornerradius}"></text>

@@ -82,23 +82,29 @@
         usersection.setAttribute("ispreviewmode", false);
     </method>
 
-    <view width="100%" height="120" gradient="['linear', 45, '#1b2a69 40%', '#5556aa']" leftpadding="15" toppadding="15" >
-        <text text="${this.parent.parent.title}"  fontsize="80" bold="false" fontfamily="微软雅黑" color="ffffff"></text>
+    <view name="titleBar" width="100%" height="120" gradient="['linear', 45, '#1b2a69 40%', '#5556aa']" padding="15">
+        <text text="${this.parent.parent.title}"  fontsize="80" bold="false" color="f8f8f8"></text>
+       <!--  <text name="ltxt" x="right" y="20" color="8586ca" text="" italic="true" fontsize="30"/>
+        <anitext name="anitxt" x="right" y="bottom" color="f8f8f8" displaytext="请登录..." italic="true" fontsize="40"/>
+         -->
+        <messageboard name="msgboard" x="right" y="bottom" height="80" width="300" messagequeue="['请登录...']">
+
+        </messageboard>
     </view>
-    <view name="scrollp" y="120"  width="100%" height="${this.parent.height-this.y}"  scrollable="true">
+    <view name="scrollp" y="120"  width="100%" height="${this.parent.height-this.y}"  scrollable="true" bgcolor="fbfbfb">
          <view name="scrollv" padding="0" width="100%" height="auto">
             <spacedlayout axis="y" spacing="30" updateparent="true" inset="60" />
             
             <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="true">
                 <spacedlayout axis="y" spacing="0" updateparent="true" />
-                <labelinput name="user" labelcolor="black" label="用户名:" labelwidth="220" width="850" 
-                    border="2" bordercolor="f0f0f0" topleftcornerradius="10" toprightcornerradius="10"></labelinput>
-                <labelinput name="pwd"  labelcolor="black" label="密码:" labelwidth="220" width="850"
-                    leftborder="2" rightborder="2" bordercolor="f0f0f0" inputtype="password">
+                <labelinput name="user" label="用户名:" labelwidth="220" width="850" 
+                    border="2" bordercolor="e8e8e8" topleftcornerradius="10" toprightcornerradius="10"></labelinput>
+                <labelinput name="pwd" label="密码:" labelwidth="220" width="850"
+                    leftborder="2" rightborder="2" bordercolor="e8e8e8" inputtype="password">
 
                 </labelinput>
-                <labelinput name="jypwd" labelcolor="black" label="交易密码:" labelwidth="220" width="850"
-                    border="2" bordercolor="f0f0f0" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password"></labelinput>
+                <labelinput name="jypwd" label="交易密码:" labelwidth="220" width="850"
+                    border="2" bordercolor="e8e8e8" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password"></labelinput>
                 <infobutton ignorelayout="true" x="right"/>
                 <view height="10"/>
                
@@ -137,7 +143,7 @@
 
             </section>
 
-            <view width="100%" height="180"  bottompadding="30">
+            <view width="100%" height="150"  bottompadding="40">
                 <!-- <text text="投标状态:" fontsize="40" y="middle"></text> -->
                 <orobutton x="middle" y="center" btncolor="#f0f0f0">
                     <handler event="oninit">
@@ -181,13 +187,27 @@
                         var action = this.classroot.accountdao.action;
                         
                         if (action==="updateAccountInfo") {
-                            if (status === "invalid") this.setAttribute("status", 0);
-                            //else if (status === "successful") this.setAttribute("status", 1);
-                            else if (status === "failed") this.setAttribute("status", 0);
+                            if (status === "invalid") {
+                                this.setAttribute("status", 0);
+                                this.classroot.titleBar.msgboard.pushMessage("登陆信息错误!");
+                                this.classroot.titleBar.msgboard.pushMessage("请登录...");
+                            } else if (status === "successful") {
+                                this.classroot.titleBar.msgboard.pushMessage("登录成功!");
+                            } else if (status === "failed") {
+                                this.setAttribute("status", 0);
+                                this.classroot.titleBar.msgboard.pushMessage("登陆信息错误!");
+                                this.classroot.titleBar.msgboard.pushMessage("请登录...");
+                            } else if (status === "loading") {
+                                this.classroot.titleBar.msgboard.pushMessage("登录中...");
+                            }
                             this.setAttribute("istransfering", status==="loading")
                         } else if (action === "stopAccountBidding") {
                             //if (status === "successful") this.setAttribute("status", 1);
                             this.setAttribute("istransfering", status==="loading");
+                            this.classroot.titleBar.msgboard.pushMessage(status==="loading"?"暂停投标...": "投标已暂停!");
+                        } else if (action === "startAccountBidding") {
+
+                            this.classroot.titleBar.msgboard.pushMessage(status==="loading" ? "开始投标...":  "投标已开始...");
                         }
                     </method>
 
@@ -211,7 +231,7 @@
                 
             </view>
             <section name="bidSettings" title="投标设置"  width="100%" bottompadding="80">
-                <spacedlayout axis="y" spacing="80" updateparent="true"  inset="0"/>
+                <spacedlayout axis="y" spacing="50" updateparent="true"  inset="0"/>
 
                 <fundtypeselectior name="fundtype" width="100%" data='[{"label":"稳盈-安e ", "types":[["新", false], ["转", true]]}, {"label":"稳盈-安e+", "types":[["新", false], ["转", true]]}]'>
                     <handler event="onchange" args="item">
