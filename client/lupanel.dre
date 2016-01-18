@@ -95,7 +95,7 @@
          <view name="scrollv" padding="0" width="100%" height="auto">
             <spacedlayout axis="y" spacing="30" updateparent="true" inset="60" />
             
-            <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="true">
+            <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="true" bottomborder="0">
                 <spacedlayout axis="y" spacing="0" updateparent="true" />
                 <labelinput name="user" label="用户名:" labelwidth="220" width="850" 
                     border="2" bordercolor="e8e8e8" topleftcornerradius="10" toprightcornerradius="10"></labelinput>
@@ -143,9 +143,8 @@
 
             </section>
 
-            <view width="100%" height="150"  bottompadding="40">
-                <!-- <text text="投标状态:" fontsize="40" y="middle"></text> -->
-                <orobutton x="middle" y="center" btncolor="#f0f0f0">
+            <view width="100%" >
+                <orobutton x="middle" y="-100" btncolor="#f0f0f0">
                     <handler event="oninit">
                         var me = this;
                         this.listenTo(this.classroot.accountdao, "onstatus", "_handleStatusChanged")
@@ -206,7 +205,6 @@
                             this.setAttribute("istransfering", status==="loading");
                             this.classroot.titleBar.msgboard.pushMessage(status==="loading"?"暂停投标...": "投标已暂停!");
                         } else if (action === "startAccountBidding") {
-
                             this.classroot.titleBar.msgboard.pushMessage(status==="loading" ? "开始投标...":  "投标已开始...");
                         }
                     </method>
@@ -230,6 +228,7 @@
                 </orobutton>
                 
             </view>
+            <view height="80"/>
             <section name="bidSettings" title="投标设置"  width="100%" bottompadding="80">
                 <spacedlayout axis="y" spacing="50" updateparent="true"  inset="0"/>
 
