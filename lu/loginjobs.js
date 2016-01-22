@@ -115,10 +115,10 @@ function login_brwoser(account, callback) {
                         account.availableBalance = info.availableFund;
                         account.uid = info.uid;
                         account.loginTime = new Date();
-                        callback(account.JSONInfo());
+                        callback(cookieJar, account.JSONInfo());
                     } else {                     
                         account.cookieJar = null;
-                        callback(info);
+                        callback(null, info);
                     }
                    // console.log("account.availableBalance:", account.availableBalance, account.uid, info)
                     
@@ -194,6 +194,7 @@ exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
     login(account, function(cookieJar, info) {
+        console.log("extendLogin======", cookieJar, info)
         callback(cookieJar);
     });
 }

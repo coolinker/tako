@@ -94,9 +94,9 @@ function loopNewTransfer_browser(startId, callback) {
 
     var productId = Number(startId);
     var productIdStart = productId;
-    var LOOP_INTERVAL = 500;
+    var LOOP_INTERVAL = 300;
     var loopjob = new LoopJob().config({
-        parallelRequests: 3,
+        parallelRequests: 2,
         url: "https://list.lu.com/list/service/product/*/productDetail",
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,

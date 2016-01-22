@@ -88,7 +88,7 @@ function confirmSpent(transferId, account, callback) {
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
     var shares = Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.5));
-    return shares;
+    return Math.min(shares, 1);
 }
 
 function ableToConsume(account, toBeConsumed) {

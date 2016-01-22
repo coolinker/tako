@@ -26,14 +26,22 @@ exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(accountJson, callback) {
     // var accountObj = addAccountJson(accountJson);
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-    accountqueue.loginAccount(accountObj, function(result) {
-        console.log("getAccountInfo result", result);
-        if (accountObj.cookieJar) {
-            accountqueue.addAccount(accountObj);
-        }
-        if (callback) callback(result);
+    var acc = accountqueue.getAccount(accountObj);
+    if (acc && !accountqueue.needRelogin(acc)) {
+         logutil.log("Account already logged in", acc.JSONInfo());
+         if (callback) callback(acc.JSONInfo());
 
-    });
+    } else {
+        accountqueue.loginAccount(accountObj, function(result) {
+            console.log("getAccountInfo result", result);
+            if (accountObj.cookieJar) {
+                accountqueue.addAccount(accountObj);
+            }
+            if (callback) callback(result);
+
+            });
+    }
+    
 }
 
 exports.startAccountBidding = startAccountBidding;

@@ -32,11 +32,12 @@ function login(account, callback) {
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
                     account.availableBalance = Number(userInfo.availableBalance.replace(",", ""));
-                    callback(cookieJar);
+                    account.loginTime = new Date();
+                    callback(cookieJar, account.JSONInfo());
                 })                
             } else {
                 console.log("body------:", body)
-                callback(null);
+                callback(null, {"resultId":"01", resultMsg: "LOGIN_ERROR", failedMessage: "登录失败！"});
             }
         });
 }

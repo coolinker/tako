@@ -41,9 +41,9 @@ function loginAccount(accountInfo, callback) {
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
     accountInfo.locked = true;
-    loginjobs.login(accountInfo, function(info) {
+    loginjobs.login(accountInfo, function(cookieJar, info) {
         accountInfo.locked = false;
-        if (accountInfo.cookieJar === null) {
+        if (cookieJar === null) {
             logutil.log("Account login failed", accountInfo.user, info.resultMsg);
         }
 
@@ -51,6 +51,7 @@ function loginAccount(accountInfo, callback) {
     })
 }
 
+exports.needRelogin = needRelogin;
 function needRelogin(account) {
     if (!account.cookieJar) return true;
     var letime = account.loginExtendedTime === null ? account.loginTime : account.loginExtendedTime;
@@ -151,7 +152,7 @@ function queueLogin() {
                         var _acc = acc;
                         return function(cookieJar) {
                             _acc.cookieJar = cookieJar;
-
+                            console.log("0000", cookieJar)
                             if (cookieJar === null) {
                                 logutil.log("extend login failed:", _acc.user);
                             } else {
