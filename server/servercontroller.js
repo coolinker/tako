@@ -1,11 +1,14 @@
-var logutil = require("./logutil");
-var rrdtransferloopjob = require("./rrd/transferloopjob");
-var lufaxtransferloopjob = require("./lu/transferloopjob");
+var logutil = require("../logutil");
+var rrdtransferloopjob = require("../rrd/transferloopjob");
+var lufaxtransferloopjob = require("../lu/transferloopjob");
 var JOBS_OBJ = {};
-var ACCOUNT_TYPES = require("./accounttypes");
+var ACCOUNT_TYPES = require("../accounttypes");
+
+var FEELERS = {};
+
 for (var att in ACCOUNT_TYPES) {
     try {
-        var job = require("./" + ACCOUNT_TYPES[att] + "/transferloopjob");
+        var job = require("../" + ACCOUNT_TYPES[att] + "/transferloopjob");
         var type = ACCOUNT_TYPES[att];
         if (!JOBS_OBJ[type]) JOBS_OBJ[type] = {};
         JOBS_OBJ[type]['transferloopjob'] = job;
@@ -14,15 +17,27 @@ for (var att in ACCOUNT_TYPES) {
     }
 }
 
-var accountqueue = require("./accountqueue");
+var accountqueue = require("../accountqueue");
 accountqueue.loopLogin();
 
-var CommonAccount = require("./commonaccount");
+var CommonAccount = require("../commonaccount");
 
 this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
 
-exports.getAccountInfo = getAccountInfo;
+exports.registerFeeler = registerFeeler;
+function registerFeeler(params, connection) {
+    var types = params.types;
+    for (var i=0; i<types.length; i++) {
+        if (FEELERS[types[i]]) {
+            logutil.log("Feeler already registered", types[i])
+        } else {
+            FEELERS[types[i]] = connection;
+            connection.sendUTF("{action: 'registerFeeler', status: 'connected'}");
+        }
+    }
+}
 
+exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(accountJson, callback) {
     // var accountObj = addAccountJson(accountJson);
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);

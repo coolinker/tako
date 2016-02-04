@@ -50,8 +50,8 @@ CommonAccount.prototype.JSONInfo = function (){
         pricePerBidMax: this.pricePerBidMax,
         startedBidding: this.startedBidding,
         interestLevelMin: this.interestLevelMin,
-        interestLevelMax: this.interestLevelMax
-           
+        interestLevelMax: this.interestLevelMax,
+        source: this.source
     }
 }
 

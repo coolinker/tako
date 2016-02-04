@@ -108,7 +108,7 @@ function updateAccountQueue() {
             if ( /*!accs[i].loggedIn() ||*/ accs[i].ableToConsume()) {
                 activeTypes[accountType] = true;
             } else if (!accs[i].isActive()){
-                console.log("remove account*******************:", accs[i])        
+                console.log("remove account*******************:", accs[i].user, accs[i].source);        
                 accs.splice(i, 1);
             }
         }
@@ -152,7 +152,6 @@ function queueLogin() {
                         var _acc = acc;
                         return function(cookieJar) {
                             _acc.cookieJar = cookieJar;
-                            console.log("0000", cookieJar)
                             if (cookieJar === null) {
                                 logutil.log("extend login failed:", _acc.user);
                             } else {

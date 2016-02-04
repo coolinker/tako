@@ -136,6 +136,7 @@
 
             this.sendUpdateAccountInfo(params, function (status, resJson) {
                 me.statusObj = null;
+                resJson = resJson.body;
                 if (status === 200) {
                     if (resJson.user) {
                         me.setAttribute("status", "successful");

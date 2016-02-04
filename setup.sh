@@ -7,7 +7,7 @@ git clone  https://github.com/teem2/dreem2.git
 git clone https://github.com/coolinker/tako.git
 
 cd dreem2/compositions/
-ln -s -d root/tako tako
+ln -sd /root/tako/ /root/dreem2/compositions/tako
 
 cd root/tako
 npm install get-pixels

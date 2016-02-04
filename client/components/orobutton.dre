@@ -78,18 +78,17 @@
         </handler>
     </view>
 
-<!-- 
     <handler event="onclick" args="event" reference="this.left">
-        this.doOnClick(this.left);
+        this.doOnDrag(0);
     </handler>
 
     <handler event="onclick" args="event" reference="this.mid">
-        this.doOnClick(this.mid); 
+        this.doOnDrag(1); 
     </handler>
 
     <handler event="onclick" args="event" reference="this.right">
-        this.doOnClick(this.right); 
-    </handler> -->
+        this.doOnDrag(2); 
+    </handler> 
 
     <handler event="onstatus" args="s">
         this.updateUIStatus();

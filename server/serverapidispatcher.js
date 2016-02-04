@@ -1,4 +1,4 @@
-var masterController = require("../mastercontroller");
+var masterController = require("servercontroller");
 
 exports.addAccount = addAccount;
 
@@ -16,7 +16,8 @@ function addAccount(params, callback) {
 
 exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(params, callback) {
-    masterController.getAccountInfo(params, function(responseInfo) {        
+    masterController.getAccountInfo(params, function(responseInfo) {
+            console.log("getAccountInfo:", responseInfo)   
             callback(JSON.stringify(responseInfo));    
     });
 
