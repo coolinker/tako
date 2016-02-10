@@ -22,11 +22,14 @@ var CommonAccount = require("../commonaccount");
 
 this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
 
-exports.getAccountInfo = getAccountInfo;
+var wsconnection;
+exports.setWebSocket = setWebSocket;
+function setWebSocket(ws) {
+    wsconnection = ws;
+}
 
+exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(accountJson, callback) {
-    // var accountObj = addAccountJson(accountJson);
-    console.log("accountJson", accountJson)
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
     var result = {
@@ -42,6 +45,7 @@ function getAccountInfo(accountJson, callback) {
             if (accountObj.cookieJar) {
                 accountqueue.addAccount(accountObj);
                 result.body = accountObj.JSONInfo();
+                accountObj.on("consumeHistory", handleConsumeHistory);
             } else {
                 result.body = info;
             }
@@ -51,8 +55,22 @@ function getAccountInfo(accountJson, callback) {
 
 }
 
-exports.startAccountBidding = startAccountBidding;
+function handleConsumeHistory(account, data) {
+    console.log("handleConsumeHistory", data, account.user)
+    var req = {
+        action: "updateConsumeHistory",
+        body: {
+            user: account.user,
+            source: account.source,
+            data: data
+        }
+    }
+    wsconnection.send(JSON.stringify(req), function(param){
+                console.log("feeler send handleConsumeHistory callback", param)
+            });
+}
 
+exports.startAccountBidding = startAccountBidding;
 function startAccountBidding(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
@@ -90,24 +108,23 @@ function stopAccountBidding(accountJson, callback) {
     //accountqueue.logoutAccount(accountObj, callback);
 }
 
-exports.addAccountJson = addAccountJson;
+// exports.addAccountJson = addAccountJson;
+// function addAccountJson(accountJson) {
+//     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
+//     var acc = accountqueue.getAccount(accountObj);
+//     var result = {
+//         action: "stoppedAccountBidding"
+//     };
+//     if (acc) {
+//         acc.config(accountJson);
+//         acc.startedBidding = false;
+//         result.resultMsg = "SUCCEED";
+//     } else {
+//         result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
+//     }
 
-function addAccountJson(accountJson) {
-    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-    var acc = accountqueue.getAccount(accountObj);
-    var result = {
-        action: "stoppedAccountBidding"
-    };
-    if (acc) {
-        acc.config(accountJson);
-        acc.startedBidding = false;
-        result.resultMsg = "SUCCEED";
-    } else {
-        result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
-    }
-
-    if (callback) callback(result);
-}
+//     if (callback) callback(result);
+// }
 
 function startNewProductCheck(source) {
     var accType = ACCOUNT_TYPES[source];
@@ -123,7 +140,6 @@ function startNewProductCheck(source) {
 }
 
 exports.removeAccountJson = removeAccountJson;
-
 function removeAccountJson(accountJson) {
     accountqueue.inactive(accountJson.user, accountJson.password, accountJson.source);
 }

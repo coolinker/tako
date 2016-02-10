@@ -11,6 +11,8 @@ function registerFeeler() {
         logutil.log("Connection existed!");
     }
     ws = new WebSocket('ws://'+takoIp+":8081");
+    
+    feelerController.setWebSocket(ws);
 
     ws.on ('open', function (){
             logutil.log("Connection open!");
@@ -19,7 +21,7 @@ function registerFeeler() {
                 body: ['lu', 'rrd']
             }
             ws.send(JSON.stringify(params), function(param){
-                console.log("0---", param)
+                console.log("feeler send callback", param)
             });
     });
 

@@ -21,16 +21,30 @@ function registerFeeler(jsonParams, callback, ws) {
         } else {
             FEELERS[types[i]] = ws;
             FEELERS[types[i]].callbacks_getAccountInfo = {};
-            FEELERS[types[i]].on("close", function(param) {
-                console.log("Remove feeler when closed", types[i])
-                delete FEELERS[types[i]];
-            })
+            FEELERS[types[i]].on("close", function (idx) {
+                    return function(param) {
+                    delete FEELERS[types[idx]];
+                }
+            }(i))
             callback({
                 status: 'connected',
                 type: [types[i]]
             });
 
         }
+    }
+}
+
+exports.updateConsumeHistory = updateConsumeHistory;
+function updateConsumeHistory (data) {
+    var user = data.user;
+    var source = data.source;
+    var consumedata = data.data;
+    var acc = accountqueue.getAccount({user: user, source: source});
+    if (acc) {
+        acc.consumeHistory.push(consumedata);
+    } else {
+        console.log("updateConsumeHistory, no account", user, source);
     }
 }
 
@@ -46,7 +60,6 @@ function getAccountInfo(accountJson, callback) {
             action: "getAccountInfo",
             body: accountJson
         };
-
         feeler.send(JSON.stringify(jsonToSend), null, function(params) {
             if (!feeler.callbacks_getAccountInfo[accountJson.user]) {
                 feeler.callbacks_getAccountInfo[accountJson.user] = [];
@@ -60,6 +73,7 @@ function getAccountInfo(accountJson, callback) {
             action: "getAccountInfo",
             resultMsg: "FEELER_NOT_REGISTERED"
         };
+        console.log("result----", result)
         callback(result);
     }
 

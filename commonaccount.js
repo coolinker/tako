@@ -1,11 +1,18 @@
 var logutil = require("./logutil");
+var events = require('events');
+
 var CommonAccount = function(user, source){
     this.user = user;
     this.source = source;
     this.createdTime = new Date();
-    this.consumeHistory = {};
+    this.consumeHistory = [];
+    //this.eventEmitter = new events.EventEmitter();
+    events.EventEmitter.call(this);
     //this.startedBidding = false;
 };
+
+CommonAccount.prototype.__proto__ = events.EventEmitter.prototype;
+
 CommonAccount.prototype.createdTime = null;
 CommonAccount.prototype.user = "";
 CommonAccount.prototype.password = "";
@@ -23,8 +30,10 @@ CommonAccount.prototype.reservedBalance = 10000;
 CommonAccount.prototype.pricePerBidMin = 0;
 CommonAccount.prototype.pricePerBidMax = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
-CommonAccount.prototype.consumeHistory = {};
+CommonAccount.prototype.consumeHistory = [];
 CommonAccount.prototype.startedBidding = false; 
+
+
 CommonAccount.prototype.config = function (obj){
     for (var att in obj) {
         this[att] = obj[att];
@@ -53,6 +62,10 @@ CommonAccount.prototype.JSONInfo = function (){
         interestLevelMax: this.interestLevelMax,
         source: this.source
     }
+}
+CommonAccount.prototype.addToConsumeHistory = function (obj) {
+    this.consumeHistory.push(obj);
+    this.emit('consumeHistory', this, obj);
 }
 
 CommonAccount.prototype.isActive = function () {

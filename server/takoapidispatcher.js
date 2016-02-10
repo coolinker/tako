@@ -33,6 +33,11 @@ function gotAccountInfo(params, callback) {
     });
 }
 
+exports.updateConsumeHistory = updateConsumeHistory;
+function updateConsumeHistory (data) {
+    takoController.updateConsumeHistory(data);
+}
+
 exports.addAccount = addAccount;
 function addAccount(params, callback) {
     takoController.addAccountJson(params, function(accountInfo) {
@@ -45,7 +50,6 @@ function addAccount(params, callback) {
     });
 
 }
-
 
 exports.startAccountBidding = startAccountBidding;
 function startAccountBidding(params, callback) {

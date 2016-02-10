@@ -49,11 +49,18 @@ function doConsume(account, toBeConsumed, callback) {
             function(err, request, body) {
                 if (request.statusCode === 302) {
                     confirmSpent(toBeConsumed.transferId, account, function(status, spent, shares) {
-                        if (!isNaN(spent)) {
+                        if (status === '0' && shares > 0 && !isNaN(spent) && spent > 0) {
                             account.availableBalance -= spent;
+                            account.lastConsumingTime = new Date();
+                            account.addToConsumeHistory({
+                                time: account.lastConsumingTime.getTime();
+                                spent: spent,
+                                shares: shares,
+                                interest: toBeConsumed.interest
+                            })
                         }
+
                         logutil.log("confirmSpent:", status, spent, shares, toBeConsumed.transferId, account.availableBalance);
-                        if (spent > 0) account.lastConsumingTime = new Date();
                         if (callback) callback(spent);
                         // account.locked = false;
                     })

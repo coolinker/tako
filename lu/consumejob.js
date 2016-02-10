@@ -23,7 +23,8 @@ securityValid(function(pkey, exp) {
 });
 
 exports.consume = consume;
-function consume(account, toBeConsumed, callback){
+
+function consume(account, toBeConsumed, callback) {
     var finished = consume_brwoser(account, toBeConsumed, callback);
     return finished;
 }
@@ -67,7 +68,6 @@ function consume(account, toBeConsumed, callback){
 
 function consume_brwoser(account, toBeConsumed, callback) {
     if (!ableToConsume(account, toBeConsumed)) return false;
-
     account.lock();
 
     logutil.log("lufax doConsume:", account.user, account.availableBalance, toBeConsumed.productId, toBeConsumed.publishTime, toBeConsumed.interest, toBeConsumed.price);
@@ -84,11 +84,12 @@ function consume_brwoser(account, toBeConsumed, callback) {
                 var ab = account.availableBalance;
                 account.availableBalance -= toBeConsumed.price;
                 account.lastConsumingTime = new Date();
-                setTimeout(function() {
-                    confirmSpent(productId, account, function(pobj) {
-                        logutil.log("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
-                    })
-                }, 3000)
+                confirmConsuming(account, toBeConsumed);
+                // setTimeout(function() {
+                //     confirmSpent(productId, account, function(pobj) {
+                //         logutil.log("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
+                //     })
+                // }, 3000)
             } else {
                 confirmSpent(productId, account, function(pobj) {
                     logutil.log("confirmSpent***********:", account.uid, productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
@@ -144,12 +145,41 @@ function consume_brwoser(account, toBeConsumed, callback) {
 
         }, 500)
 
-
-
-
     });
 
     return true;
+}
+
+function confirmConsuming(account, product) {
+    setTimeout(function() {
+        confirmSpent(product.productId, account, function(pobj) {
+            console.log("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName)
+             if (pobj.productStatus === "ONLINE") {
+                confirmConsuming(account, product)
+            } else if (pobj.productStatus === "DONE") {
+                if (matchUserName(account.user, pobj.buyerUserName)) {
+                    account.addToConsumeHistory({
+                        spent: toBeConsumed.price,
+                        interest: toBeConsumed.interest
+                    })
+                } else {
+                    console.log("confirmConsuming DONE***************", account.user, pobj.buyerUserName)
+                }
+            } else {
+                console.log("confirmConsuming else***************", pobj.productStatus)
+            }
+            logutil.log("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
+        })
+    }, 5000)
+}
+
+function matchUserName(name, ellipsisName){
+    var charstart_0 = name.charAt(0);
+    var charend_0 = name.charAt(name.length-1);
+    var charstart_1 = ellipsisName.charAt(0);
+    var charend_1 = ellipsisName.charAt(ellipsisName.length-1);
+
+    return charstart_0 === charend_0 && charstart_1 === charend_1
 }
 
 function getProductDetail(productId, callback) {
@@ -186,13 +216,7 @@ function confirmSpent(productId, account, callback) {
 
 function ableToConsume(account, toBeConsumed) {
     //console.log(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
-    return !account.locked 
-    && account.pricePerBidMax >= toBeConsumed.price 
-    && account.pricePerBidMin <= toBeConsumed.price 
-    && account.availableBalance > toBeConsumed.price 
-    && account.availableBalance - toBeConsumed.price > account.reservedBalance 
-    && account.interestLevelMin <= toBeConsumed.interest 
-    && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
+    return !account.locked && account.pricePerBidMax >= toBeConsumed.price && account.pricePerBidMin <= toBeConsumed.price && account.availableBalance > toBeConsumed.price && account.availableBalance - toBeConsumed.price > account.reservedBalance && account.interestLevelMin <= toBeConsumed.interest && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
 function mobileHeaders(account) {
@@ -296,7 +320,7 @@ function randomNumber() {
 }
 
 function investCheck(userId, productId, cookieJar, callback) {
-    
+
     //simplehttp.POST("https://list.lu.com/list/service/users/" + userId + "/products/" + productId + "/invest-check", {
     simplehttp.POST("https://list.lu.com/list/invest-check", {
             "cookieJar": cookieJar,
