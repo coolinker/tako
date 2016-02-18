@@ -28,6 +28,7 @@ wsServer.on('connection', function connection(ws) {
         data = JSON.parse(message);
 
         if (takoApiDispatcher[data.action]) {
+            
             takoApiDispatcher[data.action](data.body, function(responseJson) {
                 console.log("onmessage callback", responseJson)
             }, ws);

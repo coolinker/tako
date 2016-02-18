@@ -24,9 +24,9 @@ function loopNewTransfer(startId, callback) {
 
     var transferId = Number(startId);
     var hasNew = false;
-    var LOOP_INTERVAL = 300;
+    var LOOP_INTERVAL = 1000;
     var loopjob = new LoopJob().config({
-        parallelRequests: 2,
+        parallelRequests: 1,
         url: "http://www.we.com/transfer/loanTransferDetail.action", //http://api.we.com/2.0/loantransfer/detail.action
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,

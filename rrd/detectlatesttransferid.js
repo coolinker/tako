@@ -16,10 +16,14 @@ function detect(callback, step) {
             if (maxId < tid) maxId = tid;
         }
         console.log("detect startId", maxId)
-        detectMaxTransferId(maxId, callback, step);
+        delayDetectMaxTransferId(maxId, callback, step);
     });
 }
-
+function delayDetectMaxTransferId(startId, callback, step) {
+    setTimeout(function() {
+        detectMaxTransferId(startId, callback, step)
+    }, 500);
+}
 function detectMaxTransferId(startId, callback, step) {
     console.log("detectlatesttransferid...", startId, step);
     var detectId = startId + step;
@@ -27,7 +31,7 @@ function detectMaxTransferId(startId, callback, step) {
     simplehttp.GET(url, {}, function(error, response, body) {
         if (error) {
             console.log("error detectMaxTransferId", error);
-            detectMaxTransferId(startId, callback, step);
+            delayDetectMaxTransferId(startId, callback, step);
         } else if (response.statusCode == 200) {
             var errorcode = htmlparser.getValueFromBody('<div style="display: none;">', '</div>', body);
             if (errorcode === "500") {
@@ -35,18 +39,18 @@ function detectMaxTransferId(startId, callback, step) {
                 if (step === 1) {
                     callback(startId)
                 } else {
-                    detectMaxTransferId(startId, callback, Math.floor(step / 2));
+                    delayDetectMaxTransferId(startId, callback, Math.floor(step / 2));
                 }
             } else if (errorcode === null) {
 
-                detectMaxTransferId(detectId, callback, step);
+                delayDetectMaxTransferId(detectId, callback, step);
                 // callback(tid, callbackObj, step);
             } else {
                 console.log("??????????????????????? errorcode", errorcode)
             }
         } else {
             console.log("?????????????????????????????? statusCode", response.statusCode)
-            detectMaxTransferId(startId, callback, step);
+            delayDetectMaxTransferId(startId, callback, step);
         }
 
     });

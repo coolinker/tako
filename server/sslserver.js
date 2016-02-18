@@ -8,7 +8,7 @@ var https = require('https'),
 
 var port = 80;
 var networkInterfaces = os.networkInterfaces();
-var globalIPAddress =  process.argv[2] || os.platform() === "linux" ? networkInterfaces.eth1[0].address :  networkInterfaces.WLAN[1].address;
+var globalIPAddress =  process.argv[2] || (os.platform() === "linux" ? networkInterfaces.eth1[0].address :  networkInterfaces.WLAN[1].address);
 
 console.log("globalIPAddress", globalIPAddress)
 var apiDispatcher ;//= process.argv[2] === "tako" ? require("./takoapidispatcher.js") : require("./serverapidispatcher.js");
@@ -53,7 +53,6 @@ server.on('upgrade', function(req, socket, head) {
 
 var sslserver = https.createServer(options, function(req, res) {
     var uri = url.parse(req.url).pathname;
-    
     if (uri === "/api" && handleApiRequest(req, res)) {
         console.log("443 port api call", uri)
         return;

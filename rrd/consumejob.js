@@ -48,20 +48,16 @@ function doConsume(account, toBeConsumed, callback) {
             },
             function(err, request, body) {
                 if (request.statusCode === 302) {
-                    confirmSpent(toBeConsumed.transferId, account, function(status, spent, shares) {
-                        if (status === '0' && shares > 0 && !isNaN(spent) && spent > 0) {
-                            account.availableBalance -= spent;
+                    confirmSpent(toBeConsumed.transferId, account, function(prd) {
+                        if (prd.status === '0' && prd.shares > 0 && !isNaN(prd.price) && prd.price > 0) {
+                            account.availableBalance -= prd.price;
                             account.lastConsumingTime = new Date();
-                            account.addToConsumeHistory({
-                                time: account.lastConsumingTime.getTime();
-                                spent: spent,
-                                shares: shares,
-                                interest: toBeConsumed.interest
-                            })
+                            prd.tradeTime = account.lastConsumingTime.getTime();
+                            account.addToConsumeHistory(prd)
                         }
 
-                        logutil.log("confirmSpent:", status, spent, shares, toBeConsumed.transferId, account.availableBalance);
-                        if (callback) callback(spent);
+                        //logutil.log("confirmSpent", status===0, spent, shares, toBeConsumed.transferId, account.availableBalance);
+                        if (callback) callback(prd.price);
                         // account.locked = false;
                     })
                 } else {
@@ -86,16 +82,25 @@ function confirmSpent(transferId, account, callback) {
             //   <div id="pg-server-message" data-status="0" data-message="您已成功投资45.47元，获得1份债权及折让收益0.0元" data-ispop="true" style="display: none;"></div>
             //<div id="pg-server-message" data-status="1" data-message="该债权不能购买" data-ispop="" style="display: none;"></div>
             var status = htmlparser.getValueFromBody('id="pg-server-message" data-status="', '" data-message', body);
-            var spent = Number(htmlparser.getValueFromBody('您已成功投资', '元', body));
+            var displayName = htmlparser.getValueFromBody('<em class="title-text">', '</em>', body);
+            var price = Number(htmlparser.getValueFromBody('您已成功投资', '元', body));
+            var interest = Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body))/100;
             var share = Number(htmlparser.getValueFromBody('元，获得', '份债权及折让收益', body));
-            callback(status, spent, share);
+            callback({
+                status: status,
+                transferId: transferId,
+                displayName: displayName,
+                price: price,
+                shares: share,
+                interest: interest
+            });
         });
 }
 
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
     var shares = Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.5));
-    return Math.min(shares, 1);
+    return shares;
 }
 
 function ableToConsume(account, toBeConsumed) {

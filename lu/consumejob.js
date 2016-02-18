@@ -91,9 +91,10 @@ function consume_brwoser(account, toBeConsumed, callback) {
                 //     })
                 // }, 3000)
             } else {
-                confirmSpent(productId, account, function(pobj) {
-                    logutil.log("confirmSpent***********:", account.uid, productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
-                })
+                 confirmConsuming(account, toBeConsumed);
+                // confirmSpent(productId, account, function(pobj) {
+                //     logutil.log("confirmSpent***********:", account.uid, productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
+                // })
 
             }
 
@@ -153,14 +154,19 @@ function consume_brwoser(account, toBeConsumed, callback) {
 function confirmConsuming(account, product) {
     setTimeout(function() {
         confirmSpent(product.productId, account, function(pobj) {
-            console.log("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName)
+            console.log("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName, pobj)
              if (pobj.productStatus === "ONLINE") {
                 confirmConsuming(account, product)
             } else if (pobj.productStatus === "DONE") {
                 if (matchUserName(account.user, pobj.buyerUserName)) {
                     account.addToConsumeHistory({
-                        spent: toBeConsumed.price,
-                        interest: toBeConsumed.interest
+                        tradeTime: pobj.lastUpdateTime,
+                        productType: pobj.productType,
+                        displayName: pobj.displayName,
+                        price: pobj.price,
+                        interest: pobj.interestRateDisplay,
+                        publishedAtDateTime: pobj.publishedAtDateTime,
+                        tradingMode: pobj.tradingMode
                     })
                 } else {
                     console.log("confirmConsuming DONE***************", account.user, pobj.buyerUserName)
@@ -168,7 +174,7 @@ function confirmConsuming(account, product) {
             } else {
                 console.log("confirmConsuming else***************", pobj.productStatus)
             }
-            logutil.log("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
+            logutil.log("confirmSpent***********", pobj.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(pobj));
         })
     }, 5000)
 }
@@ -179,7 +185,7 @@ function matchUserName(name, ellipsisName){
     var charstart_1 = ellipsisName.charAt(0);
     var charend_1 = ellipsisName.charAt(ellipsisName.length-1);
 
-    return charstart_0 === charend_0 && charstart_1 === charend_1
+    return charstart_0 === charstart_1 && charend_0 === charend_1
 }
 
 function getProductDetail(productId, callback) {
@@ -570,7 +576,7 @@ function rollInvestCheck(account, product, callback) {
     }
 
 }
-
+/*
 function doInvest(account, productId, sid, callback) {
     // if (!ableToConsume(account, toBeConsumed)) return false;
     var cookieJar = account.cookieJar;
@@ -647,3 +653,4 @@ function doInvest(account, productId, sid, callback) {
 
     return true;
 }
+*/

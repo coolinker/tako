@@ -121,7 +121,7 @@ function loopNewTransfer_browser(startId, callback) {
 
                     if (productObj.productId) {
                         lastDetectTime = new Date();
-                        //if (!productObj.publishedAt) logutil.log("no publishAt", body)
+                        if (productObj.productStatus === "DONE") logutil.log("productStatus",productObj.productId, productObj.productStatus, productObj.price, productObj.interestRateDisplay, productObj.publishedAtDateTime)
 
                         if (productObj.productType === "TRANSFER_REQUEST" && productObj.tradingMode === "00" && productObj.productStatus === "ONLINE") {
                             callback({

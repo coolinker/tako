@@ -194,7 +194,7 @@ exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
     login(account, function(cookieJar, info) {
-        console.log("extendLogin======", cookieJar, info)
+        console.log("extendLogin======", account.user, account.source)
         callback(cookieJar);
     });
 }
