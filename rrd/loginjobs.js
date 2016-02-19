@@ -26,9 +26,9 @@ function login(account, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://www.we.com");
-           logutil.log("login function", cookie_string);
-
+           
             if (cookie_string.indexOf("rrd_key")>=0) {
+                logutil.log("login succeed", account.user, account.source);
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
                     account.availableBalance = Number(userInfo.availableBalance.replace(",", ""));

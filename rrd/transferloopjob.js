@@ -17,28 +17,32 @@ function rollNewProductCheck(callback) {
 }
 
 function loopNewTransfer(startId, callback) {
-    if (me.loopjob) {
+    if (this.loopjob) {
+        if (!this.loopjob.isLoopingStarted()) {
+            this.loopjob.startLooping();
+        }
         console.log("loopNewTransfer loopjob existed");
         return;
     }
-
+    var lastDetectTime = new Date();
+    var latestConsumedProductId = 0;
     var transferId = Number(startId);
     var hasNew = false;
     var LOOP_INTERVAL = 1000;
+    var detectStep = 0;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
         url: "http://www.we.com/transfer/loanTransferDetail.action", //http://api.we.com/2.0/loantransfer/detail.action
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,
         urlInjection: function(parallelIndex, url) {
-            return url + "?transferId=" + (transferId + parallelIndex);
+            return url + "?transferId=" + (transferId + parallelIndex + detectStep);
         },
         optionsInjection: function(parallelIndex, options) {
-            options.transferId = (transferId + parallelIndex);
+            options.transferId = (transferId + parallelIndex + detectStep);
             return options;
         },
         responseHandler: function(error, response, body) {
-
             if (error) {
                 //console.log("loanTransferDetail error:", error)
             } else if (response.statusCode == 200) {
@@ -46,10 +50,16 @@ function loopNewTransfer(startId, callback) {
                 if (errorcode === "500") {
                     if (hasNew) {
                         hasNew = false;
-                        console.log("-|", transferId, new Date().toLocaleTimeString())
+                        logutil.log("-|", transferId);
+                    }
+                    if ((new Date() - lastDetectTime) > 60000) {
+                        detectStep = Math.round(Math.random()*100)%5;
+                        console.log("go detect the latest", transferId, detectStep);
                     }
                     //no new item.
                 } else {
+                    detectStep = 0;
+                    lastDetectTime = new Date();
                     var sharesAvailable = Number(htmlparser.getValueFromBody('data-shares="', '">', body));
                     var interest = Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body));
                     interest = interest/100;
@@ -57,7 +67,9 @@ function loopNewTransfer(startId, callback) {
                     //var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
                     var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
                     var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
-
+                    var disabled = body.indexOf('此债权已不可购买') >= 0;
+                    var unknown = htmlparser.getValueFromBody(' UNKNOWN ', 'id="invest-submit"', body); 
+                            
                     var transferObj = {
                         transferId: transferId,
                         transferIdCode: transferIdCode,
@@ -72,14 +84,16 @@ function loopNewTransfer(startId, callback) {
                     };
                     hasNew = true;
                     //console.log("transferObj", JSON.stringify(transferObj))
-                    callback(transferObj);
-
+                    if (transferId > latestConsumedProductId) {
+                        callback(transferObj);
+                        latestConsumedProductId = transferId;
+                    }
                     var req = response.request;
                     var tid = req.__options.transferId;
                     
                     if (tid >= transferId) {
                         if (transferObj.interest >= 0.1 && transferObj.sharesAvailable >= 1) {
-                            logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
+                            logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
                         }
 
                         transferId = tid + 1;

@@ -9,7 +9,7 @@ var MINMONEY = 0;
 var MINRATE = 0.084;
 
 var isDetecting = false;
-var lastDetectTime = new Date();
+var lastDetectTime;
 
 var rollingIntervalObj;
 
@@ -41,16 +41,46 @@ function detectLastProductId(callback) {
                 } else {
                     var lidstr = ids[ids.length - 1];
                     var lastPid = htmlparser.getValueFromBody('productId=', '\'', lidstr);
-                    callback(Number(lastPid));
-                    isDetecting = false;
+                    detectLatestProductId(Number(lastPid), 0, 100, function(pid) {
+                        callback(pid);
+                        isDetecting = false;
+                    });
                 }
-
             })
-
         }
     });
 }
-
+function detectLatestProductId(pid, pidstep, interval , callback) {
+    var url = "https://list.lu.com/list/service/product/"+(pid+pidstep)+"/productDetail";
+    simplehttp.GET(url , {}, function(error, response, body) {
+        var productObj;
+        try {
+            productObj = JSON.parse(body);  
+        } catch (e) {
+            console.log("e:", e, pid, pidstep, interval)
+        }
+        if (!productObj) {
+            detectLatestProductId(pid, pidstep, interval, callback);
+        } else if (productObj.productId) {
+            var time = Math.max(0, new Date() - new Date(productObj.publishedAtDateTime));
+            var steps = Math.floor(time/interval);
+            if (!productObj.publishedAtDateTime) steps = 1;
+            //logutil.log("detectLatestProductId===", pid+pidstep, steps, interval, productObj.publishedAtDateTime)
+            if (steps >= 1) {
+                detectLatestProductId(pid+pidstep, steps , interval, callback)
+            } else  {
+                callback(pid+pidstep);
+            }
+        } else if (pidstep === 1) {
+            logutil.log("detectLatestProductId step is 1", pid, 2* interval, body)
+            callback(pid+pidstep);
+        } else {
+            logutil.log("detectLatestProductId 2*interval", pid, pidstep,  2* interval)
+            detectLatestProductId(pid, 1, 2* interval, callback)
+        }
+        
+    })
+}
 
 function detectLastPage(callback) {
     if (isDetecting) return;
@@ -63,9 +93,7 @@ function detectLastPage(callback) {
         } else {
             callback(null);
         }
-
         isDetecting = false;
-
     });
 }
 
@@ -74,7 +102,7 @@ function rollNewProductCheck(callback) {
     if (isDetecting) return;
     var transfers = [];
     detectLastProductId(function(productId) {
-        console.log("productId=", productId)
+        console.log("detected latest id", productId)
         loopNewTransfer_browser(productId, function(product) {
             return callback(product);
         })
@@ -87,11 +115,15 @@ function randomNumber() {
 }
 
 function loopNewTransfer_browser(startId, callback) {
-    if (me.loopjob) {
+    if (this.loopjob) {
+        if (!this.loopjob.isLoopingStarted()) {
+            this.loopjob.startLooping();
+        }
         console.log("loopNewTransfer loopjob existed");
         return;
     }
-
+    lastDetectTime = new Date();
+    var latestConsumedProductId = 0;
     var productId = Number(startId);
     var productIdStart = productId;
     var LOOP_INTERVAL = 300;
@@ -110,6 +142,7 @@ function loopNewTransfer_browser(startId, callback) {
             return u;
         },
         responseHandler: function(error, response, body) {
+
             if (error) {
                 // logutil.log("responseHandler error:", error)
             } else if (response.statusCode == 200) {
@@ -118,8 +151,8 @@ function loopNewTransfer_browser(startId, callback) {
                 var catchException;
                 try {
                     var productObj = JSON.parse(body);
-
-                    if (productObj.productId) {
+                    
+                    if (productObj.productId && productObj.productId > latestConsumedProductId) {
                         lastDetectTime = new Date();
                         if (productObj.productStatus === "DONE") logutil.log("productStatus",productObj.productId, productObj.productStatus, productObj.price, productObj.interestRateDisplay, productObj.publishedAtDateTime)
 
@@ -132,6 +165,8 @@ function loopNewTransfer_browser(startId, callback) {
                                 source: "www.lu.com",
                                 producedTime: new Date()
                             });
+                            
+                            latestConsumedProductId = productObj.productId;
 
                             if (productObj.amount < 5000)
                                 logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
@@ -154,9 +189,8 @@ function loopNewTransfer_browser(startId, callback) {
                     // console.log(body)    
                 } finally {
                     // logutil.log("detectLastProductId", productObj  ? productObj.productId: "no id", catchException)
-                    if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 10000) {
+                    if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 20000) {
                         lastDetectTime = new Date();
-                        // logutil.log("detectLastProductId-----", productId)
                         detectLastProductId(function(lastProductId) {
                             if (lastProductId > productId) {
                                 productId = lastProductId;

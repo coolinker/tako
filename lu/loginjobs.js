@@ -153,7 +153,7 @@ function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://user.lu.com");
-            logutil.log("doLogin -> login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, cookie_string, body);
+            logutil.log("doLogin -> login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, body);
             if (cookie_string.indexOf("lufaxSID") < 0) {
                 callback(JSON.parse(body));
             } else {

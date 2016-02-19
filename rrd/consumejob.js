@@ -61,7 +61,7 @@ function doConsume(account, toBeConsumed, callback) {
                         // account.locked = false;
                     })
                 } else {
-                    console.log("ERROR consumejob consume");
+                    console.log("ERROR consumejob consume", toBeConsumed.transferId);
                     if (callback) callback(null);
                 }
 
