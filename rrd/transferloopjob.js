@@ -30,16 +30,19 @@ function loopNewTransfer(startId, callback) {
     var hasNew = false;
     var LOOP_INTERVAL = 1000;
     var detectStep = 0;
+    var disabledStep = 0;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
         url: "http://www.we.com/transfer/loanTransferDetail.action", //http://api.we.com/2.0/loantransfer/detail.action
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,
         urlInjection: function(parallelIndex, url) {
-            return url + "?transferId=" + (transferId + parallelIndex + detectStep);
+            var tsfrid = transferId + parallelIndex + detectStep + disabledStep;
+            return url + "?transferId=" + tsfrid;
         },
         optionsInjection: function(parallelIndex, options) {
-            options.transferId = (transferId + parallelIndex + detectStep);
+            var tsfrid = transferId + parallelIndex + detectStep + disabledStep;
+            options.transferId = tsfrid;
             return options;
         },
         responseHandler: function(error, response, body) {
@@ -52,8 +55,10 @@ function loopNewTransfer(startId, callback) {
                         hasNew = false;
                         logutil.log("-|", transferId);
                     }
-                    if ((new Date() - lastDetectTime) > 60000) {
-                        detectStep = Math.round(Math.random()*100)%5;
+                    if (disabledStep>0) {
+                        disabledStep = 0;
+                    } else if ((new Date() - lastDetectTime) > 60000) {
+                        detectStep = Math.round(Math.random()*10)%5;
                         console.log("go detect the latest", transferId, detectStep);
                     }
                     //no new item.
@@ -95,8 +100,10 @@ function loopNewTransfer(startId, callback) {
                         if (transferObj.interest >= 0.1 && transferObj.sharesAvailable >= 1) {
                             logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
                         }
-
                         transferId = tid + 1;
+                        if (disabled) {
+                            disabledStep = 10;//Math.round(Math.random()*10);
+                        }
                     }
                 }
             } else {
