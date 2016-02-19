@@ -58,8 +58,7 @@ function loopNewTransfer(startId, callback) {
                     if (disabledStep>0) {
                         disabledStep = 0;
                     } else if ((new Date() - lastDetectTime) > 60000) {
-                        detectStep = Math.round(Math.random()*10)%5;
-                        console.log("go detect the latest", transferId, detectStep);
+                        detectStep = Math.floor(Math.random()*10)%5;
                     }
                     //no new item.
                 } else {
