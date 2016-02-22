@@ -154,7 +154,7 @@ function consume_brwoser(account, toBeConsumed, callback) {
 function confirmConsuming(account, product) {
     setTimeout(function() {
         confirmSpent(product.productId, account, function(pobj) {
-            console.log("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName, pobj)
+            console.log("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName)
              if (pobj.productStatus === "ONLINE") {
                 confirmConsuming(account, product)
             } else if (pobj.productStatus === "DONE") {
@@ -174,7 +174,7 @@ function confirmConsuming(account, product) {
             } else {
                 console.log("confirmConsuming else***************", pobj.productStatus)
             }
-            logutil.log("confirmSpent***********", pobj.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(pobj));
+            logutil.log("confirmSpent***********", pobj.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime);
         })
     }, 5000)
 }
