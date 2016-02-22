@@ -60,7 +60,6 @@ function loopNewTransfer(startId, callback) {
                         disabledStep = 0;
                     } else if ((new Date() - lastDetectTime) > 60000) {
                         detectStep = Math.floor(Math.random()*5);
-                        logutil.log("lastDetectTime-------------------------------", lastDetectTime)
                     }
                     //no new item.
                 } else {

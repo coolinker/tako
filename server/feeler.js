@@ -3,6 +3,8 @@ var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
 var feelerController = require("./feelercontroller");
 var takoIp = process.argv[2];
+var services =  process.argv[3].split(',');
+console.log("tako server ip:", takoIp, "services:", services);
 
 var WebSocket = require('ws');
 var ws;
@@ -18,7 +20,7 @@ function registerFeeler() {
             logutil.log("Connection open!");
             var params = {
                 action: "registerFeeler",
-                body: ['lu', 'rrd']
+                body: services
             }
             ws.send(JSON.stringify(params), function(param){
                 console.log("feeler send callback", param)
