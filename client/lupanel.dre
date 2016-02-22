@@ -97,18 +97,18 @@
             
             <section name="userInfo" title="账户信息" width="100%" showpreviewbutton="true" bottomborder="0">
                 <spacedlayout axis="y" spacing="0" updateparent="true" />
-                <labelinput name="user" label="用户名:" labelwidth="220" width="850" 
+                <labelinput name="user" label="用户名:" labelwidth="220" width="100%" 
                     border="2" bordercolor="e8e8e8" topleftcornerradius="10" toprightcornerradius="10"></labelinput>
-                <labelinput name="pwd" label="密码:" labelwidth="220" width="850"
+                <labelinput name="pwd" label="密码:" labelwidth="220" width="100%"
                     leftborder="2" rightborder="2" bordercolor="e8e8e8" inputtype="password">
 
                 </labelinput>
-                <labelinput name="jypwd" label="交易密码:" labelwidth="220" width="850"
+                <labelinput name="jypwd" label="交易密码:" labelwidth="220" width="100%"
                     border="2" bordercolor="e8e8e8" bottomleftcornerradius="10" bottomrightcornerradius="10" inputtype="password"></labelinput>
-                <infobutton ignorelayout="true" x="right"/>
-                <view height="10"/>
+                <!--infobutton ignorelayout="true" x="right"/-->
+                <!--view height="10"/-->
                
-                <text text="查看账户信息" color="orange"
+                <!--text text="查看账户信息" color="orange"
                     clickable="true" fontsize="40" italic="true" underline="true">
                     <handler event="onwidth">
                         this.setAttribute("x", this.parent.jypwd.x+this.parent.jypwd.width-this.width)
@@ -117,7 +117,7 @@
                     <handler event="onclick">
                         this.classroot.updateAccountInfo();                        
                     </handler>
-                </text>
+                </text-->
                 
                 <text name="backbtn" text="知道了" color="orange" ignoreplacement="true"
                     clickable="true" fontsize="40" italic="true" underline="true" 
@@ -143,20 +143,20 @@
 
             </section>
 
-            <view width="100%" >
-                <orobutton x="middle" y="-100" btncolor="#f0f0f0">
+            <view width="100%" padding="30" toppadding="0">
+                <actionbuttons width="100%">
                     <handler event="oninit">
                         var me = this;
                         this.listenTo(this.classroot.accountdao, "onstatus", "_handleStatusChanged")
                         this.listenTo(this.classroot.accountdao, "onaction", "_handleActionChanged")
                     </handler>
 
-                    <method name="doOnDrag" args="v"><![CDATA[
+                    <method name="doOnClick" args="v"><![CDATA[
                         var prestatus = this.status;
                         this.super();
                         if (!this.inited) return;
                         var me = this;
-                        var s = this.status;
+                        var s = this.tostatus;
                         if (s===1 && prestatus === 0) {
                             this.classroot.updateAccountInfo(function(){
                                 me.setAttribute("istransfering", false);
@@ -212,20 +212,22 @@
                     <method name="_handleActionChanged" args="action">
                         console.log("_handleActionChanged", action, this.classroot.accountdao.status);
                         var status = this.classroot.accountdao.status;
+                        if (!status === "") return;
+
                         if (action === "updateAccountInfo") {
-                            this.setAttribute("status", status === "invalid" ? 0 : 1);
+                            //this.setAttribute("status", status === "invalid" ? 0 : 1);
                             this.setAttribute("istransfering", status !== "invalid");
                         } else  if (action === "startAccountBidding"){
-                            this.setAttribute("status", 2);
+                            //this.setAttribute("status", 2);
                             this.setAttribute("istransfering", true);
                         } else  if (action === "stopAccountBidding"){
-                            this.setAttribute("status", 1);
+                            //this.setAttribute("status", 1);
                             this.setAttribute("istransfering", true);
                         }  
                         //this.setAttribute("istransfering", s==="loading")
                         
                     </method>
-                </orobutton>
+                </actionbuttons>
                 
             </view>
             <view height="80"/>

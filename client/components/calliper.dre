@@ -159,20 +159,34 @@
         this.end.setAttribute("y", this.height/2-this.end.height/2);
         this.range.setAttribute("y", this.height/2-this.range.height/2);
 
-        var fixedEndWidth = 80;
-        var flexibleEndWidth = 60
+        var fixedEndWidth = 100;
+        var flexibleEndWidth = 80
         var left = this.rangeLeft;
-        left.setAttribute("width", this.rangemasteronleft ? fixedEndWidth : flexibleEndWidth);
-        left.setAttribute("height", this.rangemasteronleft ? fixedEndWidth : flexibleEndWidth);
-        left.setAttribute("cornerradius", this.rangeleftdraggable ? left.width : 0);
+        if (this.rangeleftdraggable) {
+            left.setAttribute("width", this.rangemasteronleft ? fixedEndWidth : flexibleEndWidth);
+            left.setAttribute("height", this.rangemasteronleft ? fixedEndWidth : flexibleEndWidth);
+            left.setAttribute("cornerradius", left.width);
+        } else {
+            left.setAttribute("width", 60);
+            left.setAttribute("height", 60);
+            left.setAttribute("cornerradius", 0);
+        }
+
         left.setAttribute("clickable", this.rangeleftdraggable);
         left.setAttribute("y", (this.height-left.height)/2);
         
         var right = this.rangeRight;
-        right.setAttribute("width", this.rangemasteronright ? fixedEndWidth : flexibleEndWidth);
-        right.setAttribute("height", this.rangemasteronright ? fixedEndWidth : flexibleEndWidth);
+        if (this.rangerightdraggable) {
+            right.setAttribute("width", this.rangemasteronright ? fixedEndWidth : flexibleEndWidth);
+            right.setAttribute("height", this.rangemasteronright ? fixedEndWidth : flexibleEndWidth);
+            right.setAttribute("cornerradius", right.width);
+        } else {
+            right.setAttribute("width", 60);
+            right.setAttribute("height", 60);
+            right.setAttribute("cornerradius", 0);
+        }
+
         right.setAttribute("y", (this.height-this.rangeRight.height)/2);
-        right.setAttribute("cornerradius", this.rangerightdraggable ? right.width : 0);
         right.setAttribute("clickable", this.rangerightdraggable);
 
         this.base.setAttribute("x", this.start.width/2)

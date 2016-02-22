@@ -4,6 +4,7 @@
         <screen type="mobile" name="default" bgcolor="white">
             <include href="./components/ajaxsupport.dre"/>
             <include href="./components/orobutton.dre"/>
+            <include href="./components/actionbuttons.dre"/>
             <include href="./components/infobutton.dre"/>
             <include href="./components/calliper.dre"/>
             <include href="./components/ajaxbutton.dre"/>

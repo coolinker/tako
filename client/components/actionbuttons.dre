@@ -1,0 +1,123 @@
+<class name="actionbutton" width="200" height="100" border="2" bordercolor="orange" bgcolor="#e8e8e8">
+    <attribute name="enabled" value="true" type="boolean"/>
+    <attribute name="text" value="" type="string"/>
+    <text name="txt" x="center" y="middle" text="${this.classroot.text}" fontsize="40"></text>
+    <handler event="onmousedown">
+        if (this.enabled)
+            this.setAttribute("border", 5);
+    </handler>
+
+    <handler event="onmouseup">
+        this.setAttribute("border", 2);
+    </handler>
+
+    <handler event="onenabled" args="b">
+        this.updateUI();
+        this.setAttribute("clickable", b);
+    </handler>
+
+    <method name="updateUI">
+        this.setAttribute("bordercolor", this.enabled?"orange": "#c0c0c0");
+        this.txt.setAttribute("color", this.enabled?"orange": "#c0c0c0");
+    </method>
+
+</class>
+
+<class name="actionbuttons" height="auto" width="360" >
+    <!--off: 0, ready: 1, on: 2-->
+    <attribute name="status" value="0" type="number"/>
+    <attribute name="tostatus" value="0" type="number"/>
+    <attribute name="istransfering" value="false" type="boolean"/>
+    <attribute name="anitribute" value="0" type="number"/>
+    <attribute name="btncolor" value="#ffffff" type="string"/>
+    <resizelayout axis="x" spacing="10"/>
+    <actionbutton name="pause" text="停止投标" enabled="false"></actionbutton>
+    <actionbutton name="cont" text="开始投标" enabled="false"></actionbutton>
+    <view name="spacer" layouthint='{"weight":1}'/>
+    <actionbutton name="login" text="登陆"></actionbutton>
+
+    <handler event="onclick" args="event" reference="this.login">
+        this.doOnClick(this.status===0?1:0);
+    </handler>
+
+    <handler event="onclick" args="event" reference="this.pause">
+        this.doOnClick(1); 
+    </handler>
+
+    <handler event="onclick" args="event" reference="this.cont">
+        this.doOnClick(2); 
+    </handler> 
+    
+    <handler event="onistransfering">
+        if (!this.inited) return;
+        console.log("onistransfering=====", this.istransfering)
+        if (!this.istransfering) {
+            this.setAttribute("status", this.tostatus);
+        } else {
+            this.animateTransfering();
+        }
+    </handler>
+
+    <handler event="onstatus" args="s">
+        console.log("onstatus", this.status)
+        this.updateUI();
+    </handler>
+    
+    <handler event="onanitribute">
+        if (!this.inited) return;
+        if (!this.istransfering) return;
+        var btn;
+        if (this.status === 0 && this.tostatus === 1 || this.tostatus === 0) btn = this.login;
+        else if (this.status === 1 && this.tostatus === 2) btn = this.cont;
+        else if (this.status === 2 && this.tostatus === 1) btn = this.pause;
+        else if (!this.istransfering && this.status === 1) btn;
+        console.trace(this.status, this.tostatus)
+        if (this.anitribute === 0) {
+            btn.setAttribute("enabled", false);
+        } else if (this.anitribute === 1) {
+            btn.setAttribute("enabled", true);
+        }
+    </handler>
+
+    <method name="updateUI">
+        if (!this.inited) return;
+        if (this.status === 0) {
+            this.pause.setAttribute("enabled", false);
+            this.cont.setAttribute("enabled", false)
+            this.login.setAttribute("text", "登陆");
+        } else if (this.status === 1) {
+            this.pause.setAttribute("enabled", false);
+            this.cont.setAttribute("enabled", true)
+            this.login.setAttribute("text", "退出");
+        } else if (this.status === 2)  {
+            this.pause.setAttribute("enabled", true);
+            this.cont.setAttribute("enabled", false)
+        }
+    </method>
+    
+    <method name="animateTransfering">
+        var me = this;
+        this.animate({attribute: 'anitribute',relative: false, to: this.anitribute===1?0:1, duration: 300, motion: "linear", callback: function(){
+            if (me.istransfering) {
+                me.animateTransfering();
+            } else {
+                //me.updateUI();
+            }
+
+        }})
+    </method>
+
+    <method name="doOnClick" args="v"><![CDATA[
+        if (this.istransfering) return;
+        
+        if (v===0 && this.status !== 0) this.setAttribute("tostatus", 0);
+        else if (v===1 && this.status === 0) this.setAttribute("tostatus", 1);
+        else if (v===1 && this.status === 2) this.setAttribute("tostatus", 1);
+        else if (v===2 && this.status === 0) this.setAttribute("tostatus", 1);
+        else if (v===2 && this.status === 1) this.setAttribute("tostatus", 2);
+        
+        this.setAttribute("istransfering", true);
+    ]]>
+    </method>
+
+</class>

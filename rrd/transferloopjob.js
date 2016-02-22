@@ -56,9 +56,11 @@ function loopNewTransfer(startId, callback) {
                         logutil.log("-|", transferId);
                     }
                     if (disabledStep>0) {
+                        logutil.log("disabledStep-------------------------------", disabledStep)                        
                         disabledStep = 0;
                     } else if ((new Date() - lastDetectTime) > 60000) {
-                        detectStep = Math.floor(Math.random()*10)%5;
+                        detectStep = Math.floor(Math.random()*5);
+                        logutil.log("lastDetectTime-------------------------------", lastDetectTime)
                     }
                     //no new item.
                 } else {
@@ -88,7 +90,7 @@ function loopNewTransfer(startId, callback) {
                     };
                     hasNew = true;
                     //console.log("transferObj", JSON.stringify(transferObj))
-                    if (transferId > latestConsumedProductId) {
+                    if (!disabled && transferId > latestConsumedProductId) {
                         callback(transferObj);
                         latestConsumedProductId = transferId;
                     }
@@ -96,12 +98,12 @@ function loopNewTransfer(startId, callback) {
                     var tid = req.__options.transferId;
                     
                     if (tid >= transferId) {
-                        if (transferObj.interest >= 0.1 && transferObj.sharesAvailable >= 1) {
+                        if (transferObj.interest >= 0.13 && transferObj.sharesAvailable >= 1) {
                             logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
                         }
                         transferId = tid + 1;
                         if (disabled) {
-                            disabledStep = 10;//Math.round(Math.random()*10);
+                            disabledStep = Math.floor(Math.random()*5);
                         }
                     }
                 }
