@@ -2,12 +2,16 @@ var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var detectLatestTransferId = require("./detectlatesttransferid");
 var LoopJob = require("../loopjob");
+var detectStarted = false;
 var me = this;
 exports.rollNewProductCheck = rollNewProductCheck;
 
 function rollNewProductCheck(callback) {
     var transfers = [];
+    if (detectStarted) return;
+    detectStarted = true;
     detectLatestTransferId(function(startId) {
+        detectStarted = false;
         loopNewTransfer(startId, function(newTransferObj) {
             // transfers.push(newTransferObj);
             // if (transfers.length > 100) transfers.shift();
@@ -27,7 +31,7 @@ function loopNewTransfer(startId, callback) {
     var lastDetectTime = new Date();
     var latestConsumedProductId = 0;
     var transferId = Number(startId);
-    var hasNew = false;
+    var hasNew = true;
     var LOOP_INTERVAL = 1000;
     var detectStep = 0;
     var disabledStep = 0;

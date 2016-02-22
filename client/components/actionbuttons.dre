@@ -65,13 +65,16 @@
     
     <handler event="onanitribute">
         if (!this.inited) return;
-        if (!this.istransfering) return;
+        if (!this.istransfering) {
+            this.updateUI();
+            return;
+        }
+
         var btn;
         if (this.status === 0 && this.tostatus === 1 || this.tostatus === 0) btn = this.login;
         else if (this.status === 1 && this.tostatus === 2) btn = this.cont;
         else if (this.status === 2 && this.tostatus === 1) btn = this.pause;
         else if (!this.istransfering && this.status === 1) btn;
-        console.trace(this.status, this.tostatus)
         if (this.anitribute === 0) {
             btn.setAttribute("enabled", false);
         } else if (this.anitribute === 1) {
@@ -81,6 +84,7 @@
 
     <method name="updateUI">
         if (!this.inited) return;
+        this.login.setAttribute("enabled", true);
         if (this.status === 0) {
             this.pause.setAttribute("enabled", false);
             this.cont.setAttribute("enabled", false)
