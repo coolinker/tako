@@ -142,7 +142,7 @@
                         this.listenTo(this.classroot.accountdao, "onaction", "_handleActionChanged")
                     </handler>
 
-                    <method name="doOnDrag" args="v"><![CDATA[
+                    <method name="doOnClick" args="v"><![CDATA[
                         var prestatus = this.status;
                         this.super();
                         if (!this.inited) return;
