@@ -155,6 +155,7 @@ function queueLogin() {
                             if (cookieJar === null) {
                                 logutil.log("extend login failed:", _acc.user);
                             } else {
+                                logutil.log("extend login:", _acc.user, _acc.source);
                                 _acc.loginExtendedTime = new Date();
                             }
 

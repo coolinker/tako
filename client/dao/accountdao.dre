@@ -44,7 +44,7 @@
         if (this.status === "invalid") {
             return this.getLoginValidatingSummary();
         } else if (this.status === "loading") {
-            return <![CDATA["<span style='color:#404040;font-size: 40px'>加载中...</span><br>";]]>
+            return "loading";// <![CDATA["<span style='color:#404040;font-size: 40px'>加载中...</span><br>";]]>
         } else if (this.status === "successful") {
             return this.getAccountSummary();
         } else if (this.status === "failed") {
@@ -124,6 +124,7 @@
                          };
 
     -->
+    
     <method name="updateAccountInfo" args="callback">
         this.setAttribute("action", "updateAccountInfo");
         if (!this.validateLoginInfo()) {

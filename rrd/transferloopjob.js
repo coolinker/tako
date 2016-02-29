@@ -60,7 +60,6 @@ function loopNewTransfer(startId, callback) {
                         logutil.log("-|", transferId);
                     }
                     if (disabledStep>0) {
-                        logutil.log("disabledStep-------------------------------", disabledStep)                        
                         disabledStep = 0;
                     } else if ((new Date() - lastDetectTime) > 60000) {
                         detectStep = Math.floor(Math.random()*5);
@@ -92,7 +91,6 @@ function loopNewTransfer(startId, callback) {
                         producedTime: new Date()
                     };
                     hasNew = true;
-                    //console.log("transferObj", JSON.stringify(transferObj))
                     if (!disabled && transferId > latestConsumedProductId) {
                         callback(transferObj);
                         latestConsumedProductId = transferId;

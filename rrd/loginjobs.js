@@ -26,8 +26,7 @@ function login(account, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://www.we.com");
-           
-            if (cookie_string.indexOf("rrd_key")>=0) {
+            if (cookie_string.indexOf("jforumUserInfo")>=0) {
                 logutil.log("login succeed", account.user, account.source);
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
@@ -36,6 +35,7 @@ function login(account, callback) {
                     callback(cookieJar, account.JSONInfo());
                 })                
             } else {
+                console.log("cookie_string------:", cookie_string)
                 console.log("body------:", body)
                 callback(null, {"resultId":"01", resultMsg: "LOGIN_ERROR", failedMessage: "登录失败！"});
             }

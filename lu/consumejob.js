@@ -85,17 +85,13 @@ function consume_brwoser(account, toBeConsumed, callback) {
                 account.availableBalance -= toBeConsumed.price;
                 account.lastConsumingTime = new Date();
                 confirmConsuming(account, toBeConsumed);
-                // setTimeout(function() {
-                //     confirmSpent(productId, account, function(pobj) {
-                //         logutil.log("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
-                //     })
-                // }, 3000)
+            } else if (json.code === '15') {//Captcha incorrect
+                account.unlock();
+                consume_brwoser(account, toBeConsumed, callback)
+                return;
             } else {
-                 confirmConsuming(account, toBeConsumed);
-                // confirmSpent(productId, account, function(pobj) {
-                //     logutil.log("confirmSpent***********:", account.uid, productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
-                // })
-
+                 //confirmConsuming(account, toBeConsumed);
+                logutil.log("json.code", json.code, json)
             }
 
         }
@@ -172,7 +168,7 @@ function confirmConsuming(account, product) {
                     console.log("confirmConsuming DONE***************", account.user, pobj.buyerUserName)
                 }
             } else {
-                console.log("confirmConsuming else***************", pobj.productStatus)
+                console.log("confirmConsuming else***************", pobj.productStatus, pobj)
             }
             logutil.log("confirmSpent***********", pobj.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime);
         })
