@@ -33,11 +33,9 @@
         var me = this;
         this.accountdao.updateAccountInfo(function(result){
             usersection.updateSummary();
-            //callback(result);
         });
 
         usersection.setAttribute("ispreviewmode", true);
-        //bidsection.setAttribute("ispreviewmode", true);
     </method>
     
     <method name="startAccountBidding" args="callback">

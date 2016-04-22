@@ -1,24 +1,36 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
+var cmbcPwd = require('./cmbcPwd');
 var detectLatestTransferId = require("./detectlatesttransferid");
 var LoopJob = require("../loopjob");
+var simplehttp = require('../simplehttp');
+
 var detectStarted = false;
 var me = this;
 exports.rollNewProductCheck = rollNewProductCheck;
 
 function rollNewProductCheck(callback) {
-    var transfers = [];
-    if (detectStarted) return;
-    detectStarted = true;
-    detectLatestTransferId(function(startId) {
-        detectStarted = false;
-        loopNewTransfer(startId, function(newTransferObj) {
-            // transfers.push(newTransferObj);
-            // if (transfers.length > 100) transfers.shift();
-            callback(newTransferObj);
-        })
-    }, 10000);
+
+    loopListTransfer(function(newTransferObj) {
+        // transfers.push(newTransferObj);
+        // if (transfers.length > 100) transfers.shift();
+        callback(newTransferObj);
+    })
 }
+
+// function rollNewProductCheck(callback) {
+//     var transfers = [];
+//     if (detectStarted) return;
+//     detectStarted = true;
+//     detectLatestTransferId(function(startId) {
+//         detectStarted = false;
+//         loopListTransfer(function(newTransferObj) {
+//             // transfers.push(newTransferObj);
+//             // if (transfers.length > 100) transfers.shift();
+//             callback(newTransferObj);
+//         })
+//     }, 10000);
+// }
 
 function loopNewTransfer(startId, callback) {
     if (this.loopjob) {
@@ -59,10 +71,10 @@ function loopNewTransfer(startId, callback) {
                         hasNew = false;
                         logutil.log("-|", transferId);
                     }
-                    if (disabledStep>0) {
+                    if (disabledStep > 0) {
                         disabledStep = 0;
                     } else if ((new Date() - lastDetectTime) > 60000) {
-                        detectStep = Math.floor(Math.random()*5);
+                        detectStep = Math.floor(Math.random() * 5);
                     }
                     //no new item.
                 } else {
@@ -70,14 +82,14 @@ function loopNewTransfer(startId, callback) {
                     lastDetectTime = new Date();
                     var sharesAvailable = Number(htmlparser.getValueFromBody('data-shares="', '">', body));
                     var interest = Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body));
-                    interest = interest/100;
+                    interest = interest / 100;
                     var price = Number(htmlparser.getValueFromBody('data-amount-per-share="', '">', body));
                     //var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
                     var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
                     var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
                     var disabled = body.indexOf('此债权已不可购买') >= 0;
-                    var unknown = htmlparser.getValueFromBody(' UNKNOWN ', 'id="invest-submit"', body); 
-                            
+                    var unknown = htmlparser.getValueFromBody(' UNKNOWN ', 'id="invest-submit"', body);
+
                     var transferObj = {
                         transferId: transferId,
                         transferIdCode: transferIdCode,
@@ -85,7 +97,7 @@ function loopNewTransfer(startId, callback) {
                         sharesAvailable: sharesAvailable,
                         pricePerShare: price,
                         countRatio: countRatio,
-                       //duration: duration,
+                        //duration: duration,
                         source: "www.renrendai.com",
                         publishTime: new Date(),
                         producedTime: new Date()
@@ -97,14 +109,14 @@ function loopNewTransfer(startId, callback) {
                     }
                     var req = response.request;
                     var tid = req.__options.transferId;
-                    
+
                     if (tid >= transferId) {
                         if (transferObj.interest >= 0.13 && transferObj.sharesAvailable >= 1) {
                             logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
                         }
                         transferId = tid + 1;
                         if (disabled) {
-                            disabledStep = Math.floor(Math.random()*5);
+                            disabledStep = Math.floor(Math.random() * 5);
                         }
                     }
                 }
@@ -120,91 +132,10 @@ function loopNewTransfer(startId, callback) {
 
 }
 
-// function _loopNewTransfer(startId, callback) {
-//     if (this.loopjob) {
-//         console.log("loopNewTransfer loopjob existed");
-//         return;
-//     }
 
-//     var transferId = Number(startId);
-//     var transferIdStart = 0;
-//     var hasNew = false;
-//     var LOOP_INTERVAL = 300;
-//     var loopjob = new LoopJob().config({
-//         parallelRequests: 2,
-//         url: "http://api.we.com/2.0/loantransfer/detail.action",
-//         loopInterval: LOOP_INTERVAL,
-//         timeout: 1.8 * LOOP_INTERVAL,
-//         httpMethod: "POST",
-//         // urlInjection: function(parallelIndex, url) {
-//         //     return url + "?transferId=" + (transferId + parallelIndex);
-//         // },
-//         optionsInjection: function(parallelIndex, options) {
-//             //options.transferId = (transferId + parallelIndex);
-//             if (transferId - transferIdStart > 500) {
-//                 logutil.log("***transferId rolling", transferId);
-//                 transferIdStart = transferId;
-//             }
-//             options.form = {
-//                 transferId: (transferId + parallelIndex),
-//                 clientVersion: "30100",
-//                 version: "2.0"
-//             };
-
-//             return options;
-//         },
-//         responseHandler: function(error, response, body) {
-//             if (error) {
-//                 console.log("loanTransferDetail error:", error)
-//             } else if (response.statusCode == 200) {
-//                 var loanTranfsferVo = JSON.parse(body).data.loanTranfsferVo;
-//                 var loanVo = JSON.parse(body).data.loanVo;
-//                 if (loanTranfsferVo) {
-//                     var transferObj = {
-//                         transferId: Number(loanTranfsferVo.id),
-//                         //transferIdCode: transferIdCode,
-//                         interest: Number(loanVo.interest),
-//                         sharesAvailable: Number(loanTranfsferVo.share),
-//                         pricePerShare: Number(loanTranfsferVo.pricePerShare),
-//                         discountRatio: loanTranfsferVo.discountRatio,
-//                         borrowerLevel: loanVo.borrowerLevel,
-//                         source: "www.renrendai.com",
-//                         publishTime: new Date(),
-//                         producedTime: new Date()
-//                     };
-//                     hasNew = true;
-//                     //console.log("transferObj", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable)
-//                     callback(transferObj);
-
-//                     var req = response.request;
-//                     var tid = req.__options.transferId;
-//                     if (tid >= transferId) {
-//                         if (transferObj.interest >= 10 && transferObj.sharesAvailable >= 1) {
-//                             logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString());
-//                         }
-
-//                         transferId = tid + 1;
-//                     }
-//                 } else {
-//                     if (hasNew) {
-//                         hasNew = false;
-//                         //console.log("-|", transferId, new Date().toLocaleTimeString())
-//                     }
-
-//                 }
-
-//             } else {
-//                 console.log("?????????????????????????????? statusCode:", response.statusCode)
-//             }
-
-//         }
-//     });
-
-//     loopjob.startLooping();
-//     me.loopjob = loopjob;
-// }
 
 exports.stopRollingNewProductCheck = stopRollingNewProductCheck;
+
 function stopRollingNewProductCheck() {
     // clearInterval(rollingIntervalObj)
     this.loopjob.stopLooping();
@@ -230,8 +161,93 @@ function stopNewTransferLoop() {
     this.loopjob.stopLooping();
 }
 
+function loopListTransfer(callback) {
+    if (this.loopjob) {
+        if (!this.loopjob.isLoopingStarted()) {
+            this.loopjob.startLooping();
+        }
+        console.log("loopNewTransfer loopjob existed");
+        return;
+    }
+    var LOOP_INTERVAL = 1000;
+    var pageDetailLog = {};
+    var loopjob = new LoopJob().config({
+        parallelRequests: 1,
+        url: "http://www.we.com/transfer/transferList!json.action",
+        loopInterval: LOOP_INTERVAL,
+        timeout: 1.8 * LOOP_INTERVAL,
+        urlInjection: function(parallelIndex, url) {
+            return url + "?_=" + new Date().getTime();
+        },
+        responseHandler: function(error, response, body) {
+            if (error) {
+                //console.log("loanTransferDetail error:", error)
+            } else if (response.statusCode == 200) {
+                var products = JSON.parse(body).data.transferList;
+                for (var i = 0; i < products.length; i++) {
+                    var product = products[i];
+                    if (Number(product.share) === 0 || pageDetailLog[product.id]) continue;
+                    pageDetailLog[product.id] = true;
+                    var pubt = new Date();
+                    logutil.log("getTransferPageDetail", product.id, product.share)
+                    getTransferPageDetail(product, function(transferObj) {
+                        transferObj.publishTime = pubt;
+                        transferObj.producedTime = pubt;
+                        if (!transferObj.disabled) {
+                            callback(transferObj);
+                        }
+                    })
+                }
+
+            } else {
+                console.log("?????????????????????????????? statusCode:", response.statusCode)
+            }
+
+        }
+    });
+
+    loopjob.startLooping();
+    me.loopjob = loopjob;
+
+}
 
 
+function getTransferPageDetail(product, callback) {
+    simplehttp.GET('http://www.we.com/transfer/loanTransferDetail.action?transferId=' + product.id, {},
+        function(err, request, body) {
+            if (request.statusCode === 200) {
+                var sharesAvailable = Number(htmlparser.getValueFromBody('data-shares="', '">', body));
+                var interest = Number(product.interest); //Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body));
+                interest = interest / 100;
+                var price = Number(product.pricePerShare); //Number(htmlparser.getValueFromBody('data-amount-per-share="', '">', body));
+                //var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
+                var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
+                var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
+                var disabled = body.indexOf('此债权已不可购买') >= 0;
+                var unknown = htmlparser.getValueFromBody(' UNKNOWN ', 'id="invest-submit"', body);
+
+                var transferObj = {
+                    transferId: product.id,
+                    transferIdCode: transferIdCode,
+                    interest: interest,
+                    sharesAvailable: sharesAvailable,
+                    pricePerShare: price,
+                    countRatio: countRatio,
+                    //duration: duration,
+                    source: "www.renrendai.com",
+                    disabled: disabled
+                };
+                logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, unknown);
+                callback(transferObj)
+            } else {
+                console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
+                if (callback) callback(null);
+            }
+
+        });
+
+
+}
 // null '{"data":{"agreementTitle":"?????????","agreementUrl":"http://www.we.com/account/wapContract.action?type=transfer",
 // "loanTranfsferVo": {
 //     "discountRatio": "100",

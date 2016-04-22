@@ -1,4 +1,4 @@
-var masterController = require("servercontroller");
+var masterController = require("./servercontroller");
 
 exports.addAccount = addAccount;
 

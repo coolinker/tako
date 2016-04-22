@@ -4,7 +4,7 @@ var http = require("http"),
     url = require("url"),
     path = require("path"),
     fs = require("fs"),
-    apiDispatcher = require("./apidispatcher"),
+    apiDispatcher = require("./serverapidispatcher"),
     port = process.argv[3] || 80,
     serverIp = process.argv[2] || "localhost";
 
@@ -62,8 +62,6 @@ function handleApiRequest(request, response) {
             });
         });
     }
-
-
 
     return true;
 }

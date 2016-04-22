@@ -1,6 +1,8 @@
 var htmlparser = require('../htmlparser');
 var logutil = require("../logutil");
 var simplehttp = require('../simplehttp');
+var cmbcPwd = require('./cmbcPwd');
+
 var PRODUCE_TO_CONSUME_MIN = 2000;
 var CONSUMING_INTERVAL_MIN = 5000;
 
@@ -15,8 +17,16 @@ function consume(account, toBeConsumed, callback) {
     account.lock();
     var cb = function(spent) {
         if (callback) callback(spent);
+        if (spent>0) {
+            account.availableBalance -= spent;
+            account.lastConsumingTime = new Date();
+            //prd.tradeTime = account.lastConsumingTime.getTime();
+            //account.addToConsumeHistory(prd)
+        }
+        
         account.unlock();
     }
+    
     if (t <= 0) {
         var canBuyShares = doConsume(account, toBeConsumed, cb);
     } else {
@@ -47,22 +57,17 @@ function doConsume(account, toBeConsumed, callback) {
                 "cookieJar": account.cookieJar
             },
             function(err, request, body) {
-                if (request.statusCode === 302) {
-                    confirmSpent(toBeConsumed.transferId, account, function(prd) {
-                        if (prd.status === '0' && prd.shares > 0 && !isNaN(prd.price) && prd.price > 0) {
-                            account.availableBalance -= prd.price;
-                            account.lastConsumingTime = new Date();
-                            prd.tradeTime = account.lastConsumingTime.getTime();
-                            account.addToConsumeHistory(prd)
-                        }
+                if (request.statusCode === 200) {
+                    var actionurl = htmlparser.getValueFromBody('<input type="hidden" id="actionUrl" name="actionUrl" size=100px value="', '" />', body);
+                    var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);    
 
-                        //logutil.log("confirmSpent", status===0, spent, shares, toBeConsumed.transferId, account.availableBalance);
-                        if (callback) callback(prd.price);
-                        // account.locked = false;
-                    })
+                    cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed){
+                        console.log("cmbcPageHandler", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
+                        callback(succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
+                    });
                 } else {
-                    console.log("ERROR consumejob consume", toBeConsumed.transferId);
-                    if (callback) callback(null);
+                    console.log("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body);
+                    if (callback) callback(0);
                 }
 
             });
@@ -70,6 +75,50 @@ function doConsume(account, toBeConsumed, callback) {
         return canBuyShares;
     }
 }
+
+// function doConsume(account, toBeConsumed, callback) {
+//     if (toBeConsumed.transferId) {
+//         var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
+//         if (canBuyShares <= 0) {
+//             callback(0);
+//             return;
+//         }
+
+//         logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+//         simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
+//                 form: {
+//                     "agree-contract": "on",
+//                     transferId: toBeConsumed.transferIdCode,
+//                     currentPrice: toBeConsumed.pricePerShare,
+//                     share: canBuyShares,
+//                     countRatio: toBeConsumed.countRatio
+//                 },
+//                 "cookieJar": account.cookieJar
+//             },
+//             function(err, request, body) {
+//                 if (request.statusCode === 302) {
+//                     confirmSpent(toBeConsumed.transferId, account, function(prd) {
+//                         if (prd.status === '0' && prd.shares > 0 && !isNaN(prd.price) && prd.price > 0) {
+//                             account.availableBalance -= prd.price;
+//                             account.lastConsumingTime = new Date();
+//                             prd.tradeTime = account.lastConsumingTime.getTime();
+//                             account.addToConsumeHistory(prd)
+//                         }
+
+//                         //logutil.log("confirmSpent", status===0, spent, shares, toBeConsumed.transferId, account.availableBalance);
+//                         if (callback) callback(prd.price);
+//                         // account.locked = false;
+//                     })
+//                 } else {
+//                     console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
+//                     if (callback) callback(null);
+//                 }
+
+//             });
+
+//         return canBuyShares;
+//     }
+// }
 
 function confirmSpent(transferId, account, callback) {
 

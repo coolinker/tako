@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+
+    <meta charset="utf-8" />
+    <meta name="render" content="webkit" />
+
+    <style>
+h1 {
+    background-color: green;
+}
+
+span {
+    background-color: lightblue;
+}
+</style>
+    <script src="PassGuardCtrl.js"></script>
+    <script type="text/javascript">
+        var pgeditorChar = new PGEdit({
+            pgeId : "_ocx_passwordChar",//控件ID
+            pgeEdittype : 1,//控件类型,0星号,1明文
+            pgeRandomNum : "567123",//随机数
+            pgeHasskb : "0",//是否启用软键盘1启用/0不启用
+            pgeType : 3,//1为登录密码 2为民生交易密码
+            pgeTabindex : 2,//tab键顺序
+            pgeCert : pgeCert,//公钥
+            pgeClass : "ocx_style3",//控件css样式
+            pgeOnkeydown : "FormSubmit()",//回车键响应函数
+            pgeBackColor: "ff0000"
+        });
+
+        function FormSubmit() {
+            pgeditorChar.pwdSetSk("567123");
+            if (pgeditorChar.pwdLength() == 0) {
+                //$('#checkPage').html('密码不能为空');
+                //$('#pageErrorDiv').show();
+                return false;
+            }
+
+            var PwdResultChar = pgeditorChar.pwdResult();
+            document.getElementById("tradePwd").value = PwdResultChar;//获得密码密文,赋值给表单
+            console.log("FormSubmit", pgeditorChar.pwdLength(), new Date(),PwdResultChar.length, PwdResultChar)
+           // validatePwd()
+            //pgeditorChar.pwdclear();
+            //document.getElementById('form').submit();
+        }
+    </script>
+        </head>
+    <body>
+        <script type="text/javascript">
+            window.onload = function(){  
+                try{
+                    pgeditorChar.pgInitialize();//初始化控件，民生交易密码
+                    pgeditorChar.pwdclear();
+                    
+                    if (!pgeditorChar.checkInstall()) {
+                        console.log("need to install activex")    
+                        return;
+                    }else{
+                        return;
+                    }
+
+                }catch(err){
+                    console.log("--------------", err)                   
+                }
+            }
+            
+        </script>
+        
+            <div class="pwdDiv" >
+                <script type="text/javascript">pgeditorChar.generate()</script>
+                    <!--span id="_ocx_passwordChar_pge" style="display: inline;">
+                    <object tabindex="1" class="ocx_style3" id="_ocx_passwordChar" classid="CLSID:52CCD7E1-0C8A-4C70-B43C-7810D9A8000D" codebase="../ocx/CMBCIE32.cab#version=1,0,0,1" onkeydown="console.log(event.keyCode); if (event.keyCode === 13) FormSubmit(event.keyCode);">
+                        <param name="maxlength" value="20"/>
+                        <param name="input2" value="[A-Za-z0-9]*"/>
+                        <param name="input3" value="(?![a-zA-Z]+$)(?![0-9]+$).{6,20}"/>
+                    </object>
+                </span-->
+            </div>
+             
+            <form action="doTransferApplyByCust.html" method="post" id="form">
+                <div class="hide">
+                    <input type="hidden" name="secuNo"      value="0007" />
+                    <input type="hidden" name="usrId"       value="449646" />
+                    <input type="hidden" name="token"       value="df02a449-34ca-4966-959d-3ef66f39aaa0_c4452275bd86a50cfc481d21e9b136f2" />
+                    <input type="hidden" name="orderId"  value="1217000000033T010089476HVQLPDD4O" />
+                    <input type="hidden" name="bussNo"      value="" />
+                    <input type="hidden" name="transCode"      value="P2P_T000012" />
+                    <input type="hidden" name="fundAcc" value="9595101047851002" id="fundAcc" />
+                    <input name="tradePwd" type="hidden" id="tradePwd" class="text01" />
+                    <input type="hidden" id="randomForEnc" name="randomForEnc" value="557581" />
+                </div>
+            </form>
+    </body>
+</html>
