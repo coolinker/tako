@@ -10,16 +10,35 @@ var queuesMap = {};
 exports.consume = consume;
 
 function consume(toBeConsumed) {
-    var sourceType = ACCOUNT_TYPES[toBeConsumed['source']];
+    var sourceType = ACCOUNT_TYPES[toBeConsumed instanceof Array ? toBeConsumed[0]['source'] : toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
     //logutil.log("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price, toBeConsumed.interest);
 
-    var finished = false;
+    var finished = false, csmidx = 0;
     for (var i = 0; i < accounts.length; i++) {
         if (accounts[i].cookieJar !== null) {
-            finished = consumejob.consume(accounts[i], toBeConsumed);
-            if (finished) break;
+            if (toBeConsumed instanceof Array) {
+                 var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
+                 if (finished) {
+                    logutil.log("consume finished", toBeConsumed[csmidx])
+                    toBeConsumed.splice(csmidx, 1)
+                    if (toBeConsumed.length===0) break;
+                    //toBeConsumed.shift();
+                 } else {
+                    csmidx++;
+                 }
+
+                 if (csmidx === toBeConsumed.length) {
+                    logutil.log("start from 0", csmidx, toBeConsumed.length)
+                    csmidx = 0;
+                 }
+
+            } else {
+                finished = consumejob.consume(accounts[i], toBeConsumed);
+                if (finished) break;
+            }
+            
         }
     }
 

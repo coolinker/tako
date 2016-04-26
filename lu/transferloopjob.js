@@ -16,14 +16,14 @@ var rollingIntervalObj;
 function detectLastProductId(callback) {
     if (isDetecting) return;
     isDetecting = true;
-    var url = 'http://list.lu.com/list/transfer/anyi?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&trade=&isCx=&orderType=publishAt&orderAsc=true&currentPage=';
+    var url = 'https://list.lu.com/list/transfer-p2p?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&tradingMode=NOW&isCx=&orderCondition=&isShared=&canRealized=&productCategoryEnum=&currentPage='
     simplehttp.GET(url + 10000, {}, function(error, response, body) {
         if (!body) {
             isDetecting = false;
             detectLastProductId(callback);
             return;
         }
-        var no = htmlparser.getValueFromBody('<span class="pagination-no current">', '</span>', body);
+        var no = htmlparser.getValueFromBody('id="pageCount" value="', '">', body);
         if (!no) {
             logutil.log("ERROR detectLastProductId");
             isDetecting = false;
@@ -39,7 +39,7 @@ function detectLastProductId(callback) {
                     detectLastProductId(callback);
                     logutil.log("detectLastProductId failed", page)
                 } else {
-                    var lidstr = ids[ids.length - 1];
+                    var lidstr = ids[0];
                     var lastPid = htmlparser.getValueFromBody('productId=', '\'', lidstr);
                     detectLatestProductId(Number(lastPid), 0, 100, function(pid) {
                         callback(pid);
@@ -57,7 +57,7 @@ function detectLatestProductId(pid, pidstep, interval , callback) {
         try {
             productObj = JSON.parse(body);  
         } catch (e) {
-            console.log("e:", e, pid, pidstep, interval)
+            //console.log("e:", e, pid, pidstep, interval)
         }
         if (!productObj) {
             detectLatestProductId(pid, pidstep, interval, callback);
@@ -75,7 +75,7 @@ function detectLatestProductId(pid, pidstep, interval , callback) {
             logutil.log("detectLatestProductId step is 1", pid, 2* interval, body)
             callback(pid+pidstep);
         } else {
-            logutil.log("detectLatestProductId 2*interval", pid, pidstep,  2* interval)
+            //logutil.log("detectLatestProductId 2*interval", pid, pidstep,  2* interval)
             detectLatestProductId(pid, 1, 2* interval, callback)
         }
         
@@ -103,6 +103,7 @@ function rollNewProductCheck(callback) {
     var transfers = [];
     detectLastProductId(function(productId) {
         console.log("detected latest id", productId)
+        
         loopNewTransfer_browser(productId, function(product) {
             return callback(product);
         })
@@ -126,9 +127,10 @@ function loopNewTransfer_browser(startId, callback) {
     var latestConsumedProductId = 0;
     var productId = Number(startId);
     var productIdStart = productId;
-    var LOOP_INTERVAL = 300;
+    var LOOP_INTERVAL = 500;
     var loopjob = new LoopJob().config({
-        parallelRequests: 2,
+        parallelRequests: 1,
+        //     https://list.lu.com/list/service/product/30051629/productDetail?_=1461637642304
         url: "https://list.lu.com/list/service/product/*/productDetail",
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,
@@ -138,7 +140,7 @@ function loopNewTransfer_browser(startId, callback) {
                 logutil.log("***productId rolling", productId);
                 productIdStart = productId;
             }
-            var u = url.replace("*", productId + parallelIndex) + "?t=" + new Date().getTime();
+            var u = url.replace("*", productId + parallelIndex) + "?_=" + new Date().getTime();
             return u;
         },
         responseHandler: function(error, response, body) {
@@ -169,7 +171,7 @@ function loopNewTransfer_browser(startId, callback) {
                             latestConsumedProductId = productObj.productId;
 
                             if (productObj.amount < 5000)
-                                logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
+                                logutil.log("consume productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
 
                         } else {
                             //logutil.log("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode)
@@ -177,11 +179,11 @@ function loopNewTransfer_browser(startId, callback) {
 
                         if (productObj.productId >= productId) {
                             productId = productObj.productId + 1;
-                            //console.log("------", productId, productObj.price, productObj.interestRateDisplay)
+                            //console.log("------>", productId, productObj.price, productObj.interestRateDisplay)
                         }
 
                     } else {
-                        // logutil.log("body:", body)
+                        //logutil.log("body:", body)
                     }
                 } catch (e) {
                     catchException = e;
@@ -192,6 +194,7 @@ function loopNewTransfer_browser(startId, callback) {
                     if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 20000) {
                         lastDetectTime = new Date();
                         detectLastProductId(function(lastProductId) {
+                            logutil.log("update last product id =====", productId)
                             if (lastProductId > productId) {
                                 productId = lastProductId;
                                 logutil.log("update last product id ==========================", productId)

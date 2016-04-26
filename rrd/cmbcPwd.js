@@ -6,7 +6,7 @@ var simplehttp = require('../simplehttp');
 var SerialPort = require('serialport').SerialPort;
 var serialPort = new SerialPort('COM8');
 var isSerialPortOpen = false;
-var startInputJYPwd = false;
+var startedInputJYPwd = false;
 serialPort.on('open', function() {
     console.log('serialPort open');
     isSerialPortOpen = true;
@@ -20,9 +20,22 @@ console.log("initialize cmbcPwd...")
 var timeouts = (new webdriver.WebDriver.Timeouts(driver))
 timeouts.setScriptTimeout(10000);
 
-driver.get('http://localhost:8080/minsheng.html').then(function() {
+driver.get('http://123.57.39.80/compositions/tako/rrd/web/passguard.html');
+// driver.sleep(5000);
+// driver.executeAsyncScript(function() {
+//     var callback = arguments[arguments.length - 1];
+//    //console.log("executeAsyncScript...clear input", pgeditorChar.pwdLength());
+//     window.focus();
+//     pgeditorChar.pwdLength();
+//     pgeditorChar.pwdclear();
+//     _ocx_passwordChar.setActive();
+//     callback("cleared:");
+// }).then(function(str) {
+//     console.log("-----------------------ie run js test succeed!")
+//     return true;
+// });
 
-});
+
 
 exports.cmbcPageHandler = cmbcPageHandler;
 function cmbcPageHandler(account, actionurl, context, callback) {
@@ -59,7 +72,8 @@ function cmbcPageHandler(account, actionurl, context, callback) {
                     // obj.tradePwd = htmlparser.getValueFromBody('name="tradePwd"       value="', '" />', body);
                     obj.randomForEnc = htmlparser.getValueFromBody('name="randomForEnc" value="', '" />', body);
                     //console.log("cmbcPageHandler---------------",obj)
-                    autoInputJYPwd(account, obj, function(pwdCode){
+                    freeToInputJYPwd(function(){
+                        autoInputJYPwd(account, obj, function(pwdCode){
                         obj.tradePwd = pwdCode;
                         validJYPwd(obj, newjar, function(validRes) {
                             if (validRes.retCode === '0000') {
@@ -72,6 +86,8 @@ function cmbcPageHandler(account, actionurl, context, callback) {
                             }
                         });
                     });
+                    })
+                    
 
                 } else {
                     console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
@@ -81,35 +97,39 @@ function cmbcPageHandler(account, actionurl, context, callback) {
             });
 }
 
-function autoInputJYPwd(account, params, callback) {
-    driver.wait(function() {
-        if (!startInputJYPwd) {
-            startInputJYPwd = true;
-            return true;
-        }
-        return !startInputJYPwd;
-    }, Infinity);
+function freeToInputJYPwd(callback){
+    if (startedInputJYPwd === false) {
+        callback();
+    } else {
+        setTimeout(function(){
+            freeToInputJYPwd(callback);
+        }, 1000)
+    }
+}
 
-    driver.isElementPresent(webdriver.By.id("_ocx_passwordChar"));
+function autoInputJYPwd(account, params, callback) {
+    startedInputJYPwd = true;
     var inputFinished = false;
     driver.executeAsyncScript(function() {
         var callback = arguments[arguments.length - 1];
-        console.log("executeAsyncScript...clear input", pgeditorChar.pwdLength());
+        //console.log("executeAsyncScript...clear input", pgeditorChar.pwdLength());
+        window.focus();
         pgeditorChar.pwdclear();
+        _ocx_passwordChar.setActive();
         callback("cleared:"+pgeditorChar.pwdLength());
     }).then(function(str) {
-        console.log(str)
-        return true;
-    });
-
-    driver.findElement(webdriver.By.id("_ocx_passwordChar")).sendKeys("").then(function(){
-        console.log("serialPort password input start", account.tradePassword) 
+        console.log("-----------------------start input")
         kbInput(account.tradePassword, function(result) { 
-            console.log("serialPort password input finished", result) 
             inputFinished = true;
         });
 
+        return true;
     });
+
+    // driver.findElement(webdriver.By.id("_ocx_passwordChar")).sendKeys("").then(function(){
+        
+        
+    // });
 
      driver.wait(function() {
         if (inputFinished) console.log("Input finished")
@@ -121,19 +141,21 @@ function autoInputJYPwd(account, params, callback) {
     // });
 
     driver.executeAsyncScript(function(randomForEnc) {
-        console.log("executeAsyncScript get Pwd result...", randomForEnc);
+        //console.log("executeAsyncScript get Pwd result...", randomForEnc);
         var callback = arguments[arguments.length - 1];
         pgeditorChar.pwdSetSk(randomForEnc);
         var PwdResultChar = pgeditorChar.pwdResult();
-        console.log("executeAsyncScript get Pwd result...", PwdResultChar);
+        //console.log("executeAsyncScript get Pwd result...", PwdResultChar);
         callback(PwdResultChar);
     }, params.randomForEnc).then(function(str) {
         console.log("got Pwd result", str);
         callback(str);
-        startInputJYPwd = false;
         return true;
     })
 
+    driver.get('http://123.57.39.80/compositions/tako/rrd/web/passguard.html').then(function(){
+        startedInputJYPwd = false;
+    });
 }
 
 function kbInput(str, callback, idx) {
@@ -155,6 +177,7 @@ function kbInput(str, callback, idx) {
         });
     });
 }
+
 function validJYPwd(params, jar, callback) {
     console.log("validJYPwd:", params)
     simplehttp.POST('https://tbank.cmbc.com.cn:50002/tradeBank/trans/validatePwd.json', {
@@ -169,7 +192,7 @@ function validJYPwd(params, jar, callback) {
 
 
 function doTransferApplyByCust(params, jar, callback) {
-    console.log("doTransferApplyByCust:")
+    logutil.log("doTransferApplyByCust:")
     simplehttp.POST('https://tbank.cmbc.com.cn:50002/tradeBank//trans/doTransferApplyByCust.html', {
                 form: params,
                 "cookieJar": jar
@@ -188,7 +211,6 @@ function redirectToWe(body, jar, callback){
     var url = htmlparser.getValueFromBody('action="', '" method', body);
     var context = htmlparser.getValueFromBody('<input name="context" value="', '" />', body);
     logutil.log("=========", succeed, errorcode, errormsg, url);
-    console.log(context)
      callback(succeed);
     // simplehttp.POST(url, {
     //             form: {

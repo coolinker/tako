@@ -181,24 +181,54 @@ function loopListTransfer(callback) {
         },
         responseHandler: function(error, response, body) {
             if (error) {
-                //console.log("loanTransferDetail error:", error)
+                // console.log("loanTransferDetail error:", error)
             } else if (response.statusCode == 200) {
-                var products = JSON.parse(body).data.transferList;
-                for (var i = 0; i < products.length; i++) {
-                    var product = products[i];
-                    if (Number(product.share) === 0 || pageDetailLog[product.id]) continue;
-                    pageDetailLog[product.id] = true;
-                    var pubt = new Date();
-                    logutil.log("getTransferPageDetail", product.id, product.share)
-                    getTransferPageDetail(product, function(transferObj) {
-                        transferObj.publishTime = pubt;
-                        transferObj.producedTime = pubt;
-                        if (!transferObj.disabled) {
-                            callback(transferObj);
-                        }
-                    })
-                }
+                try {
+                    var products = JSON.parse(body).data.transferList;
+                    var avprd = [];
+                     for (var i = 0; i < products.length; i++) {
+                        var product = products[i];
+                        if (Number(product.share) === 0 || pageDetailLog[product.id]) continue;
+                        pageDetailLog[product.id] = true;
+                        product.interest = Number(product.interest)/100;
+                        product.sharesAvailable = Number(product.share);
+                        product.price = Number(product.pricePerShare);
+                        product.producedTime  = product.publishTime = new Date();
+                        product.source = "www.renrendai.com";
+                        avprd.push(product);
+                        
+                    }
 
+                    avprd.sort(function(p1, p2){
+                        if (p1.interest > p2.interest) return -1;
+                        else if (p1.interest < p2.interest) return 1;
+                        else if (p1.sharesAvailable > p2.sharesAvailable) return -1;
+                        else if  (p1.sharesAvailable < p2.sharesAvailable) return 1;
+                        else return 0;
+                    })
+                    
+                    if (avprd.length>0) {
+                        callback(avprd);
+                    }
+
+                    // for (var i = 0; i < products.length; i++) {
+                    //     var product = products[i];
+                    //     if (Number(product.share) === 0 || pageDetailLog[product.id]) continue;
+                    //     pageDetailLog[product.id] = true;
+                    //     var pubt = new Date();
+                    //     //logutil.log("getTransferPageDetail", product.id, product.share)
+                    //     getTransferPageDetail(product, function(transferObj) {
+                    //         transferObj.publishTime = pubt;
+                    //         transferObj.producedTime = pubt;
+                    //         if (!transferObj.disabled) {
+                    //             callback(transferObj);
+                    //         }
+                    //     })
+                    //     break;
+                    // }
+                } catch (e) {
+                    logutil.log("????????????? exception:", e)
+                }
             } else {
                 console.log("?????????????????????????????? statusCode:", response.statusCode)
             }
@@ -224,7 +254,6 @@ function getTransferPageDetail(product, callback) {
                 var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
                 var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
                 var disabled = body.indexOf('此债权已不可购买') >= 0;
-                var unknown = htmlparser.getValueFromBody(' UNKNOWN ', 'id="invest-submit"', body);
 
                 var transferObj = {
                     transferId: product.id,
@@ -237,7 +266,8 @@ function getTransferPageDetail(product, callback) {
                     source: "www.renrendai.com",
                     disabled: disabled
                 };
-                logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, unknown);
+                //if (transferObj.interest>=0.13)
+                logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
                 callback(transferObj)
             } else {
                 console.log("ERROR consumejob consume", toBeConsumed.transferId, body);

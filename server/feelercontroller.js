@@ -1,18 +1,29 @@
 var logutil = require("../logutil");
-var rrdtransferloopjob = require("../rrd/transferloopjob");
-var lufaxtransferloopjob = require("../lu/transferloopjob");
+//var rrdtransferloopjob = require("../rrd/transferloopjob");
+//var lufaxtransferloopjob = require("../lu/transferloopjob");
 var JOBS_OBJ = {};
 var ACCOUNT_TYPES = require("../accounttypes");
 
-for (var att in ACCOUNT_TYPES) {
-    try {
-        var job = require("../" + ACCOUNT_TYPES[att] + "/transferloopjob");
-        var type = ACCOUNT_TYPES[att];
-        if (!JOBS_OBJ[type]) JOBS_OBJ[type] = {};
+// for (var att in ACCOUNT_TYPES) {
+//     try {
+//         var job = require("../" + ACCOUNT_TYPES[att] + "/transferloopjob");
+//         var type = ACCOUNT_TYPES[att];
+//         if (!JOBS_OBJ[type]) JOBS_OBJ[type] = {};
+//         JOBS_OBJ[type]['transferloopjob'] = job;
+//     } catch (e) {
+//         console.log(type, e);
+//     }
+// }
+
+function getTransferLoopJob(type) {
+    if (!type) return null;
+
+     if (!JOBS_OBJ[type]) {
+        var job = require("../" + type + "/transferloopjob");
+        JOBS_OBJ[type] = {};
         JOBS_OBJ[type]['transferloopjob'] = job;
-    } catch (e) {
-        console.log(type, e);
     }
+    return JOBS_OBJ[type]['transferloopjob'];
 }
 
 var accountqueue = require("../accountqueue");
@@ -127,10 +138,9 @@ function stopAccountBidding(accountJson, callback) {
 // }
 
 function startNewProductCheck(source) {
-    var accType = ACCOUNT_TYPES[source];
-    var tjob = accType ? JOBS_OBJ[accType]['transferloopjob'] : null;
+    var tjob = getTransferLoopJob(ACCOUNT_TYPES[source]);
     if (tjob && !tjob.isRollingStarted()) {
-        console.log("--------------------startNewProductCheck", accType)
+        console.log("--------------------startNewProductCheck", ACCOUNT_TYPES[source])
         tjob.rollNewProductCheck(function(product) {
             if (accountqueue.consume(product)) {
                 //tjob.pauseNewTransferLoop(2000);
@@ -148,7 +158,7 @@ function monitorAccountQueueAndJobs() {
     var activeAccs = accountqueue.updateAccountQueue();
     // console.log("monitorAccountQueueAndJobs activeAccs", activeAccs)
     for (var att in activeAccs) {
-        var job = JOBS_OBJ[att]['transferloopjob'];
+        var job = getTransferLoopJob(att);
         if (activeAccs[att]) {
             if (job && !job.isRollingStarted()) {
                 job.rollNewProductCheck(function(product) {

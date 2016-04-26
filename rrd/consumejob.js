@@ -6,13 +6,21 @@ var cmbcPwd = require('./cmbcPwd');
 var PRODUCE_TO_CONSUME_MIN = 2000;
 var CONSUMING_INTERVAL_MIN = 5000;
 
+// exports.checkConsuming
+// function checkConsuming(account, toBeConsumed){
+//     if (!readyForConsume(account)) return 0;
+//     if (!ableToConsume(account, toBeConsumed)) return 0;
+//     var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
+//     return canBuyShares;
+// }
+
 exports.consume = consume;
 
 function consume(account, toBeConsumed, callback) {
     if (!readyForConsume(account)) return false;
     if (!ableToConsume(account, toBeConsumed)) return false;
     logutil.log("rrd toBeConsumed", toBeConsumed.publishTime, toBeConsumed.transferId, toBeConsumed.pricePerShare, toBeConsumed.sharesAvailable, toBeConsumed.interest);
-    var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
+    //var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
 
     account.lock();
     var cb = function(spent) {
@@ -27,15 +35,21 @@ function consume(account, toBeConsumed, callback) {
         account.unlock();
     }
     
-    if (t <= 0) {
-        var canBuyShares = doConsume(account, toBeConsumed, cb);
-    } else {
-        // logutil.log("consume too soon... :", t+"ms")
-        setTimeout(doConsume, t, account, toBeConsumed, cb);
-    }
-    //toBeConsumed.sharesAvailable -= canBuyShares;
-    return false; //toBeConsumed.sharesAvailable <= 0;
+    getTransferPageDetail(toBeConsumed, function(product){
+        doConsume(account, product, cb);
+    });
+    
+    // if (t <= 0) {
+    //     var canBuyShares = doConsume(account, toBeConsumed, cb);
+    // } else {
+    //     // logutil.log("consume too soon... :", t+"ms")
+    //     setTimeout(doConsume, t, account, toBeConsumed, cb);
+    // }
+    var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
+    toBeConsumed.sharesAvailable -= canBuyShares;
+    return toBeConsumed.sharesAvailable <= 0;
 }
+
 
 function doConsume(account, toBeConsumed, callback) {
     if (toBeConsumed.transferId) {
@@ -60,7 +74,7 @@ function doConsume(account, toBeConsumed, callback) {
                 if (request.statusCode === 200) {
                     var actionurl = htmlparser.getValueFromBody('<input type="hidden" id="actionUrl" name="actionUrl" size=100px value="', '" />', body);
                     var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);    
-
+                    console.log("before cmbcPageHandler", actionurl)
                     cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed){
                         console.log("cmbcPageHandler", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
                         callback(succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
@@ -165,4 +179,44 @@ function readyForConsume(account) {
     if (account.locked) return false;
 
     return true;
+}
+
+
+function getTransferPageDetail(product, callback) {
+    simplehttp.GET('http://www.we.com/transfer/loanTransferDetail.action?transferId=' + product.id, {},
+        function(err, request, body) {
+            if (request.statusCode === 200) {
+                var sharesAvailable = Number(htmlparser.getValueFromBody('data-shares="', '">', body));
+                var interest = Number(product.interest); //Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body));
+                interest = interest / 100;
+                var price = Number(product.pricePerShare); //Number(htmlparser.getValueFromBody('data-amount-per-share="', '">', body));
+                //var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
+                var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
+                var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
+                var disabled = body.indexOf('此债权已不可购买') >= 0;
+
+                var transferObj = {
+                    transferId: product.id,
+                    transferIdCode: transferIdCode,
+                    interest: interest,
+                    sharesAvailable: sharesAvailable,
+                    pricePerShare: price,
+                    countRatio: countRatio,
+                    //duration: duration,
+                    source: product.source,
+                    producedTime: product.producedTime,
+                    publishTime: product.publishTime,
+                    disabled: disabled
+                };
+                //if (transferObj.interest>=0.13)
+                logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
+                callback(transferObj)
+            } else {
+                console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
+                if (callback) callback(null);
+            }
+
+        });
+
+
 }
