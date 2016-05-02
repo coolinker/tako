@@ -6,3 +6,4 @@ test.js
 log.txt
 client/rrdpanel1.dre
 server/takotest.js
+*.out
