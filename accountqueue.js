@@ -30,7 +30,7 @@ function consume(toBeConsumed) {
                  }
 
                  if (csmidx === toBeConsumed.length) {
-                    logutil.log("start from 0", csmidx, toBeConsumed.length)
+                    // logutil.log("start from 0", csmidx, toBeConsumed.length)
                     csmidx = 0;
                  }
 
