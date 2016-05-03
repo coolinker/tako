@@ -3,8 +3,16 @@ var logutil = require("../logutil");
 var requestlib = require("request");
 var simplehttp = require('../simplehttp');
 
-var SerialPort = require('serialport').SerialPort;
-var serialPort = new SerialPort('COM8');
+var serialport = require('serialport');
+serialport.list(function (err, ports) {
+  ports.forEach(function(port) {
+    console.log(port.comName);
+    console.log(port.pnpId);
+    console.log(port.manufacturer);
+  });
+});
+
+var serialPort = new serialport.SerialPort('COM8');
 var isSerialPortOpen = false;
 var startedInputJYPwd = false;
 serialPort.on('open', function() {
@@ -17,7 +25,7 @@ var driver = new webdriver.Builder().
 withCapabilities(webdriver.Capabilities.ie()).
 build();
 console.log("initialize cmbcPwd...")
-var timeouts = (new webdriver.WebDriver.Timeouts(driver))
+var timeouts = driver.manage().timeouts();
 timeouts.setScriptTimeout(10000);
 
 driver.get('http://123.57.39.80/compositions/tako/rrd/web/passguard.html');
