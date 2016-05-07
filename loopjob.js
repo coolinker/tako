@@ -36,7 +36,7 @@ var LoopJob = function() {
         //     return;
         // }
         if (jobStatus.loopPaused) {
-            // logutil.log("loopPaused!")
+            logutil.log("loopPaused!")
             return;
         }
 

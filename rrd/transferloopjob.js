@@ -1,5 +1,5 @@
 var htmlparser = require('../htmlparser');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config("rrdtransfer");
 var cmbcPwd = require('./cmbcPwd');
 var detectLatestTransferId = require("./detectlatesttransferid");
 var LoopJob = require("../loopjob");
@@ -37,7 +37,7 @@ function loopNewTransfer(startId, callback) {
         if (!this.loopjob.isLoopingStarted()) {
             this.loopjob.startLooping();
         }
-        console.log("loopNewTransfer loopjob existed");
+        logutil.info("loopNewTransfer loopjob existed");
         return;
     }
     var lastDetectTime = new Date();
@@ -69,7 +69,7 @@ function loopNewTransfer(startId, callback) {
                 if (errorcode === "500") {
                     if (hasNew) {
                         hasNew = false;
-                        logutil.log("-|", transferId);
+                        logutil.info("-|", transferId);
                     }
                     if (disabledStep > 0) {
                         disabledStep = 0;
@@ -112,7 +112,7 @@ function loopNewTransfer(startId, callback) {
 
                     if (tid >= transferId) {
                         if (transferObj.interest >= 0.13 && transferObj.sharesAvailable >= 1) {
-                            logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
+                            logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
                         }
                         transferId = tid + 1;
                         if (disabled) {
@@ -169,7 +169,7 @@ function loopListTransfer(callback) {
         console.log("loopNewTransfer loopjob existed");
         return;
     }
-    var LOOP_INTERVAL = 1000;
+    var LOOP_INTERVAL = 500;
     var pageDetailLog = {};
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
@@ -211,23 +211,11 @@ function loopListTransfer(callback) {
                         callback(avprd);
                     }
 
-                    // for (var i = 0; i < products.length; i++) {
-                    //     var product = products[i];
-                    //     if (Number(product.share) === 0 || pageDetailLog[product.id]) continue;
-                    //     pageDetailLog[product.id] = true;
-                    //     var pubt = new Date();
-                    //     //logutil.log("getTransferPageDetail", product.id, product.share)
-                    //     getTransferPageDetail(product, function(transferObj) {
-                    //         transferObj.publishTime = pubt;
-                    //         transferObj.producedTime = pubt;
-                    //         if (!transferObj.disabled) {
-                    //             callback(transferObj);
-                    //         }
-                    //     })
-                    //     break;
-                    // }
                 } catch (e) {
-                    logutil.log("????????????? exception:", e)
+                    logutil.error("????????????? exception:", e, body)
+                    if (body.indexOf('禁止访问')>0) {
+                        loopjob.pause(60000)
+                    }
                 }
             } else {
                 console.log("?????????????????????????????? statusCode:", response.statusCode)
@@ -267,10 +255,10 @@ function getTransferPageDetail(product, callback) {
                     disabled: disabled
                 };
                 //if (transferObj.interest>=0.13)
-                logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
+                logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
                 callback(transferObj)
             } else {
-                console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
+                logutil.error("ERROR consumejob consume", toBeConsumed.transferId, body);
                 if (callback) callback(null);
             }
 

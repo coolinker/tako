@@ -1,5 +1,5 @@
 var htmlparser = require('../htmlparser');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config("rrdconsume");
 var simplehttp = require('../simplehttp');
 var cmbcPwd = require('./cmbcPwd');
 
@@ -19,7 +19,7 @@ exports.consume = consume;
 function consume(account, toBeConsumed, callback) {
     if (!readyForConsume(account)) return false;
     if (!ableToConsume(account, toBeConsumed)) return false;
-    logutil.log("rrd toBeConsumed", toBeConsumed.publishTime, toBeConsumed.transferId, toBeConsumed.pricePerShare, toBeConsumed.sharesAvailable, toBeConsumed.interest);
+    logutil.info("rrd toBeConsumed", toBeConsumed.publishTime, toBeConsumed.transferId, toBeConsumed.pricePerShare, toBeConsumed.sharesAvailable, toBeConsumed.interest);
     //var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
 
     account.lock();
@@ -42,7 +42,7 @@ function consume(account, toBeConsumed, callback) {
     // if (t <= 0) {
     //     var canBuyShares = doConsume(account, toBeConsumed, cb);
     // } else {
-    //     // logutil.log("consume too soon... :", t+"ms")
+    //     // logutil.info("consume too soon... :", t+"ms")
     //     setTimeout(doConsume, t, account, toBeConsumed, cb);
     // }
     var canBuyShares = sharesAbleToConsume(account, toBeConsumed);
@@ -59,7 +59,7 @@ function doConsume(account, toBeConsumed, callback) {
             return;
         }
 
-        logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+        logutil.info("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
         simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
                 form: {
                     "agree-contract": "on",
@@ -74,13 +74,13 @@ function doConsume(account, toBeConsumed, callback) {
                 if (request.statusCode === 200) {
                     var actionurl = htmlparser.getValueFromBody('<input type="hidden" id="actionUrl" name="actionUrl" size=100px value="', '" />', body);
                     var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);    
-                    console.log("before cmbcPageHandler", actionurl)
+                    // console.log("before cmbcPageHandler", actionurl)
                     cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed){
-                        console.log("cmbcPageHandler", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
+                        logutil.info("cmbcPageHandler", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
                         callback(succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
                     });
                 } else {
-                    console.log("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body);
+                    logutil.error("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body);
                     if (callback) callback(0);
                 }
 
@@ -98,7 +98,7 @@ function doConsume(account, toBeConsumed, callback) {
 //             return;
 //         }
 
-//         logutil.log("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+//         logutil.info("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
 //         simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
 //                 form: {
 //                     "agree-contract": "on",
@@ -119,7 +119,7 @@ function doConsume(account, toBeConsumed, callback) {
 //                             account.addToConsumeHistory(prd)
 //                         }
 
-//                         //logutil.log("confirmSpent", status===0, spent, shares, toBeConsumed.transferId, account.availableBalance);
+//                         //logutil.info("confirmSpent", status===0, spent, shares, toBeConsumed.transferId, account.availableBalance);
 //                         if (callback) callback(prd.price);
 //                         // account.locked = false;
 //                     })
@@ -162,7 +162,7 @@ function confirmSpent(transferId, account, callback) {
 
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
-    var shares = Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.5));
+    var shares = Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.8));
     return shares;
 }
 
@@ -209,10 +209,10 @@ function getTransferPageDetail(product, callback) {
                     disabled: disabled
                 };
                 //if (transferObj.interest>=0.13)
-                logutil.log("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
+                logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
                 callback(transferObj)
             } else {
-                console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
+                logutil.error("ERROR consumejob consume", toBeConsumed.transferId, body);
                 if (callback) callback(null);
             }
 

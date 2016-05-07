@@ -13,6 +13,19 @@ function registerFeeler(jsonParam, callback, ws) {
     }, ws);
 }
 
+exports.unregisterFeeler = unregisterFeeler;
+function unregisterFeeler(jsonParam, callback, ws) {
+    takoController.unregisterFeeler(jsonParam, function(data) {
+        var responseJson = {
+                response: true,
+                action: 'unregisterFeeler',
+                body: data
+            }
+        callback(responseJson)
+         ws.send(JSON.stringify(responseJson));
+    }, ws);
+}
+
 exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(params, callback) {
     takoController.getAccountInfo(params, function(responseInfo) {

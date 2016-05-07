@@ -1,4 +1,4 @@
-var logutil = require("../logutil");
+var logutil = require("../logutil").config("takoserver");
 var ACCOUNT_TYPES = require("../accounttypes");
 var FEELERS = {};
 
@@ -12,12 +12,11 @@ function getFeeler(source) {
 }
 
 exports.registerFeeler = registerFeeler;
-
 function registerFeeler(jsonParams, callback, ws) {
     var types = jsonParams;
     for (var i = 0; i < types.length; i++) {
         if (FEELERS[types[i]]) {
-            logutil.log("Feeler already registered", types[i])
+            logutil.info("Feeler already registered", types[i])
         } else {
             FEELERS[types[i]] = ws;
             FEELERS[types[i]].callbacks_getAccountInfo = {};
@@ -31,6 +30,19 @@ function registerFeeler(jsonParams, callback, ws) {
                 type: [types[i]]
             });
 
+        }
+    }
+}
+
+exports.unregisterFeeler = unregisterFeeler;
+function unregisterFeeler(jsonParams, callback) {
+    var types = jsonParams;
+    for (var i = 0; i < types.length; i++) {
+        if (!FEELERS[types[i]]) {
+            logutil.info("Feeler not registered", types[i])
+        } else {
+            logutil.info("Unregister feeler", types[i]);
+            delete FEELERS[types[i]];
         }
     }
 }
@@ -134,11 +146,11 @@ function stopAccountBidding(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
     var result = {
-        action: "startAccountBidding"
+        action: "stopAccountBidding"
     };
 
     if (!acc) {
-        logutil.log("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
+        logutil.info("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
         result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
     } else {
         acc.startedBidding = false;

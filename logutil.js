@@ -1,33 +1,32 @@
 var winston = require('winston');
 var path = require('path');
-winston.add(winston.transports.File, { filename: '/tako.log' });
+var util = require('util');
+var fs = require('fs'); 
+var logPath = "./logs";  
 
-exports.config = config;
-function config() {
-    transports = [];
-    transports.push(new winston.transports.DailyRotateFile({
-        name: 'file',
-        datePattern: '.yyyy-MM-dd',
-        filename: path.join(__dirname, "logs", "log_file.log")
-    }));
+if(!fs.existsSync(logPath)){  
+    fs.mkdirSync(logPath);    
+};  
 
-    var logger = new winston.Logger({
-        transports: transports
-    });
-
+exports.config  = function (fileName) {
+    var logger = new (winston.Logger)({  
+        transports: [
+          new (winston.transports.Console)({ level: 'info' }),
+          new (winston.transports.DailyRotateFile)({   
+            filename: util.format('%s/%s', logPath, fileName),  
+            datePattern: '-yyyy-MM-dd.log',  
+            maxsize: 1024 * 1024 * 10, // 10MB ,
+            level: 'info',
+            timestamp: function() { return new Date().toLocaleTimeString(); }
+          })  
+        ]  
+    });  
     return logger;
-}
+} 
 
 
-exports.defaultLogger = defaultLogger;
-function defaultLogger () {
-    return winston;
-}
 
 exports.log = log;
-function log1(methodName, str) {
-    winston.log(methodName);
-}
 function log(methodName) {
     var str = "";
     for (var i = 1; i < arguments.length; i++) {

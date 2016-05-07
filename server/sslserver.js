@@ -5,6 +5,7 @@ var https = require('https'),
     fs = require("fs"),
     httpProxy = require('http-proxy'),
     os = require("os");
+var logutil = require("../logutil").config("takoserver");
 
 var port = 80;
 var networkInterfaces = os.networkInterfaces();
@@ -34,7 +35,7 @@ var proxy = httpProxy.createProxyServer({
 var server = http.createServer( function(req, res) {
     var uri = url.parse(req.url).pathname;
     if (uri === "/api" /*&& handleApiRequest(req, res)*/) {
-        console.log("api should be using https...")
+        logutil.info("api should be using https...")
         return;
     } else {
         if (req.url === "/index.html") {
@@ -54,7 +55,7 @@ server.on('upgrade', function(req, socket, head) {
 var sslserver = https.createServer(options, function(req, res) {
     var uri = url.parse(req.url).pathname;
     if (uri === "/api" && handleApiRequest(req, res)) {
-        console.log("443 port api call", uri)
+        logutil.info("443 port api call", uri)
         return;
     } else {
         res.writeHead(301,
@@ -64,12 +65,12 @@ var sslserver = https.createServer(options, function(req, res) {
     }
  }).listen(443);
 
-console.log("Static file server running at\n  => http://"+globalIPAddress+":" + port + "/\nCTRL + C to shutdown");
+logutil.info("Static file server running at\n  => http://"+globalIPAddress+":" + port + "/\nCTRL + C to shutdown");
 
 function handleApiRequest(request, response) {
     var query = url.parse(request.url, true).query;
     var action = query.action;
-    // console.log("handleApiRequest", action);
+     logutil.info("handleApiRequest", action);
     if (!apiDispatcher[action]) return false;
     if (request.method == 'POST') {
         var jsonString = '';
@@ -85,7 +86,7 @@ function handleApiRequest(request, response) {
                         // 'Content-Length': output.length
                     "Access-Control-Allow-Origin": "http://" + globalIPAddress
                 });
-                console.log("output", output)
+                logutil.info("output", output)
                 response.write(output);
                 response.end();
             });
