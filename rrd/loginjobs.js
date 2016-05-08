@@ -1,5 +1,5 @@
 require('seajs');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config("rrdlogin");
 var request = require("request");
 var encrypt = require('./rsa');
 var simplehttp = require('../simplehttp');
@@ -13,7 +13,7 @@ function login(account, callback) {
 
     var cncryptPassword = encrypt(password, publicKey);
     var cookieJar = request.jar();
-    logutil.log("login", user, cncryptPassword);
+    logutil.info("login", user, cncryptPassword);
     simplehttp.POST('https://www.we.com/j_spring_security_check', {
             form: {
                 j_username: user,
@@ -27,7 +27,7 @@ function login(account, callback) {
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://www.we.com");
             if (cookie_string.indexOf("jforumUserInfo")>=0) {
-                logutil.log("login succeed", account.user, account.source);
+                logutil.info("login succeed", account.user, account.source);
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
                     account.availableBalance = Number(userInfo.availableBalance.replace(",", ""));

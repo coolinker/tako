@@ -70,6 +70,7 @@ function cmbcPageHandler(account, actionurl, context, callback) {
                                 })
                             } else {
                                 logutil.info("Valid password failed",account.tradePassword.length,  validRes)
+                                callback(false)
                             }
                         });
                     });

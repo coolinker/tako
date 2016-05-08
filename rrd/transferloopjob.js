@@ -196,7 +196,8 @@ function loopListTransfer(callback) {
                         product.producedTime  = product.publishTime = new Date();
                         product.source = "www.renrendai.com";
                         avprd.push(product);
-                        
+                        logutil.info("toBeConsumed", product);
+    
                     }
 
                     avprd.sort(function(p1, p2){

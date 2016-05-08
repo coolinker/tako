@@ -1,5 +1,5 @@
 var LoopJob = function() {
-    var logutil = require("./logutil");
+    var logutil = require("./logutil").config('loopjob');
     var simplehttp = require('./simplehttp');
 
     var loopCounter = 0;
@@ -47,7 +47,7 @@ var LoopJob = function() {
         loopCounter++;
         if (loopCounter % 1000 === 0) {
             // console.log("loopWork...", loopCounter);    
-            logutil.log("loopjob loopWork :", loopCounter, errorCounter, jobStatus.url);
+            logutil.warn("loopjob loopWork :", loopCounter, errorCounter, jobStatus.url);
         }
 
 
@@ -102,7 +102,7 @@ var LoopJob = function() {
     }
 
     this.pause = function (msd) {
-        logutil.log("job pause===========", msd);
+        logutil.warn("job pause===========", msd);
         jobStatus.loopPaused = true;
         setTimeout(function(){
              jobStatus.loopPaused = false;

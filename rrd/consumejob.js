@@ -76,7 +76,7 @@ function doConsume(account, toBeConsumed, callback) {
                     var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);    
                     // console.log("before cmbcPageHandler", actionurl)
                     cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed){
-                        logutil.info("cmbcPageHandler", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
+                        logutil.info("cmbcPageHandler ******", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
                         callback(succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
                     });
                 } else {

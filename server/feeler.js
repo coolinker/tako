@@ -36,7 +36,7 @@ function registerFeeler() {
     });
     
     ws.on('message',  function (data, flags) {
-        logutil.info("Connection message:", data);
+        logutil.info("Connection message:", data.action);
         data = JSON.parse(data);
         if (data.action === "registerFeeler") {
             console.log("Register feeler succeed!");
