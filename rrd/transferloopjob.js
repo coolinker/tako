@@ -212,9 +212,10 @@ function loopListTransfer(callback) {
                     }
 
                 } catch (e) {
-                    logutil.error("????????????? exception:", e, body)
+                    logutil.error("????????????? exception:", e)
                     if (body.indexOf('禁止访问')>0) {
-                        loopjob.pause(60000)
+                        logutil.error("禁止访问")
+                        loopjob.pause(600000)
                     }
                 }
             } else {

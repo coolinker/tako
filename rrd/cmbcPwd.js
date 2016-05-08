@@ -1,5 +1,5 @@
 var htmlparser = require('../htmlparser');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config("rrdconsume");;
 var requestlib = require("request");
 var simplehttp = require('../simplehttp');
 
@@ -10,15 +10,15 @@ var isSerialPortOpen = false;
 var startedInputJYPwd = false;
 
 serialport.list(function(err, ports) {
-    console.log("list ports:")
+    logutil.info("list ports:")
     ports.forEach(function(port) {
         spName = port.comName;
-        console.log(port.comName, port.pnpId, port.manufacturer);
+        logutil.info(port.comName, port.pnpId, port.manufacturer);
     });
 
     serialPort = new serialport.SerialPort(spName);
     serialPort.on('open', function() {
-        console.log('serialPort open', spName);
+        logutil.info('serialPort open', spName);
         isSerialPortOpen = true;
     });
 
@@ -30,7 +30,7 @@ var driver = new webdriver.Builder().
 withCapabilities(webdriver.Capabilities.ie()).
 build();
 
-console.log("initialize cmbcPwd...")
+logutil.info("initialize cmbcPwd...")
 ///var timeouts = driver.manage().timeouts();
 //timeouts.setScriptTimeout(10000);
 
@@ -38,7 +38,7 @@ driver.get('http://123.57.39.80/compositions/tako/rrd/web/passguard.html');
 
 exports.cmbcPageHandler = cmbcPageHandler;
 function cmbcPageHandler(account, actionurl, context, callback) {
-    // console.log("cmbcPageHandler", actionurl, context);
+    // logutil.info("cmbcPageHandler", actionurl, context);
     var newjar = requestlib.jar();
     simplehttp.POST(actionurl, {
             form: {
@@ -69,7 +69,7 @@ function cmbcPageHandler(account, actionurl, context, callback) {
                                     callback(succeed);
                                 })
                             } else {
-                                console.log("Valid password failed",account.tradePassword.length,  validRes)
+                                logutil.info("Valid password failed",account.tradePassword.length,  validRes)
                             }
                         });
                     });
@@ -77,7 +77,7 @@ function cmbcPageHandler(account, actionurl, context, callback) {
 
 
             } else {
-                console.log("ERROR consumejob consume", toBeConsumed.transferId, body);
+                logutil.info("ERROR consumejob consume", toBeConsumed.transferId, body);
                 if (callback) callback(null);
             }
 
@@ -99,13 +99,13 @@ function autoInputJYPwd(account, params, callback) {
     var inputFinished = false;
     driver.executeAsyncScript(function() {
         var callback = arguments[arguments.length - 1];
-        //console.log("executeAsyncScript...clear input", pgeditorChar.pwdLength());
+        //logutil.info("executeAsyncScript...clear input", pgeditorChar.pwdLength());
         window.focus();
         pgeditorChar.pwdclear();
         _ocx_passwordChar.setActive();
         callback(pgeditorChar.pwdLength());
     }).then(function(str) {
-        // console.log("-----------------------start input")
+        // logutil.info("-----------------------start input")
         kbInput(account.tradePassword, function(result) {
             inputFinished = true;
         });
@@ -114,19 +114,19 @@ function autoInputJYPwd(account, params, callback) {
     });
 
     driver.wait(function() {
-        //if (inputFinished) console.log("Input finished")
+        //if (inputFinished) logutil.info("Input finished")
         return inputFinished;
     }, Infinity);
 
     driver.executeAsyncScript(function(randomForEnc) {
-        //console.log("executeAsyncScript get Pwd result...", randomForEnc);
+        //logutil.info("executeAsyncScript get Pwd result...", randomForEnc);
         var callback = arguments[arguments.length - 1];
         pgeditorChar.pwdSetSk(randomForEnc);
         var PwdResultChar = pgeditorChar.pwdResult();
-        //console.log("executeAsyncScript get Pwd result...", PwdResultChar);
-        callback(PwdResultChar, pgeditorChar.pwdLength());
-    }, params.randomForEnc).then(function(str, len) {
-        console.log("got Pwd result", len, str);
+        //logutil.info("executeAsyncScript get Pwd result...", PwdResultChar);
+        callback(PwdResultChar);
+    }, params.randomForEnc).then(function(str) {
+        logutil.info("got Pwd result", str);
         callback(str);
         return true;
     })
@@ -146,7 +146,7 @@ function kbInput(str, callback, idx) {
     serialPort.write([nextchar], function() {
         idx++;
         var delay = (nextchar >= 65 && nextchar <= 90) ? 140 : 40;
-        //console.log(nextchar, delay)
+        //logutil.info(nextchar, delay)
         serialPort.drain(function() {
             setTimeout(function() {
                 kbInput(str, callback, idx);
@@ -157,7 +157,7 @@ function kbInput(str, callback, idx) {
 }
 
 function validJYPwd(params, jar, callback) {
-    //console.log("validJYPwd:", params)
+    //logutil.info("validJYPwd:", params)
     simplehttp.POST('https://tbank.cmbc.com.cn:50002/tradeBank/trans/validatePwd.json', {
             form: params,
             "cookieJar": jar
@@ -197,7 +197,7 @@ function redirectToWe(body, jar, callback) {
     //             "cookieJar": jar
     //         },
     //         function(err, request, body) {
-    //             console.log("----------", body)
+    //             logutil.info("----------", body)
     //             callback(succeed);
     //         });
 }
