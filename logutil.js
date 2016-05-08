@@ -4,6 +4,10 @@ var util = require('util');
 var fs = require('fs'); 
 var logPath = "./logs";  
 
+if (!winston.transports.DailyRotateFile) {
+    winston.transports.DailyRotateFile = require('winston-daily-rotate-file');
+}
+
 if(!fs.existsSync(logPath)){  
     fs.mkdirSync(logPath);    
 };  
