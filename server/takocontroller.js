@@ -12,6 +12,7 @@ function getFeeler(source) {
 }
 
 exports.registerFeeler = registerFeeler;
+
 function registerFeeler(jsonParams, callback, ws) {
     var types = jsonParams;
     for (var i = 0; i < types.length; i++) {
@@ -20,8 +21,8 @@ function registerFeeler(jsonParams, callback, ws) {
         } else {
             FEELERS[types[i]] = ws;
             FEELERS[types[i]].callbacks_getAccountInfo = {};
-            FEELERS[types[i]].on("close", function (idx) {
-                    return function(param) {
+            FEELERS[types[i]].on("close", function(idx) {
+                return function(param) {
                     delete FEELERS[types[idx]];
                 }
             }(i))
@@ -35,6 +36,7 @@ function registerFeeler(jsonParams, callback, ws) {
 }
 
 exports.unregisterFeeler = unregisterFeeler;
+
 function unregisterFeeler(jsonParams, callback) {
     var types = jsonParams;
     for (var i = 0; i < types.length; i++) {
@@ -45,14 +47,20 @@ function unregisterFeeler(jsonParams, callback) {
             delete FEELERS[types[i]];
         }
     }
+
+    callback({
+        status: 'connected',
+        types: JSON.stringify(types)
+    });
 }
 
 exports.updateConsumeHistory = updateConsumeHistory;
-function updateConsumeHistory (data) {
+
+function updateConsumeHistory(data) {
     var user = data.user;
     var source = data.source;
     var consumedata = data.data;
-    var acc = accountqueue.getAccount({user: user, source: source});
+    var acc = accountqueue.getAccount({ user: user, source: source });
     if (acc) {
         acc.consumeHistory.push(consumedata);
     } else {
@@ -111,6 +119,7 @@ function gotAccountInfo(accountJson, callback) {
 }
 
 exports.startAccountBidding = startAccountBidding;
+
 function startAccountBidding(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
@@ -130,7 +139,7 @@ function startAccountBidding(accountJson, callback) {
             feeler.send(JSON.stringify(jsonToSend), null, function(params) {
                 result.resultMsg = "SUCCEED";
             });
-            
+
         } else {
             result.resultMsg = "FEELER_NOT_REGISTERED";
         }
@@ -142,6 +151,7 @@ function startAccountBidding(accountJson, callback) {
 }
 
 exports.stopAccountBidding = stopAccountBidding;
+
 function stopAccountBidding(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
@@ -164,7 +174,7 @@ function stopAccountBidding(accountJson, callback) {
             feeler.send(JSON.stringify(jsonToSend), null, function(params) {
                 result.resultMsg = "SUCCEED";
             });
-            
+
         } else {
             result.resultMsg = "FEELER_NOT_REGISTERED";
         }
@@ -173,6 +183,7 @@ function stopAccountBidding(accountJson, callback) {
 }
 
 exports.addAccountJson = addAccountJson;
+
 function addAccountJson(accountJson) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);

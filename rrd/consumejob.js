@@ -19,7 +19,7 @@ exports.consume = consume;
 function consume(account, toBeConsumed, callback) {
     if (!readyForConsume(account)) return false;
     if (!ableToConsume(account, toBeConsumed)) return false;
-    logutil.info("rrd toBeConsumed", toBeConsumed.publishTime, toBeConsumed.transferId, toBeConsumed.pricePerShare, toBeConsumed.sharesAvailable, toBeConsumed.interest);
+    logutil.info("\ntoBeConsumed", toBeConsumed.publishTime, toBeConsumed.transferId, toBeConsumed.pricePerShare, toBeConsumed.sharesAvailable, toBeConsumed.interest);
     //var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
 
     account.lock();
@@ -59,7 +59,7 @@ function doConsume(account, toBeConsumed, callback) {
             return;
         }
 
-        logutil.info("rrd doConsume:", account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+        logutil.info("doConsume:", account.user, account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
         simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
                 form: {
                     "agree-contract": "on",

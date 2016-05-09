@@ -1,4 +1,4 @@
-var logutil = require("./logutil");
+var logutil = require("./logutil").config('feeler');
 var ACCOUNT_TYPES = require("./accounttypes");
 
 var LOGIN_ACCOUNTS_NUMBER = 3;
@@ -13,7 +13,7 @@ function consume(toBeConsumed) {
     var sourceType = ACCOUNT_TYPES[toBeConsumed instanceof Array ? toBeConsumed[0]['source'] : toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
-    //logutil.log("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price, toBeConsumed.interest);
+    //logutil.info("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price, toBeConsumed.interest);
 
     var finished = false, csmidx = 0;
     for (var i = 0; i < accounts.length; i++) {
@@ -21,7 +21,7 @@ function consume(toBeConsumed) {
             if (toBeConsumed instanceof Array) {
                  var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
                  if (finished) {
-                    logutil.log("consume finished", toBeConsumed[csmidx])
+                    logutil.info("consume finished", toBeConsumed[csmidx].productId)
                     toBeConsumed.splice(csmidx, 1)
                     if (toBeConsumed.length===0) break;
                     //toBeConsumed.shift();
@@ -30,7 +30,7 @@ function consume(toBeConsumed) {
                  }
 
                  if (csmidx === toBeConsumed.length) {
-                    // logutil.log("start from 0", csmidx, toBeConsumed.length)
+                    // logutil.info("start from 0", csmidx, toBeConsumed.length)
                     csmidx = 0;
                  }
 
@@ -63,7 +63,7 @@ function loginAccount(accountInfo, callback) {
     loginjobs.login(accountInfo, function(cookieJar, info) {
         accountInfo.locked = false;
         if (cookieJar === null) {
-            logutil.log("Account login failed", accountInfo.user, info.resultMsg);
+            logutil.error("\nAccount login failed", accountInfo.user, info.resultMsg);
         }
 
         if (callback) callback(info);
@@ -100,7 +100,7 @@ function addAccount(account) {
 
     accountQueues[accounttype].push(account);
     queuesMap[accounttype][account.user] = account;
-    logutil.log("Account added in queue", account.user)
+    logutil.info("Account added in queue", account.user)
 }
 
 function removeAccount(account) {
@@ -113,7 +113,7 @@ function removeAccount(account) {
         }
     }
     delete queuesMap[accounttype][account.user];
-    logutil.log("remove Account", accounttype, account.user)
+    logutil.info("remove Account", accounttype, account.user)
 }
 
 exports.updateAccountQueue = updateAccountQueue;
@@ -155,13 +155,13 @@ function queueLogin() {
                 var acc = queue[i];
 
                 if (acc.cookieJar === null) {
-                    logutil.log("loopLogin...", att, i);
+                    logutil.info("loopLogin...", att, i);
                     loginAccount(acc);
                     continue;
                 }
 
                 var letime = acc.loginExtendedTime === null ? acc.loginTime : acc.loginExtendedTime;
-                // logutil.log("extend login...", acc.user, now - letime, acc.loginExtendInterval)
+                // logutil.info("extend login...", acc.user, now - letime, acc.loginExtendInterval)
                 if (acc.ableToConsume() && now - letime > acc.loginExtendInterval) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");
@@ -172,9 +172,9 @@ function queueLogin() {
                         return function(cookieJar) {
                             _acc.cookieJar = cookieJar;
                             if (cookieJar === null) {
-                                logutil.log("extend login failed:", _acc.user);
+                                logutil.info("extend login failed:", _acc.user);
                             } else {
-                                logutil.log("extend login:", _acc.user, _acc.source);
+                                logutil.info("extend login:", _acc.user, _acc.source);
                                 _acc.loginExtendedTime = new Date();
                             }
 

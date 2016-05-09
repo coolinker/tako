@@ -196,7 +196,9 @@ function loopListTransfer(callback) {
                         product.producedTime  = product.publishTime = new Date();
                         product.source = "www.renrendai.com";
                         avprd.push(product);
-                        logutil.info("toBeConsumed", product);
+                        
+                        if (product.interest > 0.12)
+                            logutil.info("toBeConsumed", product);
     
                     }
 

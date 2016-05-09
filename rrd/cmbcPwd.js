@@ -171,7 +171,7 @@ function validJYPwd(params, jar, callback) {
 
 
 function doTransferApplyByCust(params, jar, callback) {
-    logutil.log("doTransferApplyByCust:")
+    logutil.info("doTransferApplyByCust:")
     simplehttp.POST('https://tbank.cmbc.com.cn:50002/tradeBank//trans/doTransferApplyByCust.html', {
             form: params,
             "cookieJar": jar
@@ -189,7 +189,7 @@ function redirectToWe(body, jar, callback) {
 
     var url = htmlparser.getValueFromBody('action="', '" method', body);
     var context = htmlparser.getValueFromBody('<input name="context" value="', '" />', body);
-    logutil.log("=========", succeed, errorcode, errormsg, url);
+    logutil.info("redirectToWe", succeed, errorcode, errormsg, url);
     callback(succeed);
     // simplehttp.POST(url, {
     //             form: {
