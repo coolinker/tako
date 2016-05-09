@@ -1,5 +1,5 @@
 var htmlparser = require('../htmlparser');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config('luconsume');
 var mobilesigutil = require("./mobilesigutil");
 var simplehttp = require('../simplehttp');
 
@@ -36,7 +36,7 @@ function consume(account, toBeConsumed, callback) {
 //     var productId = toBeConsumed.productId;
 //     var cookieJar = account.cookieJar;
 //     mobileGetSID(account, productId, function(sid) {
-//         logutil.log("mobileGetSID", productId, sid)
+//         logutil.info("mobileGetSID", productId, sid)
 //         if (!sid) {
 //             account.unlock();
 //             return;
@@ -44,7 +44,7 @@ function consume(account, toBeConsumed, callback) {
 //         var st = new Date();
 //         mobileContract(account, productId, sid, function(info) {
 //             //if (!info) return;
-//             logutil.log("mobileContract duration:", new Date()-st);
+//             logutil.info("mobileContract duration:", new Date()-st);
 //         });
 //         setTimeout(function() {
 //             var st = new Date();
@@ -52,14 +52,14 @@ function consume(account, toBeConsumed, callback) {
 //                 // mobileInvestmentRequest(account, productId, sid, function(info) {
 //                 //     account.unlock();
 //                 // });
-//                 logutil.log("mobileContractConfirm duration:", new Date()-st);
+//                 logutil.info("mobileContractConfirm duration:", new Date()-st);
 //             });
 //         }, 150)
 
 //         setTimeout(function() {
 //             var st = new Date();
 //             mobileInvestmentRequest(account, productId, sid, function(info){
-//                 logutil.log("mobileInvestmentRequest duration:", new Date()-st);
+//                 logutil.info("mobileInvestmentRequest duration:", new Date()-st);
 //                 account.unlock();
 //             });
 //         }, 300)
@@ -70,15 +70,15 @@ function consume_brwoser(account, toBeConsumed, callback) {
     if (!ableToConsume(account, toBeConsumed)) return false;
     account.lock();
 
-    logutil.log("lufax doConsume:", account.user, account.availableBalance, toBeConsumed.productId, toBeConsumed.publishTime, toBeConsumed.interest, toBeConsumed.price);
+    logutil.info("lufax doConsume:", account.user, account.availableBalance, toBeConsumed.productId, toBeConsumed.publishTime, toBeConsumed.interest, toBeConsumed.price);
     var productId = toBeConsumed.productId;
     var cookieJar = account.cookieJar;
 
     var investmentRequestCallback = function(json) {
 
-        logutil.log("investmentRequestCallback", new Date() - consumeStart, JSON.stringify(json))
+        logutil.info("investmentRequestCallback", new Date() - consumeStart, JSON.stringify(json))
         if (!json) {
-            logutil.log("investmentRequest failed.", productId, account.uid);
+            logutil.error("investmentRequest failed.", productId, account.uid);
         } else {
             if (json.code === '01') {
                 var ab = account.availableBalance;
@@ -91,7 +91,7 @@ function consume_brwoser(account, toBeConsumed, callback) {
                 return;
             } else {
                  //confirmConsuming(account, toBeConsumed);
-                logutil.log("json.code", json.code, json)
+                logutil.info("json.code", json.code, json)
             }
 
         }
@@ -102,7 +102,7 @@ function consume_brwoser(account, toBeConsumed, callback) {
     var consumeStart = new Date();
     investCheck(account.uid, productId, cookieJar, function(sid) {
         if (!sid) {
-            logutil.log("Get sid failed")
+            logutil.error("Get sid failed")
             account.unlock();
             if (callback) callback();
             return;
@@ -119,23 +119,23 @@ function consume_brwoser(account, toBeConsumed, callback) {
 
         });
 
-        logutil.log("investCheck done", sid, new Date() - consumeStart);
+        logutil.info("investCheck done", sid, new Date() - consumeStart);
 
         setTimeout(function() {
             traceOtp(productId, sid, cookieJar, function() {
                 traceOtpDone = true;
             })
-            logutil.log("guessCaptchaForTrading start", sid, new Date() - consumeStart);
+            logutil.info("guessCaptchaForTrading start", sid, new Date() - consumeStart);
             captchaUtil.guessCaptchaForTrading(productId, sid, cookieJar, function(capStr, imgid) {
                 if (!capStr) {
-                    logutil.log("guessCaptchaForTrading failed");
+                    logutil.error("guessCaptchaForTrading failed");
                     if (callback) callback();
                     account.unlock();
                     return;
                 } else {
                     captachStr = capStr;
                     imageId = imgid;
-                    logutil.log("guessCaptchaForTrading done", productId, sid, captachStr, imageId, new Date() - consumeStart);
+                    logutil.info("guessCaptchaForTrading done", productId, sid, captachStr, imageId, new Date() - consumeStart);
                     investmentRequest(account.uid, productId, sid, cncryptPassword, captachStr, imageId, cookieJar, investmentRequestCallback);
                 }
             })
@@ -150,7 +150,7 @@ function consume_brwoser(account, toBeConsumed, callback) {
 function confirmConsuming(account, product) {
     setTimeout(function() {
         confirmSpent(product.productId, account, function(pobj) {
-            console.log("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName)
+            logutil.info("pobj.productStatus", pobj.productStatus, account.user, pobj.buyerUserName)
              if (pobj.productStatus === "ONLINE") {
                 confirmConsuming(account, product)
             } else if (pobj.productStatus === "DONE") {
@@ -165,12 +165,12 @@ function confirmConsuming(account, product) {
                         tradingMode: pobj.tradingMode
                     })
                 } else {
-                    console.log("confirmConsuming DONE***************", account.user, pobj.buyerUserName)
+                    logutil.info("confirmConsuming DONE***************", account.user, pobj.buyerUserName)
                 }
             } else {
-                console.log("confirmConsuming else***************", pobj.productStatus, pobj)
+                logutil.info("confirmConsuming else***************", pobj.productStatus, pobj)
             }
-            logutil.log("confirmSpent***********", pobj.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime);
+            logutil.info("confirmSpent***********", pobj.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime);
         })
     }, 5000)
 }
@@ -190,10 +190,10 @@ function getProductDetail(productId, callback) {
             try {
                 var json = JSON.parse(body);
                 if (json.productId != 0 && json.tradingMode != "06")
-                    logutil.log("getProductDetail", json.productId, json.productStatus, json.publishedAtDateTime, json.productType, json.tradingMode, json.price)
+                    logutil.info("getProductDetail", json.productId, json.productStatus, json.publishedAtDateTime, json.productType, json.tradingMode, json.price)
                 callback(json);
             } catch (e) {
-                logutil.log("****************getDetail failed", productId)
+                logutil.error("****************getDetail failed", productId)
                     //getProductDetail(productId, callback)
                     // callback({
                     //     body: body
@@ -217,7 +217,7 @@ function confirmSpent(productId, account, callback) {
 }
 
 function ableToConsume(account, toBeConsumed) {
-    //console.log(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
+    //logutil.info(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
     return !account.locked && account.pricePerBidMax >= toBeConsumed.price && account.pricePerBidMin <= toBeConsumed.price && account.availableBalance > toBeConsumed.price && account.availableBalance - toBeConsumed.price > account.reservedBalance && account.interestLevelMin <= toBeConsumed.interest && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
@@ -231,7 +231,7 @@ function mobileHeaders(account) {
             "x-lufax-mobile-t": t,
             "x-lufax-mobile-signature": sig
         }
-        // console.log("mobileHeaders", h)
+        // logutil.info("mobileHeaders", h)
     return h;
 }
 
@@ -246,11 +246,11 @@ function mobileGetSID(account, productId, callback) {
             try {
                 var info = JSON.parse(body).checkInvest;
                 if (!info.sid) {
-                    logutil.log("investCheck failed", body);
+                    logutil.error("investCheck failed", body);
                 }
                 callback(info.sid);
             } catch (e) {
-                logutil.log("investCheck exception:", productId, err, body);
+                logutil.error("investCheck exception:", productId, err, body);
                 callback(null);
             }
         });
@@ -265,9 +265,9 @@ function mobileContract(account, productId, sid, callback) {
             try {
                 var info = JSON.parse(body);
                 callback(info);
-                //logutil.log("mobileContract", body)
+                //logutil.info("mobileContract", body)
             } catch (e) {
-                logutil.log("mobileContract exception:", productId, err, body);
+                logutil.error("mobileContract exception:", productId, err, body);
                 callback(null);
             }
         });
@@ -282,9 +282,9 @@ function mobileContractConfirm(account, productId, sid, callback) {
         function(err, httpResponse, body) {
             //try {
             callback(body);
-            logutil.log("mobileContractConfirm", sid, body)
+            logutil.info("mobileContractConfirm", sid, body)
                 // } catch (e) {
-                //     logutil.log("mobileContractConfirm exception:", sid, productId, err, body);
+                //     logutil.info("mobileContractConfirm exception:", sid, productId, err, body);
                 //     callback(null);
                 // }
         });
@@ -308,10 +308,10 @@ function mobileInvestmentRequest(account, productId, sid, callback) {
             try {
                 var info = JSON.parse(body);
                 callback(info);
-                logutil.log("mobileInvestmentRequest", sid, productId, body)
+                logutil.info("mobileInvestmentRequest", sid, productId, body)
 
             } catch (e) {
-                logutil.log("productId exception:", sid, productId, err, body);
+                logutil.error("productId exception:", sid, productId, err, body);
                 callback(null);
             }
         });
@@ -339,11 +339,11 @@ function investCheck(userId, productId, cookieJar, callback) {
             try {
                 var info = JSON.parse(body);
                 if (!info.sid) {
-                    logutil.log("investCheck failed==", body);
+                    logutil.error("investCheck failed==", body);
                 }
                 callback(info.sid);
             } catch (e) {
-                logutil.log("investCheck exception:", userId, productId, err, body);
+                logutil.error("investCheck exception:", userId, productId, err, body);
                 callback(null);
             }
         });
@@ -376,7 +376,7 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             traceTradeFlag = true;
-            logutil.log("****", 2, body, userId, productId, sid, cookieJar, new Date() - tradeTime);
+            logutil.info("****", 2, body, userId, productId, sid, cookieJar, new Date() - tradeTime);
             // if (checkFlag && traceFlag) callback(body);
             syncFun(body);
         });
@@ -396,7 +396,7 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
             },
             function(err, httpResponse, body) {
                 traceContractFlag = true;
-                logutil.log("****", 4, body, new Date() - contractTime)
+                logutil.info("****", 4, body, new Date() - contractTime)
                     // if (checkFlag && traceFlag) callback(body);
                 syncFun(body);
             });
@@ -416,7 +416,7 @@ function traceOtp(productId, sid, cookieJar, callback) {
             }
         },
         function(err, httpResponse, body) {
-            logutil.log("****", 6, body)
+            logutil.info("****", 6, body)
             callback(body);
         });
 }
@@ -428,7 +428,7 @@ function securityValid(callback) {
             var publicKey = htmlparser.getValueFromBody('encryptPwd:function(e){var t="', '",n=', body);
             var rsaExponent = htmlparser.getValueFromBody('n.setPublic(t,"', '"),n.', body);
 
-            // console.log("securityValid:", rsaExponent, publicKey)
+            // logutil.info("securityValid:", rsaExponent, publicKey)
             callback(publicKey, rsaExponent);
         });
 }
@@ -454,7 +454,7 @@ function investmentRequest(uid, productId, sid, password, captachStr, imageId, c
                 var json = JSON.parse(body);
                 callback(json);
             } catch (e) {
-                logutil.log(body);
+                logutil.error(body);
                 callback();
             }
 
@@ -477,10 +477,10 @@ function rollInvestCheck(account, product, callback) {
             urlInjection: function(parallelIndex, url, jobConfig) {
                 if (jobConfig.latestProductId >= productId) {
                     productId = jobConfig.latestProductId + 1;
-                    logutil.log("adjust productId************************", productId)
+                    logutil.info("adjust productId************************", productId)
                 }
                 var u = url.replace("*", account.uid).replace("#", productId + parallelIndex);
-                logutil.log(u)
+                logutil.info(u)
                 return u;
             },
             optionsInjection: function(parallelIndex, options) {
@@ -500,29 +500,29 @@ function rollInvestCheck(account, product, callback) {
                 var path = response.request.uri.pathname;
                 var pId = Number(path.split("/")[6]);
                 if (error) {
-                    logutil.log("responseHandler error:", error)
+                    logutil.error("responseHandler error:", error)
                 } else if (response.statusCode === 200) {
                     try {
-                        logutil.log("-----", pId, "body=", body)
+                        logutil.info("-----", pId, "body=", body)
                         if (body === '') {
                             //not published
                             return;
                         }
 
                         var checkObj = JSON.parse(body);
-                        logutil.log("~~", productId, pId, checkObj.code, checkObj.sid)
+                        logutil.info("~~", productId, pId, checkObj.code, checkObj.sid)
                         if (productId <= pId) {
                             productId = pId + 1;
-                            logutil.log(pId, "+1=", productId, checkObj.code)
+                            logutil.info(pId, "+1=", productId, checkObj.code)
                         }
-                        // console.log(response.statusCode, productId, body)
+                        // logutil.info(response.statusCode, productId, body)
                         // if (response.statusCode === 302) return;
 
 
-                        // console.log(response.statusCode, productId, checkObj.code)
+                        // logutil.info(response.statusCode, productId, checkObj.code)
                         if (checkObj.code === "66" && !investObj[productId]) {
                             investObj[productId] = true;
-                            console.log("++++++++++++++", productId, pId, checkObj.code, checkObj.sid)
+                            logutil.info("++++++++++++++", productId, pId, checkObj.code, checkObj.sid)
                             doInvest(account, pId, checkObj.sid, function() {
 
                             })
@@ -536,29 +536,29 @@ function rollInvestCheck(account, product, callback) {
 
 
                     } catch (e) {
-                        console.log("Catch", e)
+                        logutil.error("Catch", e)
                     }
                 } else if (response.statusCode === 302) {
                     if (new Date() - lastTimeGetDetail > 500) {
                         lastTimeGetDetail = new Date();
                         getProductDetail(pId, function(pobj) {
                             if (pobj.productId != 0) {
-                                // logutil.log("guessCaptchaForTrading done in getProductDetail", productId, sid, captachStr, imageId, new Date() - consumeStart);
+                                // logutil.info("guessCaptchaForTrading done in getProductDetail", productId, sid, captachStr, imageId, new Date() - consumeStart);
                                 var dt = new Date(pobj.publishedAtDateTime);
                                 if (productId <= pobj.productId && new Date() - dt > 5000) {
                                     productId = pobj.productId + 1;
                                     if (pobj.tradingMode === "00")
-                                        logutil.log(productId, "**", pobj.productId, pobj.productStatus, pobj.tradingMode, pobj.publishedAtDateTime, pobj.price)
+                                        logutil.info(productId, "**", pobj.productId, pobj.productStatus, pobj.tradingMode, pobj.publishedAtDateTime, pobj.price)
                                 }
                             } else {
-                                //logutil.log("** no detail", pId)
+                                //logutil.info("** no detail", pId)
                             }
 
                         });
                     }
                 } else {
 
-                    // console.log("?????????????????????????????? statusCode:", response.statusCode,  productId)
+                    // logutil.info("?????????????????????????????? statusCode:", response.statusCode,  productId)
                 }
 
             }
@@ -578,9 +578,9 @@ function doInvest(account, productId, sid, callback) {
     var cookieJar = account.cookieJar;
     var consumeStart = new Date();
     var investmentRequestCallback = function(json) {
-        logutil.log("investmentRequestCallback", new Date() - consumeStart)
+        logutil.info("investmentRequestCallback", new Date() - consumeStart)
         if (!json) {
-            logutil.log("investmentRequest failed.", productId, account.uid);
+            logutil.info("investmentRequest failed.", productId, account.uid);
         } else {
             if (json.code === '01') {
                 var ab = account.availableBalance;
@@ -588,12 +588,12 @@ function doInvest(account, productId, sid, callback) {
                 account.lastConsumingTime = new Date();
                 setTimeout(function() {
                     confirmSpent(productId, account, function(pobj) {
-                        logutil.log("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
+                        logutil.info("confirmSpent***********:", productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
                     })
                 }, 3000)
             } else {
                 confirmSpent(productId, account, function(pobj) {
-                    logutil.log("confirmSpent***********:", account.uid, productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
+                    logutil.info("confirmSpent***********:", account.uid, productId, toBeConsumed.price, pobj.productStatus, pobj.buyerUserName, pobj.lastUpdateTime, JSON.stringify(json));
                 })
 
             }
@@ -608,12 +608,12 @@ function doInvest(account, productId, sid, callback) {
     var captachStr, imageId, traceOtpDone;
     var cncryptPassword = rsakey.encrypt(account.tradePassword);
     var traceInfoDone = false;
-    logutil.log("getProductDetail...", productId, sid)
+    logutil.info("getProductDetail...", productId, sid)
     getProductDetail(productId, function(pobj) {
         toBeConsumed = pobj;
-        logutil.log("getProductDetail", toBeConsumed)
+        logutil.info("getProductDetail", toBeConsumed)
         if (captachStr && imageId && ableToConsume(account, toBeConsumed)) {
-            logutil.log("guessCaptchaForTrading done in getProductDetail", productId, sid, captachStr, imageId, new Date() - consumeStart);
+            logutil.info("guessCaptchaForTrading done in getProductDetail", productId, sid, captachStr, imageId, new Date() - consumeStart);
             investmentRequest(account.uid, productId, sid, cncryptPassword, captachStr, imageId, cookieJar, investmentRequestCallback);
         }
     });
@@ -626,19 +626,19 @@ function doInvest(account, productId, sid, callback) {
         traceOtp(productId, sid, cookieJar, function() {
             traceOtpDone = true;
         })
-        logutil.log("guessCaptchaForTrading start", productId, sid);
+        logutil.info("guessCaptchaForTrading start", productId, sid);
         captchaUtil.guessCaptchaForTrading(productId, sid, cookieJar, function(capStr, imgid) {
             if (!capStr) {
-                logutil.log("guessCaptchaForTrading failed");
+                logutil.info("guessCaptchaForTrading failed");
                 if (callback) callback();
                 // account.unlock();
                 return;
             } else {
                 captachStr = capStr;
                 imageId = imgid;
-                logutil.log("---", toBeConsumed)
+                logutil.info("---", toBeConsumed)
                 if (toBeConsumed && ableToConsume(account, toBeConsumed)) {
-                    logutil.log("guessCaptchaForTrading done", productId, sid, captachStr, imageId, new Date() - consumeStart);
+                    logutil.info("guessCaptchaForTrading done", productId, sid, captachStr, imageId, new Date() - consumeStart);
                     investmentRequest(account.uid, productId, sid, cncryptPassword, captachStr, imageId, cookieJar, investmentRequestCallback);
                 }
 

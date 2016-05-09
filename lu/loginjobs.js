@@ -1,7 +1,7 @@
 var request = require("request");
 var captchaUtil = require('./captchautil.js');
 var RSAKey = require('./rsa.js');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config('lulogin');
 var simplehttp = require('../simplehttp');
 var htmlparser = require('../htmlparser');
 var mobilesigutil = require("./mobilesigutil");
@@ -46,7 +46,7 @@ function login_mobile(account, callback) {
                 },
                 function(err, httpResponse, body) {
                     var cookie_string = cookieJar.getCookieString("https://user.lufax.com");
-                    logutil.log("login status:", cookie_string.indexOf("lufaxSID") > 0, account.user);
+                    logutil.info("login status:", cookie_string.indexOf("lufaxSID") > 0, account.user);
                     if (cookie_string.indexOf("lufaxSID") < 0) {
                         callback(null);
                     } else {
@@ -56,7 +56,7 @@ function login_mobile(account, callback) {
                         userInfo_mobile(account, function(result) {
                             //account.uid = result.userInfo.userName;
                             account.availableBalance = result.asset.availableFund;
-                            console.log("account.availableBalance:", account.availableBalance, account.uid)
+                            logutil.info("account.availableBalance:", account.availableBalance, account.uid)
 
                             callback(cookieJar);
 
@@ -95,7 +95,7 @@ function login_brwoser(account, callback) {
     var cookieJar = request.jar();
     var rsakey = new RSAKey();
 
-    //logutil.log("login...", user);
+    //logutil.info("login...", user);
 
     simplehttp.GET('https://user.lu.com/user/login', {
             "cookieJar": cookieJar
@@ -120,7 +120,7 @@ function login_brwoser(account, callback) {
                         account.cookieJar = null;
                         callback(null, info);
                     }
-                   // console.log("account.availableBalance:", account.availableBalance, account.uid, info)
+                   // logutil.info("account.availableBalance:", account.availableBalance, account.uid, info)
                     
                 })
             })
@@ -153,7 +153,7 @@ function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://user.lu.com");
-            logutil.log("doLogin -> login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, body);
+            logutil.info("doLogin -> login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, body);
             if (cookie_string.indexOf("lufaxSID") < 0) {
                 callback(JSON.parse(body));
             } else {
@@ -169,7 +169,7 @@ function getUserInfo(cookieJar, callback) {
         function(err, httpResponse, body) {
             var info = htmlparser.getValueFromBody('<input id="assetOverview" type="hidden" value=\'', '\'/>', body);
             info = JSON.parse(info);
-            if (!info) logutil.log("ERROR getUserInfo:", info)
+            if (!info) logutil.error("ERROR getUserInfo:", info)
             getUserId(cookieJar, function(json) {
                 for (var att in json) {
                     info[att] = json[att];
@@ -185,8 +185,8 @@ function getUserId(cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             var info = JSON.parse(body);
-            // console.log("---------", info) 18270.60
-            if (!info) logutil.log("ERROR getUserId:", body)
+            // logutil.info("---------", info) 18270.60
+            if (!info) logutil.error("ERROR getUserId:", body)
             callback(info);
         });
 }
@@ -194,7 +194,7 @@ exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
     login(account, function(cookieJar, info) {
-        console.log("extendLogin======", account.user, account.source)
+        logutil.info("extendLogin======", account.user, account.source)
         callback(cookieJar);
     });
 }
