@@ -23,22 +23,20 @@ function consume(account, toBeConsumed, callback) {
     //var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
 
     account.lock();
-    var cb = function(spent) {
-        if (callback) callback(spent);
-        if (spent>0) {
-            account.availableBalance -= spent;
-            account.lastConsumingTime = new Date();
-            //prd.tradeTime = account.lastConsumingTime.getTime();
-            //account.addToConsumeHistory(prd)
-        }
-        
-        account.unlock();
-    }
-    
-    getTransferPageDetail(toBeConsumed, function(product){
-        doConsume(account, product, cb);
+
+    getTransferPageDetail(toBeConsumed, function(product) {
+        doConsume(account, product, function(spent) {
+            if (spent > 0) {
+                account.availableBalance -= spent;
+                account.lastConsumingTime = new Date();
+                product.tradeTime = account.lastConsumingTime.getTime();
+                account.addToConsumeHistory(product)
+            }
+            account.unlock();
+            if (callback) callback(spent);
+        });
     });
-    
+
     // if (t <= 0) {
     //     var canBuyShares = doConsume(account, toBeConsumed, cb);
     // } else {
@@ -73,11 +71,11 @@ function doConsume(account, toBeConsumed, callback) {
             function(err, request, body) {
                 if (request.statusCode === 200) {
                     var actionurl = htmlparser.getValueFromBody('<input type="hidden" id="actionUrl" name="actionUrl" size=100px value="', '" />', body);
-                    var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);    
+                    var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);
                     // console.log("before cmbcPageHandler", actionurl)
-                    cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed){
-                        logutil.info("cmbcPageHandler ******", succeed, succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
-                        callback(succeed ? (canBuyShares*toBeConsumed.pricePerShare) : 0)
+                    cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed) {
+                        logutil.info("cmbcPageHandler ******", succeed, succeed ? (canBuyShares * toBeConsumed.pricePerShare) : 0)
+                        callback(succeed ? (canBuyShares * toBeConsumed.pricePerShare) : 0)
                     });
                 } else {
                     logutil.error("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body);
@@ -141,13 +139,13 @@ function confirmSpent(transferId, account, callback) {
         },
         function(err, request, body) {
             //<div id="pg-server-message" data-status="0" data-message="您已成功投资16.01元，获得1份债权及折让收益0.0元" data-ispop="true" style="display: none;"></div>
-        
+
             //   <div id="pg-server-message" data-status="0" data-message="您已成功投资45.47元，获得1份债权及折让收益0.0元" data-ispop="true" style="display: none;"></div>
             //<div id="pg-server-message" data-status="1" data-message="该债权不能购买" data-ispop="" style="display: none;"></div>
             var status = htmlparser.getValueFromBody('id="pg-server-message" data-status="', '" data-message', body);
             var displayName = htmlparser.getValueFromBody('<em class="title-text">', '</em>', body);
             var price = Number(htmlparser.getValueFromBody('您已成功投资', '元', body));
-            var interest = Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body))/100;
+            var interest = Number(htmlparser.getValueFromBody('<em class="text-xxxl num-family color-dark-text">', '</em>', body)) / 100;
             var share = Number(htmlparser.getValueFromBody('元，获得', '份债权及折让收益', body));
             callback({
                 status: status,
@@ -168,11 +166,8 @@ function sharesAbleToConsume(account, toBeConsumed) {
 
 function ableToConsume(account, toBeConsumed) {
     var shares = sharesAbleToConsume(account, toBeConsumed);
-    var price = shares *  toBeConsumed.pricePerShare;
-    return toBeConsumed.sharesAvailable > 0 && account.interestLevelMin <= toBeConsumed.interest
-    && price >= account.pricePerBidMin && price <= account.pricePerBidMax 
-    && account.availableBalance - price >= account.reservedBalance 
-    && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
+    var price = shares * toBeConsumed.pricePerShare;
+    return toBeConsumed.sharesAvailable > 0 && account.interestLevelMin <= toBeConsumed.interest && price >= account.pricePerBidMin && price <= account.pricePerBidMax && account.availableBalance - price >= account.reservedBalance && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
 function readyForConsume(account) {

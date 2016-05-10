@@ -376,7 +376,7 @@ function traceInfo(userId, productId, sid, cookieJar, callback) {
         },
         function(err, httpResponse, body) {
             traceTradeFlag = true;
-            logutil.info("****", 2, body, userId, productId, sid, cookieJar, new Date() - tradeTime);
+            logutil.info("****", 2, body, userId, productId, sid, new Date() - tradeTime);
             // if (checkFlag && traceFlag) callback(body);
             syncFun(body);
         });

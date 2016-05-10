@@ -30,6 +30,9 @@ function detectLastProductId(callback) {
             callback(-1);
         } else {
             var page = Number(no);
+            
+            page = "";
+
             simplehttp.GET(url + page, {}, function(error, response, body) {
                 var newlineregexp = /\n/g;
                 var ids = body ? htmlparser.getSubStringsFromBody('productId=', 'target="_blank"', body, newlineregexp) : null;
@@ -41,6 +44,7 @@ function detectLastProductId(callback) {
                 } else {
                     var lidstr = ids[0];
                     var lastPid = htmlparser.getValueFromBody('productId=', '\'', lidstr);
+                    console.log("get last Pid", lastPid)
                     detectLatestProductId(Number(lastPid), 0, 100, function(pid) {
                         callback(pid);
                         isDetecting = false;
@@ -50,6 +54,7 @@ function detectLastProductId(callback) {
         }
     });
 }
+
 function detectLatestProductId(pid, pidstep, interval , callback) {
     var url = "https://list.lu.com/list/service/product/"+(pid+pidstep)+"/productDetail";
     simplehttp.GET(url , {}, function(error, response, body) {
@@ -170,7 +175,7 @@ function loopNewTransfer_browser(startId, callback) {
                             
                             latestConsumedProductId = productObj.productId;
 
-                            if (productObj.amount < 5000)
+                            if (productObj.price < 5000)
                                 logutil.info("consume productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
 
                         } else {
@@ -190,16 +195,22 @@ function loopNewTransfer_browser(startId, callback) {
                     // logutil.error("e", e.stack)
                     // logutil.info(body)    
                 } finally {
-                    // logutil.info("detectLastProductId", productObj  ? productObj.productId: "no id", catchException)
                     if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 20000) {
                         lastDetectTime = new Date();
-                        detectLastProductId(function(lastProductId) {
-                            logutil.info("update last product id =====", productId)
-                            if (lastProductId > productId) {
-                                productId = lastProductId;
+                        detectLatestProductId(productId, 0, 100, function(pid) {
+                            if (pid > productId) {
+                                productId = pid;
                                 logutil.info("update last product id ==========================", productId)
                             }
                         });
+
+                        // detectLastProductId(function(lastProductId) {
+                        //     logutil.info("update last product id =====", productId)
+                        //     if (lastProductId > productId) {
+                        //         productId = lastProductId;
+                        //         logutil.info("update last product id ==========================", productId)
+                        //     }
+                        // });
                     }
                 }
             } else {
