@@ -57,7 +57,7 @@ function doConsume(account, toBeConsumed, callback) {
             return;
         }
 
-        logutil.info("doConsume:", account.user, account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+        logutil.info("doConsume******:", account.user, account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
         simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
                 form: {
                     "agree-contract": "on",
@@ -203,7 +203,7 @@ function getTransferPageDetail(product, callback) {
                     publishTime: product.publishTime,
                     disabled: disabled
                 };
-                //if (transferObj.interest>=0.13)
+                if (transferObj.interest>=0.13)
                 logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
                 callback(transferObj)
             } else {
