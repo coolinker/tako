@@ -1,6 +1,6 @@
 var WebSocketServer = require('ws').Server;
 var http = require('http');
-var logutil = require("../logutil");
+var logutil = require("../logutil").config('takoserver');
 var ACCOUNT_TYPES = require("../accounttypes");
 var feelerConnections = {};
 
@@ -23,22 +23,22 @@ wsServer = new WebSocketServer({
 });
 
 wsServer.on('connection', function connection(ws) {
-    logutil.log((new Date()) + ' Connection accepted.');
+    logutil.info((new Date()) + ' Connection accepted.');
     ws.on('message', function(message) {
-        logutil.log("onmessage", message)
+        logutil.info("onmessage", message)
         data = JSON.parse(message);
 
         if (takoApiDispatcher[data.action]) {
             takoApiDispatcher[data.action](data.body, function(responseJson) {
-                logutil.log("onmessage callback", responseJson)
+                logutil.info("onmessage callback", responseJson)
             }, ws);
         } else {
-            logutil.log("action not existed in takoapidispatcher", data.aciton, data)
+            logutil.info("action not existed in takoapidispatcher", data.aciton, data)
         }
 
     });
 
     ws.on('close', function(reasonCode, description) {
-        logutil.log((new Date()) + ' Peer ' + ws.remoteAddress + ' disconnected.');
+        logutil.info((new Date()) + ' Peer ' + ws.remoteAddress + ' disconnected.');
     });
 });

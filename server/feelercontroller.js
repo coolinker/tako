@@ -1,4 +1,4 @@
-var logutil = require("../logutil");
+var logutil = require("../logutil").config("feeler");
 //var rrdtransferloopjob = require("../rrd/transferloopjob");
 //var lufaxtransferloopjob = require("../lu/transferloopjob");
 var JOBS_OBJ = {};
