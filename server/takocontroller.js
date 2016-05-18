@@ -44,18 +44,26 @@ function unregisterFeeler(jsonParams, callback) {
             logutil.info("Feeler not registered", types[i])
         } else {
             logutil.info("Unregister feeler", types[i]);
+             var jsonToSend = {
+                action: "unregisterFeeler",
+                body: types[i]
+            };
+
+            FEELERS[types[i]].send(JSON.stringify(jsonToSend), null, function(params) {
+                logutil.info("unregisterFeeler succeed", types[i]);
+            });
+
             delete FEELERS[types[i]];
         }
     }
 
     callback({
-        status: 'connected',
+        status: 'succeed',
         types: JSON.stringify(types)
     });
 }
 
 exports.updateConsumeHistory = updateConsumeHistory;
-
 function updateConsumeHistory(data) {
     var user = data.user;
     var source = data.source;
@@ -68,8 +76,26 @@ function updateConsumeHistory(data) {
     }
 }
 
-exports.getAccountInfo = getAccountInfo;
+exports.getTradingHistory = getTradingHistory;
+function getTradingHistory (accountJson, callback) {
+    var user = accountJson.user;
+    var source = accountJson.source;
+    var acc = accountqueue.getAccount({ user: user, source: source });
+     var result = {
+            action: "getTradingHistory"
+        };
+    if (acc) {
+        result.resultMsg = "SUCCEED";
+        result.body = acc.consumeHistory;
+        callback(result)
+    } else {
+        result.resultMsg = "NO_SUCH_ACCOUNT";
+        callback(result);
+    }
 
+}
+
+exports.getAccountInfo = getAccountInfo;
 function getAccountInfo(accountJson, callback) {
     // var accountObj = addAccountJson(accountJson);
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
@@ -138,16 +164,17 @@ function startAccountBidding(accountJson, callback) {
 
             feeler.send(JSON.stringify(jsonToSend), null, function(params) {
                 result.resultMsg = "SUCCEED";
+                if (callback) callback(result);
             });
 
         } else {
             result.resultMsg = "FEELER_NOT_REGISTERED";
+            if (callback) callback(result);
         }
     } else {
         result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
+        if (callback) callback(result);
     }
-
-    if (callback) callback(result);
 }
 
 exports.stopAccountBidding = stopAccountBidding;

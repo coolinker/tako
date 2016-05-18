@@ -47,7 +47,7 @@ function getAccountInfo(accountJson, callback) {
         action: "gotAccountInfo"
     };
     if (acc && !accountqueue.needRelogin(acc)) {
-        logutil.log("Account already logged in", acc.JSONInfo());
+        logutil.info("Account already logged in", acc.JSONInfo());
         result.body = acc.JSONInfo();
         if (callback) callback(result);
 
@@ -108,7 +108,7 @@ function stopAccountBidding(accountJson, callback) {
     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
     var acc = accountqueue.getAccount(accountObj);
     if (!acc) {
-        logutil.log("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
+        logutil.info("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
     } else {
         acc.startedBidding = false;
     }

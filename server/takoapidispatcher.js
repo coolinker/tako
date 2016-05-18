@@ -14,16 +14,23 @@ function registerFeeler(jsonParam, callback, ws) {
 }
 
 exports.unregisterFeeler = unregisterFeeler;
-function unregisterFeeler(jsonParam, callback, ws) {
+function unregisterFeeler(jsonParam, callback) {
     takoController.unregisterFeeler(jsonParam, function(data) {
         var responseJson = {
                 response: true,
                 action: 'unregisterFeeler',
                 body: data
             }
-        callback(responseJson)
-         ws.send(JSON.stringify(responseJson));
-    }, ws);
+        callback(JSON.stringify(responseJson));
+         //ws.send(JSON.stringify(responseJson));
+    });
+}
+
+exports.getTradingHistory = getTradingHistory;
+function getTradingHistory(params, callback) {
+    takoController.getTradingHistory(params, function(responseInfo) {
+            callback(JSON.stringify(responseInfo));    
+    });
 }
 
 exports.getAccountInfo = getAccountInfo;

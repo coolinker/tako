@@ -41,6 +41,9 @@ function registerFeeler() {
         if (data.action === "registerFeeler") {
             console.log("Register feeler succeed!");
             return;
+        } else if (data.action === "unregisterFeeler") {
+            ws.terminate();
+            return;
         }
         feelerController[data.action](data.body, function (responseJson) {
             if (responseJson) {
