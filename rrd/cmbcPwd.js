@@ -33,8 +33,10 @@ build();
 logutil.info("initialize cmbcPwd...")
 ///var timeouts = driver.manage().timeouts();
 //timeouts.setScriptTimeout(10000);
-
-driver.get('http://123.57.39.80/compositions/tako/rrd/web/passguard.html');
+var passwordPageReady = false;
+driver.get('http://123.57.39.80/compositions/tako/rrd/web/passguard.html').then(function(){
+    passwordPageReady = true;
+});
 
 exports.cmbcPageHandler = cmbcPageHandler;
 function cmbcPageHandler(account, actionurl, context, callback) {
@@ -48,7 +50,7 @@ function cmbcPageHandler(account, actionurl, context, callback) {
             "cookieJar": newjar
         },
         function(err, request, body) {
-            if (request.statusCode === 200) {
+            if (request && request.statusCode === 200) {
                 var obj = {};
                 obj.secuNo = htmlparser.getValueFromBody('name="secuNo"      value="', '" />', body);
 
@@ -78,7 +80,7 @@ function cmbcPageHandler(account, actionurl, context, callback) {
 
 
             } else {
-                logutil.info("ERROR consumejob consume", toBeConsumed.transferId, body);
+                logutil.info("ERROR consumejob consume", err, '\n', actionurl, '\n', context, body);
                 if (callback) callback(null);
             }
 
@@ -96,6 +98,10 @@ function freeToInputJYPwd(callback) {
 }
 
 function autoInputJYPwd(account, params, callback) {
+    if (!passwordPageReady) {
+        callback(null);
+        return;
+    }
     startedInputJYPwd = true;
     var inputFinished = false;
     driver.executeAsyncScript(function() {

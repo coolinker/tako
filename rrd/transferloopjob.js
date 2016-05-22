@@ -196,7 +196,6 @@ function loopListTransfer(callback) {
                         product.producedTime  = product.publishTime = new Date();
                         product.source = "www.renrendai.com";
                         avprd.push(product);
-                        
                         if (product.interest > 0.12)
                             logutil.info("toBeConsumed", product);
     
@@ -260,7 +259,7 @@ function getTransferPageDetail(product, callback) {
                 };
                 //if (transferObj.interest>=0.13)
                 logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
-                callback(transferObj)
+                if (callback) callback(transferObj)
             } else {
                 logutil.error("ERROR consumejob consume", toBeConsumed.transferId, body);
                 if (callback) callback(null);

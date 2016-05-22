@@ -57,28 +57,47 @@ function doConsume(account, toBeConsumed, callback) {
             return;
         }
 
-        logutil.info("doConsume******:", account.user, account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare);
+        // logutil.info("doConsume******:", account.user, account.availableBalance, toBeConsumed.transferId, toBeConsumed.interest, 
+        //     canBuyShares, toBeConsumed.sharesAvailable, toBeConsumed.pricePerShare,
+        //     toBeConsumed.transferIdCode);
+        logutil.info("doConsume******:", account.user, account.availableBalance, canBuyShares, toBeConsumed.transferIdCode, toBeConsumed.countRatio, toBeConsumed, '\n');
         simplehttp.POST('http://www.we.com/transfer/buyLoanTransfer.action', {
                 form: {
                     "agree-contract": "on",
-                    transferId: toBeConsumed.transferIdCode,
+                    countRatio: toBeConsumed.countRatio,
+                    couponId: '',
                     currentPrice: toBeConsumed.pricePerShare,
                     share: canBuyShares,
-                    countRatio: toBeConsumed.countRatio
+                    transferId: toBeConsumed.transferIdCode
+                },
+                "headers": {
+                    // "Accept": 'image/gif, image/jpeg, image/pjpeg, application/x-ms-application, application/xaml+xml, application/x-ms-xbap, */*',
+                    // "Accept-Encoding": 'gzip, deflate',
+                    // "Content-Type": 'application/x-www-form-urlencoded',
+                    // "Host": 'www.we.com',
+                    // "Referer": 'http://www.we.com/transfer/loanTransferDetail.action?transferId=' + toBeConsumed.transferId,
+                    "Upgrade-Insecure-Requests": 1
                 },
                 "cookieJar": account.cookieJar
             },
             function(err, request, body) {
-                if (request.statusCode === 200) {
+                if (request && request.statusCode === 200) {
                     var actionurl = htmlparser.getValueFromBody('<input type="hidden" id="actionUrl" name="actionUrl" size=100px value="', '" />', body);
                     var context = htmlparser.getValueFromBody('<input type="hidden" id="context" name="context" size=100px value="', '" />', body);
-                    // console.log("before cmbcPageHandler", actionurl)
-                    cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed) {
-                        logutil.info("cmbcPageHandler ******", succeed, succeed ? (canBuyShares * toBeConsumed.pricePerShare) : 0)
-                        callback(succeed ? (canBuyShares * toBeConsumed.pricePerShare) : 0)
-                    });
+                    if (actionurl && context) {
+                        cmbcPwd.cmbcPageHandler(account, actionurl, context, function(succeed) {
+                            logutil.info("cmbcPageHandler ******", succeed, succeed ? (canBuyShares * toBeConsumed.pricePerShare) : 0)
+                            callback(succeed ? (canBuyShares * toBeConsumed.pricePerShare) : 0)
+                        })
+                    } else {
+                        logutil.info("before cmbcPageHandler", actionurl, context, body)
+                        if (callback) callback(0);
+                    }
+
+                    ;
                 } else {
-                    logutil.error("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body);
+                    var cookie_string = account.cookieJar.getCookieString("https://www.we.com");
+                    logutil.error("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body, cookie_string);
                     if (callback) callback(0);
                 }
 
@@ -187,6 +206,7 @@ function getTransferPageDetail(product, callback) {
                 var price = Number(product.pricePerShare); //Number(htmlparser.getValueFromBody('data-amount-per-share="', '">', body));
                 //var duration = htmlparser.getValueFromBody('<div class="box"><em>成交用时</em><span>', '秒</span></div>', body);
                 var transferIdCode = htmlparser.getValueFromBody('<input name="transferId" type="hidden" value="', '" />', body);
+
                 var countRatio = htmlparser.getValueFromBody('<input name="countRatio" type="hidden" value="', '" />', body);
                 var disabled = body.indexOf('此债权已不可购买') >= 0;
 
@@ -203,8 +223,8 @@ function getTransferPageDetail(product, callback) {
                     publishTime: product.publishTime,
                     disabled: disabled
                 };
-                if (transferObj.interest>=0.13)
-                logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
+                if (transferObj.interest >= 0.13)
+                    logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
                 callback(transferObj)
             } else {
                 logutil.error("ERROR consumejob consume", toBeConsumed.transferId, body);

@@ -27,7 +27,7 @@ function login(account, callback) {
         function(err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://www.we.com");
             if (cookie_string.indexOf("jforumUserInfo")>=0) {
-                logutil.info("login succeed", account.user, account.source);
+                logutil.info("login succeed", account.user, account.source, cookie_string);
                 account.cookieJar = cookieJar;
                 getUserInfo(account, function(userInfo) {
                     account.availableBalance = Number(userInfo.availableBalance.replace(",", ""));
