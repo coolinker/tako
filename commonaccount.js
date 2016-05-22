@@ -74,7 +74,7 @@ CommonAccount.prototype.isActive = function () {
 
 CommonAccount.prototype.ableToConsume = function (){
     // console.log("ableToConsume-=======", this.availableBalance, this.reservedBalance, this.source, this.user, this.startedBidding)
-    return this.cookieJar && this.startedBidding && this.availableBalance >= this.reservedBalance;
+    return this.cookieJar && this.startedBidding && (this.availableBalance - this.pricePerBidMin) >= this.reservedBalance;
 }
 
 CommonAccount.prototype.lock = function (){
