@@ -76,7 +76,7 @@ function doConsume(account, toBeConsumed, callback) {
                     // "Content-Type": 'application/x-www-form-urlencoded',
                     // "Host": 'www.we.com',
                     // "Referer": 'http://www.we.com/transfer/loanTransferDetail.action?transferId=' + toBeConsumed.transferId,
-                    "Upgrade-Insecure-Requests": 1
+                    //"Upgrade-Insecure-Requests": 1
                 },
                 "cookieJar": account.cookieJar
             },
@@ -96,6 +96,7 @@ function doConsume(account, toBeConsumed, callback) {
 
                     ;
                 } else {
+                    //302 = 对不起！因使用第三方程序
                     var cookie_string = account.cookieJar.getCookieString("https://www.we.com");
                     logutil.error("ERROR consumejob consume", toBeConsumed.transferId, request.statusCode, body, cookie_string);
                     if (callback) callback(0);
@@ -179,7 +180,7 @@ function confirmSpent(transferId, account, callback) {
 
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
-    var shares = Math.min(maxShares, Math.ceil(toBeConsumed.sharesAvailable * 0.8));
+    var shares = Math.min(maxShares, Math.floor(toBeConsumed.sharesAvailable * 0.8));
     return shares;
 }
 
