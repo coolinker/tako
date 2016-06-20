@@ -65,16 +65,17 @@ function cmbcPageHandler(account, actionurl, context, callback) {
                 freeToInputJYPwd(function() {
                     autoInputJYPwd(account, obj, function(pwdCode) {
                         obj.tradePwd = pwdCode;
-                        validJYPwd(obj, newjar, function(validRes) {
-                            if (validRes.retCode === '0000') {
+                        // validJYPwd(obj, newjar, function(validRes) {
+                        //     if (validRes.retCode === '0000') {
+
                                 doTransferApplyByCust(obj, newjar, function(succeed) {
                                     callback(succeed);
                                 })
-                            } else {
-                                logutil.info("Valid password failed",account.tradePassword.length,  validRes)
-                                callback(false)
-                            }
-                        });
+                        //     } else {
+                        //         logutil.info("Valid password failed",account.tradePassword.length,  validRes)
+                        //         callback(false)
+                        //     }
+                        // });
                     });
                 })
 

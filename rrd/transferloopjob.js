@@ -9,28 +9,24 @@ var detectStarted = false;
 var me = this;
 exports.rollNewProductCheck = rollNewProductCheck;
 
-function rollNewProductCheck(callback) {
-
-    loopListTransfer(function(newTransferObj) {
-        // transfers.push(newTransferObj);
-        // if (transfers.length > 100) transfers.shift();
-        callback(newTransferObj);
-    })
-}
-
 // function rollNewProductCheck(callback) {
-//     var transfers = [];
-//     if (detectStarted) return;
-//     detectStarted = true;
-//     detectLatestTransferId(function(startId) {
-//         detectStarted = false;
-//         loopListTransfer(function(newTransferObj) {
-//             // transfers.push(newTransferObj);
-//             // if (transfers.length > 100) transfers.shift();
-//             callback(newTransferObj);
-//         })
-//     }, 10000);
+//     loopListTransfer(function(newTransferObj) {
+//         callback(newTransferObj);
+//     })
 // }
+
+function rollNewProductCheck(callback) {
+    var transfers = [];
+    if (detectStarted) return;
+    detectStarted = true;
+    detectLatestTransferId(function(startId) {
+        detectStarted = false;
+        console.log("&************* detectLatestTransferId", startId)
+        loopNewTransfer(startId, function(newTransferObj) {
+            callback(newTransferObj);
+        })
+    }, 10000);
+}
 
 function loopNewTransfer(startId, callback) {
     if (this.loopjob) {
@@ -44,17 +40,17 @@ function loopNewTransfer(startId, callback) {
     var latestConsumedProductId = 0;
     var transferId = Number(startId);
     var hasNew = true;
-    var LOOP_INTERVAL = 1000;
+    var LOOP_INTERVAL = 300;
     var detectStep = 0;
     var disabledStep = 0;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
-        url: "http://www.we.com/transfer/loanTransferDetail.action", //http://api.we.com/2.0/loantransfer/detail.action
+        url: "http://www.we.com/transfer/", //http://api.we.com/2.0/loantransfer/detail.action
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,
         urlInjection: function(parallelIndex, url) {
             var tsfrid = transferId + parallelIndex + detectStep + disabledStep;
-            return url + "?transferId=" + tsfrid;
+            return url + tsfrid;
         },
         optionsInjection: function(parallelIndex, options) {
             var tsfrid = transferId + parallelIndex + detectStep + disabledStep;
@@ -63,9 +59,10 @@ function loopNewTransfer(startId, callback) {
         },
         responseHandler: function(error, response, body) {
             if (error) {
-                //console.log("loanTransferDetail error:", error)
+                console.log("loanTransferDetail error:", error)
             } else if (response.statusCode == 200) {
                 var errorcode = htmlparser.getValueFromBody('<div style="display: none;">', '</div>', body);
+                if (errorcode && errorcode !=="500") console.log("errorcode", errorcode)
                 if (errorcode === "500") {
                     if (hasNew) {
                         hasNew = false;
@@ -100,7 +97,8 @@ function loopNewTransfer(startId, callback) {
                         //duration: duration,
                         source: "www.renrendai.com",
                         publishTime: new Date(),
-                        producedTime: new Date()
+                        producedTime: new Date(),
+                        disabled: disabled
                     };
                     hasNew = true;
                     if (!disabled && transferId > latestConsumedProductId) {
@@ -111,12 +109,12 @@ function loopNewTransfer(startId, callback) {
                     var tid = req.__options.transferId;
 
                     if (tid >= transferId) {
-                        if (transferObj.interest >= 0.13 && transferObj.sharesAvailable >= 1) {
-                            logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), disabled, unknown);
-                        }
+                        //if (transferObj.interest >= 0.13 && transferObj.sharesAvailable >= 1) {
+                            logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, transferObj.producedTime.toLocaleTimeString(), "******",disabled);
+                        //}
                         transferId = tid + 1;
                         if (disabled) {
-                            disabledStep = Math.floor(Math.random() * 5);
+                            disabledStep = Math.floor(Math.random() * 10);
                         }
                     }
                 }
@@ -166,10 +164,10 @@ function loopListTransfer(callback) {
         if (!this.loopjob.isLoopingStarted()) {
             this.loopjob.startLooping();
         }
-        console.log("loopNewTransfer loopjob existed");
+        console.log("loopListTransfer loopjob existed");
         return;
     }
-    var LOOP_INTERVAL = 500;
+    var LOOP_INTERVAL = 400;
     var pageDetailLog = {};
     var loopjob = new LoopJob().config({
         parallelRequests: 1,

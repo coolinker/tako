@@ -23,19 +23,19 @@ function consume(account, toBeConsumed, callback) {
     //var t = PRODUCE_TO_CONSUME_MIN - (new Date() - toBeConsumed.producedTime);
 
     account.lock();
-
-    getTransferPageDetail(toBeConsumed, function(product) {
-        doConsume(account, product, function(spent) {
-            if (spent > 0) {
-                account.availableBalance -= spent;
-                account.lastConsumingTime = new Date();
-                product.tradeTime = account.lastConsumingTime.getTime();
-                account.addToConsumeHistory(product)
-            }
-            account.unlock();
-            if (callback) callback(spent);
-        });
+    var product = toBeConsumed;
+    // getTransferPageDetail(toBeConsumed, function(product) {
+    doConsume(account, product, function(spent) {
+        if (spent > 0) {
+            account.availableBalance -= spent;
+            account.lastConsumingTime = new Date();
+            product.tradeTime = account.lastConsumingTime.getTime();
+            account.addToConsumeHistory(product)
+        }
+        account.unlock();
+        if (callback) callback(spent);
     });
+    // });
 
     // if (t <= 0) {
     //     var canBuyShares = doConsume(account, toBeConsumed, cb);
@@ -180,7 +180,8 @@ function confirmSpent(transferId, account, callback) {
 
 function sharesAbleToConsume(account, toBeConsumed) {
     var maxShares = Math.floor(account.availableBalance / toBeConsumed.pricePerShare);
-    var shares = Math.min(maxShares, Math.floor(toBeConsumed.sharesAvailable * 0.8));
+    var shares = Math.min(maxShares, Math.floor(toBeConsumed.sharesAvailable * 0.5));
+    //console.log("\nsharesAbleToConsume", toBeConsumed.sharesAvailable, toBeConsumed.sharesAvailable * 0.8, shares)
     return shares;
 }
 
@@ -198,7 +199,7 @@ function readyForConsume(account) {
 
 
 function getTransferPageDetail(product, callback) {
-    simplehttp.GET('http://www.we.com/transfer/loanTransferDetail.action?transferId=' + product.id, {},
+    simplehttp.GET('http://www.we.com/transfer/' + product.id, {},
         function(err, request, body) {
             if (request.statusCode === 200) {
                 var sharesAvailable = Number(htmlparser.getValueFromBody('data-shares="', '">', body));
@@ -224,7 +225,7 @@ function getTransferPageDetail(product, callback) {
                     publishTime: product.publishTime,
                     disabled: disabled
                 };
-                if (transferObj.interest >= 0.13)
+                if (transferObj.interest >= 0.12)
                     logutil.info("->", transferObj.transferId, transferObj.interest, transferObj.sharesAvailable, disabled, body.length);
                 callback(transferObj)
             } else {
