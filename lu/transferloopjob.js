@@ -30,13 +30,13 @@ function detectLastProductId(callback) {
             callback(-1);
         } else {
             var page = Number(no);
-            
+
             page = "";
 
             simplehttp.GET(url + page, {}, function(error, response, body) {
                 var newlineregexp = /\n/g;
                 var ids = body ? htmlparser.getSubStringsFromBody('productId=', 'target="_blank"', body, newlineregexp) : null;
-                
+
                 if (!ids) {
                     isDetecting = false;
                     detectLastProductId(callback);
@@ -45,7 +45,7 @@ function detectLastProductId(callback) {
                     var lidstr = ids[0];
                     var lastPid = htmlparser.getValueFromBody('productId=', '\'', lidstr);
                     console.log("get last Pid", lastPid)
-                    detectLatestProductId(Number(lastPid), 0, 100, function(pid) {
+                    detectLatestProductId(Number(lastPid), 0, 3000, function(pid) {
                         callback(pid);
                         isDetecting = false;
                     });
@@ -55,35 +55,46 @@ function detectLastProductId(callback) {
     });
 }
 
-function detectLatestProductId(pid, pidstep, interval , callback) {
-    var url = "https://list.lu.com/list/service/product/"+(pid+pidstep)+"/productDetail";
-    simplehttp.GET(url , {}, function(error, response, body) {
+function detectLatestProductId(pid, pidstep, interval, callback) {
+    var url = "https://list.lu.com/list/service/product/" + (pid + pidstep) + "/productDetail";
+    var delay = 100;
+     console.log("===detectLatestProductId", pid, pidstep, new Date())
+    simplehttp.GET(url, {}, function(error, response, body) {
         var productObj;
         try {
-            productObj = JSON.parse(body);  
+            productObj = JSON.parse(body);
         } catch (e) {
-            //logutil.info("e:", e, pid, pidstep, interval)
+            logutil.info("e:", e, pid, pidstep, interval)
+            callback(pid + pidstep);
+            return;
         }
         if (!productObj) {
-            detectLatestProductId(pid, pidstep, interval, callback);
+            setTimeout(function() {
+                detectLatestProductId(pid, pidstep, interval, callback);
+            }, delay)
+
         } else if (productObj.productId) {
             var time = Math.max(0, new Date() - new Date(productObj.publishedAtDateTime));
-            var steps = Math.floor(time/interval);
+            var steps = Math.floor(time / interval);
             if (!productObj.publishedAtDateTime) steps = 1;
             //logutil.info("detectLatestProductId===", pid+pidstep, steps, interval, productObj.publishedAtDateTime)
             if (steps >= 1) {
-                detectLatestProductId(pid+pidstep, steps , interval, callback)
-            } else  {
-                callback(pid+pidstep);
+                setTimeout(function() {
+                    detectLatestProductId(pid + pidstep, steps, interval, callback)
+                }, delay)
+            } else {
+                callback(pid + pidstep);
             }
         } else if (pidstep === 1) {
-            logutil.info("detectLatestProductId step is 1", pid, 2* interval, body)
-            callback(pid+pidstep);
+            logutil.info("detectLatestProductId step is 1", pid, 2 * interval, body)
+            callback(pid + pidstep);
         } else {
             //logutil.info("detectLatestProductId 2*interval", pid, pidstep,  2* interval)
-            detectLatestProductId(pid, 1, 2* interval, callback)
+            setTimeout(function() {
+                detectLatestProductId(pid, 1, 2 * interval, callback)
+            }, delay);
         }
-        
+
     })
 }
 
@@ -103,12 +114,13 @@ function detectLastPage(callback) {
 }
 
 exports.rollNewProductCheck = rollNewProductCheck;
+
 function rollNewProductCheck(callback) {
     if (isDetecting) return;
     var transfers = [];
     detectLastProductId(function(productId) {
         logutil.info("detected latest id", productId)
-        
+
         loopNewTransfer_browser(productId, function(product) {
             return callback(product);
         })
@@ -132,36 +144,36 @@ function loopNewTransfer_browser(startId, callback) {
     var latestConsumedProductId = 0;
     var productId = Number(startId);
     var productIdStart = productId;
-    var LOOP_INTERVAL = 300;
+    var LOOP_INTERVAL = 500;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
-        //     https://list.lu.com/list/service/product/30051629/productDetail?_=1461637642304
-        url: "https://list.lu.com/list/service/product/*/productDetail",
+        //url: "https://list.lu.com/list/service/product/*/productDetail",
+        url: "https://list.lu.com/list/productDetail?productId=*",
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,
         httpMethod: "GET",
         urlInjection: function(parallelIndex, url) {
-            if (productId - productIdStart > 500) {
+            if (productId - productIdStart > 50) {
                 logutil.info("***productId rolling", productId);
                 productIdStart = productId;
             }
-            var u = url.replace("*", productId + parallelIndex) + "?_=" + new Date().getTime();
+            //31551142, 31551143
+            var u = url.replace("*", productId + parallelIndex); //+ "?_=" + new Date().getTime();
             return u;
         },
         responseHandler: function(error, response, body) {
-
             if (error) {
-                // logutil.info("responseHandler error:", error)
+                logutil.info("responseHandler error:" + error)
             } else if (response.statusCode == 200) {
                 var req = response.request;
 
                 var catchException;
                 try {
-                    var productObj = JSON.parse(body);
-                    
+                    var productObj = parseProductPage(body)// JSON.parse(body);
+
                     if (productObj.productId && productObj.productId > latestConsumedProductId) {
                         lastDetectTime = new Date();
-                        if (productObj.productStatus === "DONE") logutil.info("productStatus",productObj.productId, productObj.productStatus, productObj.price, productObj.interestRateDisplay, productObj.publishedAtDateTime)
+                        if (productObj.productStatus === "DONE") logutil.info("productStatus", productObj.productId, productObj.productStatus, productObj.price, productObj.interestRateDisplay, productObj.publishedAtDateTime)
 
                         if (productObj.productType === "TRANSFER_REQUEST" && productObj.tradingMode === "00" && productObj.productStatus === "ONLINE") {
                             callback({
@@ -172,10 +184,10 @@ function loopNewTransfer_browser(startId, callback) {
                                 source: "www.lu.com",
                                 producedTime: new Date()
                             });
-                            
+
                             latestConsumedProductId = productObj.productId;
 
-                            if (productObj.price < 5000)
+                            //if (productObj.price < 5000)
                                 logutil.info("consume productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
 
                         } else {
@@ -188,16 +200,23 @@ function loopNewTransfer_browser(startId, callback) {
                         }
 
                     } else {
-                        //logutil.error("body:", body)
+                        if (body.indexOf('id="current-page" type="hidden" value="login"')>0 || body.indexOf('项目信息已变更')>0) {
+                            //latestConsumedProductId = productId;
+                            lastDetectTime = new Date();
+                            productId += 1;
+                        } else {
+                            //console.log("productId---------------------", productId, latestConsumedProductId, productObj)
+                        }
                     }
                 } catch (e) {
                     catchException = e;
-                    // logutil.error("e", e.stack)
+                    logutil.error("e", e.stack)
                     // logutil.info(body)    
                 } finally {
-                    if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 20000) {
+                    //console.log("-----------------------------------------------finally", productId, productObj.productId, new Date() - lastDetectTime)
+                    if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 100000) {
                         lastDetectTime = new Date();
-                        detectLatestProductId(productId, 0, 100, function(pid) {
+                        detectLatestProductId(productId, 0, 3000, function(pid) {
                             if (pid > productId) {
                                 productId = pid;
                                 logutil.info("update last product id ==========================", productId)
@@ -214,7 +233,8 @@ function loopNewTransfer_browser(startId, callback) {
                     }
                 }
             } else {
-                logutil.error("?????????????????????????????? statusCode:", response.statusCode, productId)
+                if (response.statusCode !== 423)
+                    logutil.error("?????????????????????????????? statusCode:", response.statusCode, productId)
             }
 
         }
@@ -222,6 +242,33 @@ function loopNewTransfer_browser(startId, callback) {
 
     loopjob.startLooping();
     me.loopjob = loopjob;
+}
+
+function parseProductPage(body){
+    
+   var productObj = {};
+    var productId = htmlparser.getValueFromBody('="productId" value="', '"', body);
+    if (!productId)  {
+        return productObj;
+    }
+    productObj.productId = Number(productId);
+
+    var intereststr = htmlparser.getValueFromBody('<p class="p1">预期年化利率</p>', '</strong>', body);
+    var intrest = htmlparser.getValueFromBody('<strong>', '%', intereststr);
+    productObj.interestRateDisplay = Number(intrest)/100;
+    
+    var price = htmlparser.getValueFromBody('price="', '"', body);
+    productObj.price =  Number(price);
+    
+    var  publishedAtDateTime = htmlparser.getValueFromBody('发布时间：', '\n', body);
+    productObj.publishedAtDateTime = publishedAtDateTime;
+
+    var status = htmlparser.getValueFromBody('product-status="', '"', body);
+    productObj.productStatus = status;
+
+    productObj.productType = "TRANSFER_REQUEST";
+    productObj.tradingMode ="00";
+    return  productObj;
 }
 
 // function loopNewTransfer_mobile(startId, callback) {

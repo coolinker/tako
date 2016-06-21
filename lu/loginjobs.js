@@ -109,19 +109,18 @@ function login_brwoser(account, callback) {
 
             captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
                 doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
-
                     if (info.uid) {
                         account.cookieJar = cookieJar;
                         account.availableBalance = info.availableFund;
                         account.uid = info.uid;
                         account.loginTime = new Date();
                         callback(cookieJar, account.JSONInfo());
-                    } else {                     
+                    } else {
                         account.cookieJar = null;
                         callback(null, info);
                     }
                    // logutil.info("account.availableBalance:", account.availableBalance, account.uid, info)
-                    
+
                 })
             })
         });
@@ -163,19 +162,25 @@ function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
 }
 
 function getUserInfo(cookieJar, callback) {
-    simplehttp.GET('https://my.lu.com/my/account?lufax_ref=http%3A%2F%2Fwww.lu.com%2F', {
+    getUserId(cookieJar, function(info) {
+        getFundInfo(cookieJar, info.uid, function(json) {
+            for (var att in json) {
+                info[att] = json[att];
+            }
+            callback(info);
+        })
+
+    });
+}
+
+function getFundInfo(cookieJar, uid, callback) {
+    simplehttp.GET('https://cashier.lu.com/cashier/service/users/' + uid + '/account-system/overview', {
             "cookieJar": cookieJar
         },
         function(err, httpResponse, body) {
-            var info = htmlparser.getValueFromBody('<input id="assetOverview" type="hidden" value=\'', '\'/>', body);
-            info = JSON.parse(info);
-            if (!info) logutil.error("ERROR getUserInfo:", info)
-            getUserId(cookieJar, function(json) {
-                for (var att in json) {
-                    info[att] = json[att];
-                }
-                callback(info);
-            });
+            var info = JSON.parse(body);
+            if (!info) logutil.error("ERROR getFundInfo:", body)
+            callback(info);
         });
 }
 
