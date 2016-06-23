@@ -9,7 +9,7 @@ var MINMONEY = 0;
 var MINRATE = 0.084;
 
 var isDetecting = false;
-var lastDetectTime;
+// var lastDetectTime;
 
 var rollingIntervalObj;
 
@@ -58,7 +58,7 @@ function detectLastProductId(callback) {
 function detectLatestProductId(pid, pidstep, interval, callback) {
     var url = "https://list.lu.com/list/service/product/" + (pid + pidstep) + "/productDetail";
     var delay = 100;
-     console.log("===detectLatestProductId", pid, pidstep, new Date())
+    console.log("===detectLatestProductId", pid, pidstep, new Date())
     simplehttp.GET(url, {}, function(error, response, body) {
         var productObj;
         try {
@@ -140,7 +140,8 @@ function loopNewTransfer_browser(startId, callback) {
         logutil.info("loopNewTransfer loopjob existed");
         return;
     }
-    lastDetectTime = new Date();
+    var lastDetectTime = lastIncTime = new Date();
+
     var latestConsumedProductId = 0;
     var productId = Number(startId);
     var productIdStart = productId;
@@ -157,20 +158,20 @@ function loopNewTransfer_browser(startId, callback) {
                 logutil.info("***productId rolling", productId);
                 productIdStart = productId;
             }
-            //31551142, 31551143
+             //31551142, 31551143 31642122
             var u = url.replace("*", productId + parallelIndex); //+ "?_=" + new Date().getTime();
+            //var u = url.replace("*", "31642122");
             return u;
         },
         responseHandler: function(error, response, body) {
             if (error) {
-                logutil.info("responseHandler error:" + error)
+                logutil.info("responseHandler error:" + error, productId)
             } else if (response.statusCode == 200) {
                 var req = response.request;
 
                 var catchException;
                 try {
-                    var productObj = parseProductPage(body)// JSON.parse(body);
-
+                    var productObj = parseProductPage(body) // JSON.parse(body);
                     if (productObj.productId && productObj.productId > latestConsumedProductId) {
                         lastDetectTime = new Date();
                         if (productObj.productStatus === "DONE") logutil.info("productStatus", productObj.productId, productObj.productStatus, productObj.price, productObj.interestRateDisplay, productObj.publishedAtDateTime)
@@ -188,7 +189,7 @@ function loopNewTransfer_browser(startId, callback) {
                             latestConsumedProductId = productObj.productId;
 
                             //if (productObj.price < 5000)
-                                logutil.info("consume productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
+                            logutil.info("consume productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay, new Date())
 
                         } else {
                             //logutil.info("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode)
@@ -200,36 +201,41 @@ function loopNewTransfer_browser(startId, callback) {
                         }
 
                     } else {
-                        if (body.indexOf('id="current-page" type="hidden" value="login"')>0 || body.indexOf('项目信息已变更')>0) {
+                        if (body.indexOf('id="current-page" type="hidden" value="login"') > 0 || body.indexOf('项目信息已变更') > 0) {
                             //latestConsumedProductId = productId;
                             lastDetectTime = new Date();
+                            console.log("----------------------======", productId, new Date())
                             productId += 1;
+                            
                         } else {
+                            productObj = {productId:0};
                             //console.log("productId---------------------", productId, latestConsumedProductId, productObj)
                         }
                     }
                 } catch (e) {
                     catchException = e;
                     logutil.error("e", e.stack)
-                    // logutil.info(body)    
+                        // logutil.info(body)    
                 } finally {
                     //console.log("-----------------------------------------------finally", productId, productObj.productId, new Date() - lastDetectTime)
-                    if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 100000) {
-                        lastDetectTime = new Date();
-                        detectLatestProductId(productId, 0, 3000, function(pid) {
-                            if (pid > productId) {
-                                productId = pid;
-                                logutil.info("update last product id ==========================", productId)
-                            }
-                        });
 
-                        // detectLastProductId(function(lastProductId) {
-                        //     logutil.info("update last product id =====", productId)
-                        //     if (lastProductId > productId) {
-                        //         productId = lastProductId;
-                        //         logutil.info("update last product id ==========================", productId)
-                        //     }
-                        // });
+                    if (catchException || productObj.productId === 0) {
+                        var sincelastdetect = new Date() - lastDetectTime;
+                        var sincelastinc = new Date() - lastIncTime;
+                        if (sincelastdetect > 300000) {
+                            lastDetectTime = new Date();
+                            detectLastProductId(function(lastProductId) {
+                                logutil.info("update last product id =====", lastProductId, productId)
+                                if (lastProductId > productId) {
+                                    productId = lastProductId;
+                                    logutil.info("update last product id ==========================", productId, lastProductId > productId)
+                                }
+                            });
+                        } else if (sincelastinc > 100000) {
+                            productId++;
+                            lastIncTime = new Date();
+                            console.log("auto inc", productId, new Date())
+                        }
                     }
                 }
             } else {
@@ -244,31 +250,32 @@ function loopNewTransfer_browser(startId, callback) {
     me.loopjob = loopjob;
 }
 
-function parseProductPage(body){
-    
-   var productObj = {};
+function parseProductPage(body) {
+
+    var productObj = {};
     var productId = htmlparser.getValueFromBody('="productId" value="', '"', body);
-    if (!productId)  {
+    
+    if (!productId) {
         return productObj;
     }
     productObj.productId = Number(productId);
 
     var intereststr = htmlparser.getValueFromBody('<p class="p1">预期年化利率</p>', '</strong>', body);
     var intrest = htmlparser.getValueFromBody('<strong>', '%', intereststr);
-    productObj.interestRateDisplay = Number(intrest)/100;
-    
+    productObj.interestRateDisplay = Number(intrest) / 100;
+
     var price = htmlparser.getValueFromBody('price="', '"', body);
-    productObj.price =  Number(price);
-    
-    var  publishedAtDateTime = htmlparser.getValueFromBody('发布时间：', '\n', body);
+    productObj.price = Number(price);
+
+    var publishedAtDateTime = htmlparser.getValueFromBody('发布时间：', '\n', body);
     productObj.publishedAtDateTime = publishedAtDateTime;
 
     var status = htmlparser.getValueFromBody('product-status="', '"', body);
     productObj.productStatus = status;
 
     productObj.productType = "TRANSFER_REQUEST";
-    productObj.tradingMode ="00";
-    return  productObj;
+    productObj.tradingMode = "00";
+    return productObj;
 }
 
 // function loopNewTransfer_mobile(startId, callback) {
