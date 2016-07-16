@@ -145,7 +145,7 @@ function loopNewTransfer_browser(startId, callback) {
     var latestConsumedProductId = 0;
     var productId = Number(startId);
     var productIdStart = productId;
-    var LOOP_INTERVAL = 500;
+    var LOOP_INTERVAL = 1800;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
         //url: "https://list.lu.com/list/service/product/*/productDetail",
@@ -173,7 +173,7 @@ function loopNewTransfer_browser(startId, callback) {
                 try {
                     var productObj = parseProductPage(body) // JSON.parse(body);
                     if (productObj.productId && productObj.productId > latestConsumedProductId) {
-                        lastDetectTime = new Date();
+                        lastIncTime = lastDetectTime = new Date();
                         if (productObj.productStatus === "DONE") logutil.info("productStatus", productObj.productId, productObj.productStatus, productObj.price, productObj.interestRateDisplay, productObj.publishedAtDateTime)
 
                         if (productObj.productType === "TRANSFER_REQUEST" && productObj.tradingMode === "00" && productObj.productStatus === "ONLINE") {
@@ -189,7 +189,8 @@ function loopNewTransfer_browser(startId, callback) {
                             latestConsumedProductId = productObj.productId;
 
                             //if (productObj.price < 5000)
-                            logutil.info("consume productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.price, productObj.interestRateDisplay, new Date())
+                            logutil.info("consume productStatus", productObj.publishedAtDateTime, new Date(), productObj.productId, productObj.productStatus, 
+                                productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
 
                         } else {
                             //logutil.info("productStatus", productObj.publishedAtDateTime, productObj.productId, productObj.productStatus, productObj.tradingMode)
@@ -203,8 +204,9 @@ function loopNewTransfer_browser(startId, callback) {
                     } else {
                         if (body.indexOf('id="current-page" type="hidden" value="login"') > 0 || body.indexOf('项目信息已变更') > 0) {
                             //latestConsumedProductId = productId;
-                            lastDetectTime = new Date();
-                            console.log("----------------------======", productId, new Date())
+                            lastIncTime = lastDetectTime = new Date();
+
+                            //console.log("----------------------======", productId, body.indexOf('id="current-page" type="hidden" value="login"') > 0, new Date())
                             productId += 1;
                             
                         } else {
@@ -231,7 +233,7 @@ function loopNewTransfer_browser(startId, callback) {
                                     logutil.info("update last product id ==========================", productId, lastProductId > productId)
                                 }
                             });
-                        } else if (sincelastinc > 100000) {
+                        } else if (sincelastinc > 30000) {
                             productId++;
                             lastIncTime = new Date();
                             console.log("auto inc", productId, new Date())
