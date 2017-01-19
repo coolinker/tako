@@ -1,6 +1,19 @@
 var crypto = require('crypto');
 
-exports.genSig = genSig;
+exports.getHeaders = getHeaders;
+function getHeaders(uid) {
+    var t = new Date().getTime() - 2345;
+    var headers = {
+        "mobile_agent": "appVersion:3.4.9,platform:android,osVersion:17,device:GT-P5210,resourceVersion:2.7.0,channel:H5",
+        "X-LUFAX-MOBILE-DATA-AGENT": '',
+        "x-lufax-mobile-t": t,
+        "x-lufax-mobile-signature": genSig(uid?uid:null, t),
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+    };
+    return headers;
+}
+
+//exports.genSig = genSig;
 function genSig(userId, time) {
     // "{\"userId\":1770933,\"_t\":1443018369935}", "1|4"
     var str = userId ? "{\"userId\":"+userId+",\"_t\":"+time+"}" : "{\"_t\":"+time+"}";

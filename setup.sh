@@ -18,5 +18,5 @@ npm install path
 npm install request
 npm install save-pixels
 npm install seajs
-npm install winston
 npm install ws
+npm install winston

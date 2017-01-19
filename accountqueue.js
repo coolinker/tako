@@ -17,27 +17,30 @@ function consume(toBeConsumed) {
 
     var finished = false, csmidx = 0;
     for (var i = 0; i < accounts.length; i++) {
+        if (toBeConsumed.length===0) break;
+        if (toBeConsumed.length===csmidx) break;
         if (accounts[i].cookieJar !== null) {
-            if (toBeConsumed instanceof Array) {
-                 var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
-                 if (finished) {
-                    logutil.info("consume finished", toBeConsumed[csmidx].productId)
-                    toBeConsumed.splice(csmidx, 1)
-                    if (toBeConsumed.length===0) break;
-                    //toBeConsumed.shift();
-                 } else {
-                    csmidx++;
-                 }
+            consumejob.consume(accounts[i], toBeConsumed[csmidx++]);
+            // if (toBeConsumed instanceof Array) {
+            //      var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
+            //      if (finished) {
+            //         logutil.info("consume finished", toBeConsumed[csmidx].productId)
+            //         toBeConsumed.splice(csmidx, 1)
+            //         if (toBeConsumed.length===0) break;
+            //         //toBeConsumed.shift();
+            //      } else {
+            //         csmidx++;
+            //      }
 
-                 if (csmidx === toBeConsumed.length) {
-                    // logutil.info("start from 0", csmidx, toBeConsumed.length)
-                    csmidx = 0;
-                 }
+            //      if (csmidx === toBeConsumed.length) {
+            //         // logutil.info("start from 0", csmidx, toBeConsumed.length)
+            //         csmidx = 0;
+            //      }
 
-            } else {
-                finished = consumejob.consume(accounts[i], toBeConsumed);
-                if (finished) break;
-            }
+            // } else {
+            //     finished = consumejob.consume(accounts[i], toBeConsumed);
+            //     if (finished) break;
+            // }
             
         }
     }

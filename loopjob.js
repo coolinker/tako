@@ -32,9 +32,10 @@ var LoopJob = function() {
     }
 
     function loopWork(parallelIndex) {
-        // if (jobStatus.isRequestSending) {
-        //     return;
-        // }
+        if (jobStatus.isRequestSending) {
+            return;
+        }
+
         if (jobStatus.loopPaused) {
             //logutil.log("loopPaused!")
             return;
@@ -103,9 +104,12 @@ var LoopJob = function() {
 
     this.pause = function (msd) {
         logutil.warn("job pause===========", msd);
+        if (this.timeoutObj) clearTimeout(this.timeoutObj)
         jobStatus.loopPaused = true;
-        setTimeout(function(){
+        this.timeoutObj = setTimeout(function(){
+            logutil.warn("job pause===========end");      
              jobStatus.loopPaused = false;
+             this.timeoutObj = null;
         }, msd)
     }
 

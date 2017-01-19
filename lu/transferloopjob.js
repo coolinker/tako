@@ -2,6 +2,9 @@ var logutil = require("../logutil").config("lutransfer");
 var simplehttp = require('../simplehttp');
 var htmlparser = require('../htmlparser');
 var LoopJob = require("../loopjob");
+var mobileheaderutil = require("./mobileheaderutil");
+var pppoeutil = require("../pppoeutil");
+
 var me = this;
 
 var MAXMONEY = 10000;
@@ -17,7 +20,7 @@ function detectLastProductId(callback) {
     if (isDetecting) return;
     isDetecting = true;
     var url = 'https://list.lu.com/list/transfer-p2p?minMoney=&maxMoney=&minDays=&maxDays=&minRate=&maxRate=&mode=&tradingMode=NOW&isCx=&orderCondition=&isShared=&canRealized=&productCategoryEnum=&currentPage='
-    simplehttp.GET(url + 10000, {}, function(error, response, body) {
+    simplehttp.GET(url + 10000, {}, function (error, response, body) {
         if (!body) {
             isDetecting = false;
             detectLastProductId(callback);
@@ -33,7 +36,7 @@ function detectLastProductId(callback) {
 
             page = "";
 
-            simplehttp.GET(url + page, {}, function(error, response, body) {
+            simplehttp.GET(url + page, {}, function (error, response, body) {
                 var newlineregexp = /\n/g;
                 var ids = body ? htmlparser.getSubStringsFromBody('productId=', 'target="_blank"', body, newlineregexp) : null;
 
@@ -45,7 +48,7 @@ function detectLastProductId(callback) {
                     var lidstr = ids[0];
                     var lastPid = htmlparser.getValueFromBody('productId=', '\'', lidstr);
                     console.log("get last Pid", lastPid)
-                    detectLatestProductId(Number(lastPid), 0, 3000, function(pid) {
+                    detectLatestProductId(Number(lastPid), 0, 3000, function (pid) {
                         callback(pid);
                         isDetecting = false;
                     });
@@ -59,7 +62,7 @@ function detectLatestProductId(pid, pidstep, interval, callback) {
     var url = "https://list.lu.com/list/service/product/" + (pid + pidstep) + "/productDetail";
     var delay = 100;
     console.log("===detectLatestProductId", pid, pidstep, new Date())
-    simplehttp.GET(url, {}, function(error, response, body) {
+    simplehttp.GET(url, {}, function (error, response, body) {
         var productObj;
         try {
             productObj = JSON.parse(body);
@@ -69,7 +72,7 @@ function detectLatestProductId(pid, pidstep, interval, callback) {
             return;
         }
         if (!productObj) {
-            setTimeout(function() {
+            setTimeout(function () {
                 detectLatestProductId(pid, pidstep, interval, callback);
             }, delay)
 
@@ -79,7 +82,7 @@ function detectLatestProductId(pid, pidstep, interval, callback) {
             if (!productObj.publishedAtDateTime) steps = 1;
             //logutil.info("detectLatestProductId===", pid+pidstep, steps, interval, productObj.publishedAtDateTime)
             if (steps >= 1) {
-                setTimeout(function() {
+                setTimeout(function () {
                     detectLatestProductId(pid + pidstep, steps, interval, callback)
                 }, delay)
             } else {
@@ -90,7 +93,7 @@ function detectLatestProductId(pid, pidstep, interval, callback) {
             callback(pid + pidstep);
         } else {
             //logutil.info("detectLatestProductId 2*interval", pid, pidstep,  2* interval)
-            setTimeout(function() {
+            setTimeout(function () {
                 detectLatestProductId(pid, 1, 2 * interval, callback)
             }, delay);
         }
@@ -102,7 +105,7 @@ function detectLastPage(callback) {
     if (isDetecting) return;
     isDetecting = true;
     var url = 'http://list.lu.com/list/transfer/anyi?minMoney=' + MINMONEY + '&maxMoney=' + MAXMONEY + '&minDays=&maxDays=&minRate=' + MINRATE + '&maxRate=0.2&mode=&trade=FIX_PRICE&isCx=&currentPage=10000'
-    simplehttp.GET(url, {}, function(error, response, body) {
+    simplehttp.GET(url, {}, function (error, response, body) {
         var no = htmlparser.getValueFromBody('<span class="pagination-no current">', '</span>', body);
         if (no !== null) {
             callback(Number(no));
@@ -116,16 +119,17 @@ function detectLastPage(callback) {
 exports.rollNewProductCheck = rollNewProductCheck;
 
 function rollNewProductCheck(callback) {
-    if (isDetecting) return;
-    var transfers = [];
-    detectLastProductId(function(productId) {
-        logutil.info("detected latest id", productId)
+    loopNewTransfer_mobile(callback);
+    // if (isDetecting) return;
 
-        loopNewTransfer_browser(productId, function(product) {
-            return callback(product);
-        })
+    // detectLastProductId(function(productId) {
+    //     logutil.info("detected latest id", productId)
 
-    })
+    //     loopNewTransfer_browser(productId, function(product) {
+    //         return callback(product);
+    //     })
+
+    // })
 }
 
 function randomNumber() {
@@ -153,17 +157,17 @@ function loopNewTransfer_browser(startId, callback) {
         loopInterval: LOOP_INTERVAL,
         timeout: 1.8 * LOOP_INTERVAL,
         httpMethod: "GET",
-        urlInjection: function(parallelIndex, url) {
+        urlInjection: function (parallelIndex, url) {
             if (productId - productIdStart > 50) {
                 logutil.info("***productId rolling", productId);
                 productIdStart = productId;
             }
-             //31551142, 31551143 31642122
+            //31551142, 31551143 31642122
             var u = url.replace("*", productId + parallelIndex); //+ "?_=" + new Date().getTime();
             //var u = url.replace("*", "31642122");
             return u;
         },
-        responseHandler: function(error, response, body) {
+        responseHandler: function (error, response, body) {
             if (error) {
                 logutil.info("responseHandler error:" + error, productId)
             } else if (response.statusCode == 200) {
@@ -189,7 +193,7 @@ function loopNewTransfer_browser(startId, callback) {
                             latestConsumedProductId = productObj.productId;
 
                             //if (productObj.price < 5000)
-                            logutil.info("consume productStatus", productObj.publishedAtDateTime, new Date(), productObj.productId, productObj.productStatus, 
+                            logutil.info("consume productStatus", productObj.publishedAtDateTime, new Date(), productObj.productId, productObj.productStatus,
                                 productObj.tradingMode, productObj.price, productObj.interestRateDisplay)
 
                         } else {
@@ -208,16 +212,16 @@ function loopNewTransfer_browser(startId, callback) {
 
                             //console.log("----------------------======", productId, body.indexOf('id="current-page" type="hidden" value="login"') > 0, new Date())
                             productId += 1;
-                            
+
                         } else {
-                            productObj = {productId:0};
+                            productObj = { productId: 0 };
                             //console.log("productId---------------------", productId, latestConsumedProductId, productObj)
                         }
                     }
                 } catch (e) {
                     catchException = e;
                     logutil.error("e", e.stack)
-                        // logutil.info(body)    
+                    // logutil.info(body)    
                 } finally {
                     //console.log("-----------------------------------------------finally", productId, productObj.productId, new Date() - lastDetectTime)
 
@@ -226,7 +230,7 @@ function loopNewTransfer_browser(startId, callback) {
                         var sincelastinc = new Date() - lastIncTime;
                         if (sincelastdetect > 300000) {
                             lastDetectTime = new Date();
-                            detectLastProductId(function(lastProductId) {
+                            detectLastProductId(function (lastProductId) {
                                 logutil.info("update last product id =====", lastProductId, productId)
                                 if (lastProductId > productId) {
                                     productId = lastProductId;
@@ -256,7 +260,7 @@ function parseProductPage(body) {
 
     var productObj = {};
     var productId = htmlparser.getValueFromBody('="productId" value="', '"', body);
-    
+
     if (!productId) {
         return productObj;
     }
@@ -280,124 +284,114 @@ function parseProductPage(body) {
     return productObj;
 }
 
-// function loopNewTransfer_mobile(startId, callback) {
-//     if (this.loopjob) {
-//         logutil.info("loopNewTransfer loopjob existed");
-//         return;
-//     }
+function loopNewTransfer_mobile(callback) {
+    if (me.loopjob) {
+        if (!me.loopjob.isLoopingStarted()) {
+            me.loopjob.startLooping();
+        }
+        logutil.info("loopNewTransfer loopjob existed");
+        return;
+    }
 
-//     var productId = Number(startId);
-//     var productIdStart = productId;
-//     var LOOP_INTERVAL = 300;
-//     var loopjob = new LoopJob().config({
-//         parallelRequests: 3,
-//         //url: "https://list.lu.com/list/service/product/*/productDetail",
-//         url: "https://mapp.lufax.com/mapp/service/public?M4100",
-//         loopInterval: LOOP_INTERVAL,
-//         timeout: 1.8 * LOOP_INTERVAL,
-//         httpMethod: "POST",
-//         urlInjection: function(parallelIndex, url) {
-//             url += ("?_" + randomNumber());
+    var jobStartTime = new Date();
+    console.log("job start", jobStartTime)
+    var requestCount = 0;
+    var productId = 0;
+    var LOOP_INTERVAL = 2000;
+    var loopjob = new LoopJob().config({
+        parallelRequests: 1,
+        url: "https://ma.lu.com/mapp/service/public?M3024&listType=trans_p2p",
+        loopInterval: LOOP_INTERVAL,
+        timeout: 2 * LOOP_INTERVAL,
+        httpMethod: "POST",
+        urlInjection: function (parallelIndex, url) {
+            url += ("?_" + randomNumber());
+            return url;
+        },
+        optionsInjection: function (parallelIndex, options) {
+            requestCount++;
+            if (requestCount%100 === 0) console.log("requestCount", requestCount, new Date());
+            options.form = {
+                requestCode: "M3024",
+                version: "3.4.9",
+                //{"cookieUserName":"MjAyMDk2RjZGN0IyNDc2OUZCNzRGQTNDMDQ2RTlBNTk=","readListType":"trans_p2p","filterBeginInvestPeriodInDay":"10","width":720,"listType":"trans_p2p","pageSize":"15","ver":"1","isForNewUser":"false","forNewUser":"false","pageIndex":"1","filterEndTransPrice":"0.65","source":"android","filterBeginTransPrice":"0.2","currentPage":"1"}
+                params: '{"cookieUserName":"","readListType":"trans_p2p","filterBeginInvestPeriodInDay":"10","width":720,"listType":"trans_p2p","pageSize":"15","ver":"1","isForNewUser":"false","productSortType":"INTEREST_RATE_DESC","forNewUser":"false","pageIndex":"1","filterEndTransPrice":"0.6","source":"android","filterBeginTransPrice":"0.2","currentPage":"1"}'
+            };
+            options.headers = {
+                "mobile_agent": "appVersion:3.4.9,platform:android,osVersion:17,device:GT-P5210,resourceVersion:2.7.0,channel:H5",
+                "X-LUFAX-MOBILE-DATA-AGENT": '',
+                "x-lufax-mobile-t": '',
+                "x-lufax-mobile-signature": ''
+            }
+            return options;
+        },
+        responseHandler: function (error, response, body) {
+            
+            if (error) {
+                logutil.info("responseHandler error:",new Date(), error)
+            } else if (response.statusCode == 200) {
+                var req = response.request;
+                var catchException;
+                try {
+                    var bodyJson = JSON.parse(body);
+                    if (!bodyJson.result.products) {
+                        console.log(new Date(), "*******", requestCount,body)
+                        loopjob.pause(5000);
+                        pppoeutil.pppoeUpdate(function(succeed){
+                            if (succeed) loopjob.pause(45000);
+                        })
+                        return;
+                        
+                    } else {
+                        //console.log(bodyJson.result.totalCount, new Date())
+                    }
 
-//             //var u = url.replace("*", productId + parallelIndex) + "?t=" + new Date().getTime();
-//             return url;
-//         },
-//         optionsInjection: function(parallelIndex, options) {
-//             if (productId - productIdStart > 100) {
-//                 logutil.info("***productId rolling", productId);
-//                 productIdStart = productId;
-//             }
-//             options.form = {
-//                 requestCode: "M4100",
-//                 version: "2.8.1",
-//                 params: "{'productId':'" + (productId + parallelIndex) + "','from':'list'}",
-//                 paramsJson: {
-//                     productId: productId + parallelIndex,
-//                     from: 'list'
-//                 }
-//             };
+                    var productObjs = bodyJson.result.products[0].productList;
+                    var products = [];
+                    var maxpid = 0;
+                    for (var i = 0; i < productObjs.length; i++) {
+                        var item = productObjs[i];
+                        if (item.id > productId) {
+                            console.log("*******************product:", item.id, item.price, item.principal, item.interestRate, item.numOfInstalments, "totalCount", bodyJson.result.totalCount);
+                            maxpid = Math.max(maxpid, item.id);
+                            products.push({
+                                productId: item.id,
+                                productCategory: item.productCategory,
+                                interest: Number(item.interestRate),
+                                productType: item.productType,
+                                productStatus: item.productStatus,
+                                tradingMode: item.tradingMode,
+                                price: item.price,
+                                reducePrice:Number(item.extReducePrice),
+                                publishTime: item.publishedAt,
+                                numOfInstalments: item.numOfInstalments,
+                                source: "www.lu.com",
+                                producedTime: new Date()
+                            });
+                        }
+                    }
 
-//             return options;
-//         },
-//         responseHandler: function(error, response, body) {
-//             if (error) {
-//                 // logutil.info("responseHandler error:", error)
-//             } else if (response.statusCode == 200) {
-//                 var req = response.request;
+                    productId = Math.max(maxpid, productId);
+                    //"},{"id":138988453,"price":6952.88,"principal":6941.54,"interestRate":"0.084","numOfInstalments":24,"sourceId":151450837,"publishedAt":"Jan 11, 2017 12:08:55 PM","code":"17011132696","productType":"TRANSFER_REQUEST","productStatus":"ONLINE","collectionMode":"1","tradingMode":"00","mgmtFeeRate":0,"feeDisplayFlag":"false","extOnlineDianjinCount":0,"sourceType":"9","maxInvestAmount":6952.88,"minInvestAmount":6952.88,"remainingAmount":6952.88,"raisedAmount":0,"investPeriod":"24","investPeriodUnit":"3","displayName":"稳盈-安e","trxEndAt":"Jan 12, 2017 12:08:55 PM","sellerUserId":18806205,"transferFee":13.9,"riskLevel":"1","salesChannel":"0","isCuxiao":"0","isForNewUser":"0","isForDefault":"1","minInterestRate":"0","createdAt":"Jan 11, 2017 12:08:55 PM","updatedAt":"Jan 11, 2017 4:01:23 PM","productCategory":"901","interestRateDisplay":"8.40%","listTypeName":"转让专区","listType":"p2p_transfer","extUserGroupList":["DEFAULT"],"extInvestPeriodDisplay":"24个月","extCurrentPrice":6952.88,"extIsVipGroup":false,"extIsSpecialGroup":false,"extCanWithHold":false,"extRiskLevelDisplayName":"保守型","extProgress":0.00,"extInvestAmoutUnitDisplay":"元","extPromotionDisplay":"","extProductNameDisplay":"稳盈-安e 17011132696","extInterestRateDisplay":"8.40%","remainingTransferDays":"5","isOverdueTransfer":"0","productPropDtoList":[],"interestRateDesc":"期望年化利率","subProductCategory":"3","extReducePriceDays":"0.0","extReducePrice":"0.00","transferCutRate":"0","extReducePriceDisplay":"转让人已降价0.00% (0.00元)","extProductLineNewUser":false,"extForCarOwner":false,"extTransferPriceDisplay":"转让价格(元)","lastCollectionDate":"Jan 5, 2019 11:59:59 PM","nextCollectionDate":"Feb 5, 2017 11:59:59 PM","extIsShowProgress":"0","extMinInvestAmountDisplay":"6952.88"},{"
+                    if (products.length > 0) callback(products);
 
-//                 var catchException;
-//                 try {
-//                     var bodyJson = JSON.parse(body);
-//                     var productObj = bodyJson.result;
+                } catch (e) {
+                    catchException = e;
+                    logutil.info("e", e.stack)
 
-//                     if (productObj.productId) {
-//                         lastDetectTime = new Date();
-//                         //if (!productObj.publishedAt) logutil.info("no publishAt", body)
+                } finally {
 
-//                         if (productObj.productType === "TRANSFER_REQUEST" && productObj.tradingMode === "00" && productObj.productStatus === "ONLINE") {
-//                             callback({
-//                                 productId: productObj.productId,
-//                                 interest: productObj.intrestRateDisplay,
-//                                 price: productObj.amount,
-//                                 publishTime: productObj.publishedAt,
-//                                 source: "www.lu.com",
-//                                 producedTime: new Date()
-//                             });
+                }
+            } else {
+                logutil.info("?????????????????????????????? statusCode:", response.statusCode)
+            }
 
-//                             if (productObj.amount < 5000)
-//                                 logutil.info("productStatus", productObj.publishedAt, productObj.productId, productObj.productStatus, productObj.tradingMode, productObj.amount, productObj.interestRateDisplay)
+        }
+    });
 
-//                         } else {
-//                             //logutil.info("productStatus", productObj.publishedAt, productObj.productId, productObj.productStatus, productObj.tradingMode)
-//                         }
-
-//                         if (productObj.productId >= productId) {
-//                             productId = productObj.productId + 1;
-//                         }
-
-//                     } else if (productObj.lockTip) {
-//                         var rid = req.__options.form.paramsJson.productId;
-//                         if (rid >= productId) {
-//                             productId++;
-//                         }
-
-//                     } else {
-//                         //logutil.info("body:", body)
-//                     }
-//                 } catch (e) {
-//                     catchException = e;
-//                     logutil.info("e", e.stack)
-//                         // if ((new Date() - lastDetectTime) > 10000) {
-//                         //         lastDetectTime = new Date();
-//                         //         detectLastProductId(function(lastProductId) {
-//                         //             if (lastProductId > productId) {
-//                         //                 productId = lastProductId;
-//                         //                 logutil.info("update last product id ==========================", productId)
-//                         //             }
-//                         //         });
-//                         //     }
-//                 } finally {
-//                     if ((catchException || productObj.productId === 0) && (new Date() - lastDetectTime) > 10000) {
-//                         lastDetectTime = new Date();
-//                         logutil.info("detectLastProductId", productId)
-//                         detectLastProductId(function(lastProductId) {
-//                             if (lastProductId > productId) {
-//                                 productId = lastProductId;
-//                                 logutil.info("update last product id ==========================", productId)
-//                             }
-//                         });
-//                     }
-//                 }
-//             } else {
-//                 logutil.info("?????????????????????????????? statusCode:", response.statusCode)
-//             }
-
-//         }
-//     });
-
-//     loopjob.startLooping();
-//     me.loopjob = loopjob;
-// }
+    loopjob.startLooping();
+    me.loopjob = loopjob;
+}
 
 exports.stopRollingNewProductCheck = stopRollingNewProductCheck;
 
@@ -438,7 +432,7 @@ function getProductsDetail(index, products) {
     var product = products[index];
 
     var url = "http://list.lu.com/list/productDetail?productId=" + product.productId;
-    simplehttp.GET(url, {}, function(error, response, body) {
+    simplehttp.GET(url, {}, function (error, response, body) {
 
         try {
             var principal = htmlparser.getValueFromBody('<td><strong>', ' 元', htmlparser.getValueFromBody('<td>项目本金：</td>', '</strong></td>', body)).replace(',', '');

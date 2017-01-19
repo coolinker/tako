@@ -4,19 +4,20 @@ var RSAKey = require('./rsa.js');
 var logutil = require("../logutil").config('lulogin');
 var simplehttp = require('../simplehttp');
 var htmlparser = require('../htmlparser');
-var mobilesigutil = require("./mobilesigutil");
+var mobileheaderutil = require("./mobileheaderutil");
 
 exports.login = login;
 
 function login(account, callback) {
-    // login_mobile(account, callback);
-    login_brwoser(account, callback)
+    login_mobile(account, callback);
+    //login_brwoser(account, callback)
 }
+
 
 function login_mobile(account, callback) {
     var publicKey, rsaExponent;
     var rsakey = new RSAKey();
-    securityValid(function(pkey, exp) {
+    securityValid(function (pkey, exp) {
         publicKey = pkey;
         rsaExponent = exp;
         rsakey.setPublic(publicKey, rsaExponent);
@@ -27,25 +28,26 @@ function login_mobile(account, callback) {
         //{"userNameLogin":"coolinker","password":"8139CA3D93FAA7D50498E37642EED8D106C486771DC220E22AE63BDF3545A394DD440790B33EA5DF30213940AED9EDC710EC05C7D70352FF9E45BABAF25EFFBC1A111BEBEFCD3632DFD2D47E9B2E300DD3BCCD621D15B2CBB4B27596C0A558913DBC822B0C2FBBE46B27563D47C52CEDEED743E9A6ED348B2951DFCBBA5BD5CB",
         //"validNum":"","IMVC":"","mobileSerial":"868191022314031"}
         //{"userNameLogin":"luhuiqing","password":"0A63B5746D1E545C76D9F39F2189D6FF7EA32FB9EA9CAF2A7D044B28B4B134301844088971AD36FDFF328E17E6008E4B4505AE8AD89E2D1065438661C94C8024E1D8D42C3FA8FDE600082180BE639655CFFCF759F916EC97B33E2A9962BBF634AAAD40F248B39DEC112686A9365659190CE4DD172D9EA6AD152C008C76F9FA32","validNum":"kwp7","IMVC":"","mobileSerial":"868191022314031"}
-        captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
-            var t = new Date().getTime() - 2345;
-            var sig = mobilesigutil.genSig(null, t);
-            simplehttp.POST('https://mapp.lufax.com/mapp/service/public?M8001', {
-                    "cookieJar": cookieJar,
-                    form: {
-                        requestCode: "M8001",
-                        version: "2.8.1",
-                        params: '{"userNameLogin":"' + account.user + '","password":"' + cncryptPassword + '","validNum":"' + captachStr + '","IMVC":"","mobileSerial":"868191022314031"}'
-                    },
-                    headers: {
-                        "mobile_agent": "appVersion:2.8.1,platform:android,osVersion:19,device:2014813,resourceVersion:2.7.0,channel:JLX01",
-                        "X-LUFAX-MOBILE-DATA-AGENT": "qFgr54W0EdddXNHAEiURy9j3gNNZl1XtNIyKJrjynMS6LEhmOA1dqIM9+BhHucXUY1FcS/OK5No62MHrRqwHcm/lXEhbeygM8rp8Zevk9E2Ze7+1z3geqdnEDfAGN/eKFrgIzRQIR5jItWwVv8UZ6w==",
-                        "x-lufax-mobile-t": t,
-                        "x-lufax-mobile-signature": sig
-                    }
+        captchaUtil.guessCaptchaForLogin("login", cookieJar, function (captachStr) {
+            // var t = new Date().getTime() - 2345;
+            // var sig = mobilesigutil.genSig(null, t);
+            simplehttp.POST('https://ma.lu.com/mapp/service/public?M8001', {
+                "cookieJar": cookieJar,
+                form: {
+                    requestCode: "M8001",
+                    version: "3.4.9",
+                    params: '{"userNameLogin":"' + account.user + '","password":"' + cncryptPassword + '","validNum":"' + captachStr + '","IMVC":"","mobileSerial":"868191022314031"}'
                 },
-                function(err, httpResponse, body) {
-                    var cookie_string = cookieJar.getCookieString("https://user.lufax.com");
+                headers: mobileheaderutil.getHeaders()
+                // {
+                //     "mobile_agent": "appVersion:3.4.9,platform:android,osVersion:17,device:GT-P5210,resourceVersion:2.7.0,channel:H5",
+                //     "X-LUFAX-MOBILE-DATA-AGENT": "qFgr54W0EdddXNHAEiURy9j3gNNZl1XtNIyKJrjynMS6LEhmOA1dqIM9+BhHucXUY1FcS/OK5No62MHrRqwHcm/lXEhbeygM8rp8Zevk9E2Ze7+1z3geqdnEDfAGN/eKFrgIzRQIR5jItWwVv8UZ6w==",
+                //     "x-lufax-mobile-t": t,
+                //     "x-lufax-mobile-signature": sig
+                // }
+            },
+                function (err, httpResponse, body) {
+                    var cookie_string = cookieJar.getCookieString("https://user.lu.com");
                     logutil.info("login status:", cookie_string.indexOf("lufaxSID") > 0, account.user);
                     if (cookie_string.indexOf("lufaxSID") < 0) {
                         callback(null);
@@ -53,12 +55,15 @@ function login_mobile(account, callback) {
                         var info = JSON.parse(body);
                         account.cookieJar = cookieJar;
                         account.uid = info.result.userOverview.userId;
-                        userInfo_mobile(account, function(result) {
+                        account.loginTime = new Date();
+                        
+                        userInfo_mobile(account, function (result) {
                             //account.uid = result.userInfo.userName;
-                            account.availableBalance = result.asset.availableFund;
-                            logutil.info("account.availableBalance:", account.availableBalance, account.uid)
-
-                            callback(cookieJar);
+                            if (result.asset) {
+                                account.availableBalance = Number(result.asset.availableAmount.text);
+                            }
+                            logutil.info("account.availableBalance:", account.availableBalance, account.uid);
+                            callback(cookieJar, account.JSONInfo());
 
                         });
 
@@ -72,16 +77,19 @@ function login_mobile(account, callback) {
 }
 
 function userInfo_mobile(account, callback) {
-    simplehttp.POST('https://mapp.lufax.com/mapp/service/private??M2111', {
-            "cookieJar": account.cookieJar,
-            form: {
-                requestCode: "M2111",
-                version: "2.8.1",
-                params: '{"type":"userInfo,asset"}'
-            }
+    simplehttp.POST('https://ma.lu.com/mapp/service/private?M6057', {
+        "cookieJar": account.cookieJar,
+        form: {
+            requestCode: "M6057",
+            version: "3.4.9",
+            params: '{"ver":"1.0" , "source":"android"}'
         },
-        function(err, httpResponse, body) {
+        headers: mobileheaderutil.getHeaders(account.uid)
+    },
+        function (err, httpResponse, body) {
             var info = JSON.parse(body);
+            if (info.code !== '0000') console.log(body);
+
             callback(info.result);
 
         });
@@ -98,17 +106,17 @@ function login_brwoser(account, callback) {
     //logutil.info("login...", user);
 
     simplehttp.GET('https://user.lu.com/user/login', {
-            "cookieJar": cookieJar
-        },
-        function(err, httpResponse, body) {
+        "cookieJar": cookieJar
+    },
+        function (err, httpResponse, body) {
 
             var publicKey = htmlparser.getValueFromBody('id="publicKey" name="publicKey" value="', '" />', body);
             var rsaExponent = htmlparser.getValueFromBody('id="rsaExponent" name="rsaExponent" value="', '" />', body);
             rsakey.setPublic(publicKey, rsaExponent);
             var cncryptPassword = rsakey.encrypt(password);
 
-            captchaUtil.guessCaptchaForLogin("login", cookieJar, function(captachStr) {
-                doLogin(user, cncryptPassword, captachStr, cookieJar, function(info) {
+            captchaUtil.guessCaptchaForLogin("login", cookieJar, function (captachStr) {
+                doLogin(user, cncryptPassword, captachStr, cookieJar, function (info) {
                     if (info.uid) {
                         account.cookieJar = cookieJar;
                         account.availableBalance = info.availableFund;
@@ -119,7 +127,7 @@ function login_brwoser(account, callback) {
                         account.cookieJar = null;
                         callback(null, info);
                     }
-                   // logutil.info("account.availableBalance:", account.availableBalance, account.uid, info)
+                    // logutil.info("account.availableBalance:", account.availableBalance, account.uid, info)
 
                 })
             })
@@ -128,29 +136,29 @@ function login_brwoser(account, callback) {
 
 function captchaAuthorize(source, username, cookieJar, callback) {
     simplehttp.POST('https://user.lu.com/user/service/login/captcha-authorize', {
-            form: {
-                source: source,
-                username: username
-            },
-            "cookieJar": cookieJar
+        form: {
+            source: source,
+            username: username
         },
-        function(err, httpResponse, body) {
+        "cookieJar": cookieJar
+    },
+        function (err, httpResponse, body) {
             callback(body)
         })
 }
 
 function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
     simplehttp.POST('https://user.lu.com/user/login', {
-            form: {
-                userName: userNameLogin,
-                password: cncryptPassword,
-                validNum: captcha,
-                loginagree: "on",
-                isTrust: "Y"
-            },
-            "cookieJar": cookieJar
+        form: {
+            userName: userNameLogin,
+            password: cncryptPassword,
+            validNum: captcha,
+            loginagree: "on",
+            isTrust: "Y"
         },
-        function(err, httpResponse, body) {
+        "cookieJar": cookieJar
+    },
+        function (err, httpResponse, body) {
             var cookie_string = cookieJar.getCookieString("https://user.lu.com");
             logutil.info("doLogin -> login status:", cookie_string.indexOf("lufaxSID") > 0, userNameLogin, body);
             if (cookie_string.indexOf("lufaxSID") < 0) {
@@ -162,8 +170,8 @@ function doLogin(userNameLogin, cncryptPassword, captcha, cookieJar, callback) {
 }
 
 function getUserInfo(cookieJar, callback) {
-    getUserId(cookieJar, function(info) {
-        getFundInfo(cookieJar, info.uid, function(json) {
+    getUserId(cookieJar, function (info) {
+        getFundInfo(cookieJar, info.uid, function (json) {
             for (var att in json) {
                 info[att] = json[att];
             }
@@ -175,9 +183,9 @@ function getUserInfo(cookieJar, callback) {
 
 function getFundInfo(cookieJar, uid, callback) {
     simplehttp.GET('https://cashier.lu.com/cashier/service/users/' + uid + '/account-system/overview', {
-            "cookieJar": cookieJar
-        },
-        function(err, httpResponse, body) {
+        "cookieJar": cookieJar
+    },
+        function (err, httpResponse, body) {
             var info = JSON.parse(body);
             if (!info) logutil.error("ERROR getFundInfo:", body)
             callback(info);
@@ -186,9 +194,9 @@ function getFundInfo(cookieJar, uid, callback) {
 
 function getUserId(cookieJar, callback) {
     simplehttp.GET('https://user.lu.com/user/service/user/current-user-info-for-homepage', {
-            "cookieJar": cookieJar
-        },
-        function(err, httpResponse, body) {
+        "cookieJar": cookieJar
+    },
+        function (err, httpResponse, body) {
             var info = JSON.parse(body);
             // logutil.info("---------", info) 18270.60
             if (!info) logutil.error("ERROR getUserId:", body)
@@ -198,7 +206,7 @@ function getUserId(cookieJar, callback) {
 exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
-    login(account, function(cookieJar, info) {
+    login(account, function (cookieJar, info) {
         logutil.info("extendLogin======", account.user, account.source)
         callback(cookieJar);
     });
@@ -206,7 +214,7 @@ function extendLogin(account, callback) {
 
 function securityValid(callback) {
     simplehttp.GET('https://static.lufaxcdn.com/trading/resource/securityValid/main/1be866c2e005.securityValid.js', {},
-        function(err, httpResponse, body) {
+        function (err, httpResponse, body) {
             var publicKey = htmlparser.getValueFromBody('encryptPwd:function(e){var t="', '",n=', body);
             var rsaExponent = htmlparser.getValueFromBody('n.setPublic(t,"', '"),n.', body);
 

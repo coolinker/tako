@@ -7,3 +7,4 @@ log.txt
 client/rrdpanel1.dre
 server/takotest.js
 *.out
+testdata.js
