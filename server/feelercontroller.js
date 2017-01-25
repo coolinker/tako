@@ -90,11 +90,14 @@ function startAccountBidding(accountJson, callback) {
     };
     if (acc) {
         acc.config(accountJson);
-        acc.startedBidding = true;
-        if (acc.cookieJar) {
+        if (acc.ableToConsume()) {
+            acc.startedBidding = true;
             startNewProductCheck(acc.source);
-        }
-        result.resultMsg = "SUCCEED";
+            result.resultMsg = "SUCCEED";
+        } else {
+            result.resultMsg = "NOT_BE_ABLE_TO_CONSUME";
+        } 
+        
     } else {
         result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
     }

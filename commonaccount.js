@@ -8,7 +8,6 @@ var CommonAccount = function(user, source){
     this.consumeHistory = [];
     //this.eventEmitter = new events.EventEmitter();
     events.EventEmitter.call(this);
-    //this.startedBidding = false;
 };
 
 CommonAccount.prototype.__proto__ = events.EventEmitter.prototype;
@@ -31,8 +30,14 @@ CommonAccount.prototype.pricePerBidMin = 0;
 CommonAccount.prototype.pricePerBidMax = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
 CommonAccount.prototype.consumeHistory = [];
-CommonAccount.prototype.startedBidding = false; 
+CommonAccount.prototype.startedBidding = false;
 
+
+CommonAccount.prototype.capability = {
+    consume: true,
+    schedule: false,
+    runSchedule: false
+};
 
 CommonAccount.prototype.config = function (obj){
     for (var att in obj) {
@@ -60,21 +65,28 @@ CommonAccount.prototype.JSONInfo = function (){
         startedBidding: this.startedBidding,
         interestLevelMin: this.interestLevelMin,
         interestLevelMax: this.interestLevelMax,
+        capability: this.capability,
         source: this.source
     }
 }
+
 CommonAccount.prototype.addToConsumeHistory = function (obj) {
     this.consumeHistory.push(obj);
     this.emit('consumeHistory', this, obj);
 }
 
+
 CommonAccount.prototype.isActive = function () {
     return this.ableToConsume() || this.loginTime ? (new Date() - this.loginTime < this.loginExtendInterval) : (new Date() - this.createdTime < 1000*60*15)
 }
 
+CommonAccount.prototype.ableToSchedule = function (){
+    return !this.locked && this.cookieJar && this.capability.schedule;
+}
+
 CommonAccount.prototype.ableToConsume = function (){
     // console.log("ableToConsume-=======", this.availableBalance, this.reservedBalance, this.source, this.user, this.startedBidding)
-    return this.cookieJar && this.startedBidding && (this.availableBalance - this.pricePerBidMin) >= this.reservedBalance;
+    return !this.locked && this.cookieJar && this.capability.consume && this.startedBidding && (this.availableBalance - this.pricePerBidMin) >= this.reservedBalance;
 }
 
 CommonAccount.prototype.lock = function (){

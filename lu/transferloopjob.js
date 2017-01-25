@@ -119,6 +119,7 @@ function detectLastPage(callback) {
 exports.rollNewProductCheck = rollNewProductCheck;
 
 function rollNewProductCheck(callback) {
+    return;
     loopNewTransfer_mobile(callback);
     // if (isDetecting) return;
 
@@ -292,7 +293,7 @@ function loopNewTransfer_mobile(callback) {
         logutil.info("loopNewTransfer loopjob existed");
         return;
     }
-
+    var filterEndTransPrice = 0.7;
     var jobStartTime = new Date();
     console.log("job start", jobStartTime)
     var requestCount = 0;
@@ -310,12 +311,12 @@ function loopNewTransfer_mobile(callback) {
         },
         optionsInjection: function (parallelIndex, options) {
             requestCount++;
-            if (requestCount%100 === 0) console.log("requestCount", requestCount, new Date());
+            if (requestCount % 100 === 0) console.log("requestCount", requestCount, new Date());
             options.form = {
                 requestCode: "M3024",
                 version: "3.4.9",
                 //{"cookieUserName":"MjAyMDk2RjZGN0IyNDc2OUZCNzRGQTNDMDQ2RTlBNTk=","readListType":"trans_p2p","filterBeginInvestPeriodInDay":"10","width":720,"listType":"trans_p2p","pageSize":"15","ver":"1","isForNewUser":"false","forNewUser":"false","pageIndex":"1","filterEndTransPrice":"0.65","source":"android","filterBeginTransPrice":"0.2","currentPage":"1"}
-                params: '{"cookieUserName":"","readListType":"trans_p2p","filterBeginInvestPeriodInDay":"10","width":720,"listType":"trans_p2p","pageSize":"15","ver":"1","isForNewUser":"false","productSortType":"INTEREST_RATE_DESC","forNewUser":"false","pageIndex":"1","filterEndTransPrice":"0.6","source":"android","filterBeginTransPrice":"0.2","currentPage":"1"}'
+                params: '{"cookieUserName":"","readListType":"trans_p2p","filterBeginInvestPeriodInDay":"10","width":720,"listType":"trans_p2p","pageSize":"15","ver":"1","isForNewUser":"false","productSortType":"INTEREST_RATE_DESC","forNewUser":"false","pageIndex":"1","filterEndTransPrice":"' + filterEndTransPrice + '","source":"android","filterBeginTransPrice":"0.2","currentPage":"1"}'
             };
             options.headers = {
                 "mobile_agent": "appVersion:3.4.9,platform:android,osVersion:17,device:GT-P5210,resourceVersion:2.7.0,channel:H5",
@@ -326,22 +327,22 @@ function loopNewTransfer_mobile(callback) {
             return options;
         },
         responseHandler: function (error, response, body) {
-            
+
             if (error) {
-                logutil.info("responseHandler error:",new Date(), error)
+                logutil.info("responseHandler error:", new Date(), error)
             } else if (response.statusCode == 200) {
                 var req = response.request;
                 var catchException;
                 try {
                     var bodyJson = JSON.parse(body);
                     if (!bodyJson.result.products) {
-                        console.log(new Date(), "*******", requestCount,body)
+                        console.log(new Date(), "*******", requestCount, body)
                         loopjob.pause(5000);
-                        pppoeutil.pppoeUpdate(function(succeed){
+                        pppoeutil.pppoeUpdate(function (succeed) {
                             if (succeed) loopjob.pause(45000);
                         })
                         return;
-                        
+
                     } else {
                         //console.log(bodyJson.result.totalCount, new Date())
                     }
@@ -362,7 +363,7 @@ function loopNewTransfer_mobile(callback) {
                                 productStatus: item.productStatus,
                                 tradingMode: item.tradingMode,
                                 price: item.price,
-                                reducePrice:Number(item.extReducePrice),
+                                reducePrice: Number(item.extReducePrice),
                                 publishTime: item.publishedAt,
                                 numOfInstalments: item.numOfInstalments,
                                 source: "www.lu.com",

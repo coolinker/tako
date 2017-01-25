@@ -17,8 +17,8 @@ function consume(toBeConsumed) {
 
     var finished = false, csmidx = 0;
     for (var i = 0; i < accounts.length; i++) {
-        if (toBeConsumed.length===0) break;
-        if (toBeConsumed.length===csmidx) break;
+        if (toBeConsumed.length === 0) break;
+        if (toBeConsumed.length === csmidx) break;
         if (accounts[i].cookieJar !== null) {
             consumejob.consume(accounts[i], toBeConsumed[csmidx++]);
             // if (toBeConsumed instanceof Array) {
@@ -41,7 +41,7 @@ function consume(toBeConsumed) {
             //     finished = consumejob.consume(accounts[i], toBeConsumed);
             //     if (finished) break;
             // }
-            
+
         }
     }
 
@@ -51,7 +51,7 @@ function consume(toBeConsumed) {
 exports.loginAccount = loginAccount;
 function loginAccount(accountInfo, callback) {
     if (accountInfo.locked) {
-        if (callback) callback();
+        if (callback) callback(accountInfo.JSONInfo());
         return;
     }
     if (!needRelogin(accountInfo)) {
@@ -62,15 +62,35 @@ function loginAccount(accountInfo, callback) {
 
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
-    accountInfo.locked = true;
-    loginjobs.login(accountInfo, function(cookieJar, info) {
-        accountInfo.locked = false;
+    accountInfo.lock();
+    loginjobs.login(accountInfo, function (cookieJar, info) {
+        accountInfo.unlock();
         if (cookieJar === null) {
             logutil.error("\nAccount login failed", accountInfo.user, info.resultMsg);
         }
 
+
+        if (accountInfo.ableToSchedule()) {
+            scheduleAccount(accountInfo);
+        }
+
         if (callback) callback(info);
     })
+}
+
+exports.scheduleAccount = scheduleAccount;
+function scheduleAccount(account, callback) {
+    if (account.locked) return;
+    if (!account.ableToSchedule()) return;
+
+    var accounttype = ACCOUNT_TYPES[account['source']];
+    var job = require("./" + accounttype + "/schedulejob");
+    account.lock();
+    job.schedule(account, function (prm) {
+        //should start consume job here
+        account.unlock();
+    })
+
 }
 
 exports.needRelogin = needRelogin;
@@ -109,7 +129,7 @@ function addAccount(account) {
 function removeAccount(account) {
     var accounttype = ACCOUNT_TYPES[account['source']];
     var arr = accountQueues[accounttype];
-    for (var i=0; i<arr.length; i++) {
+    for (var i = 0; i < arr.length; i++) {
         if (arr[i].user === account.user) {
             arr.splice(i, 1);
             break;
@@ -127,15 +147,16 @@ function updateAccountQueue() {
         activeTypes[accountType] = false;
         var accs = accountQueues[accountType];
         for (var i = accs.length - 1; i >= 0; i--) {
-            if ( /*!accs[i].loggedIn() ||*/ accs[i].ableToConsume()) {
+
+            if (accs[i].locked || accs[i].ableToConsume()) {
                 activeTypes[accountType] = true;
-            } else if (!accs[i].isActive()){
-                console.log("remove account*******************:", accs[i].user, accs[i].source);        
+            } else if (!accs[i].isActive()) {
+                console.log("remove account*******************:", accs[i].user, accs[i].source);
                 accs.splice(i, 1);
             }
         }
     }
-    
+
     return activeTypes;
 }
 
@@ -168,11 +189,11 @@ function queueLogin() {
                 if (acc.ableToConsume() && now - letime > acc.loginExtendInterval) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");
-                    acc.locked = true;
+                    acc.lock();
 
-                    loginjobs.extendLogin(acc, (function() {
+                    loginjobs.extendLogin(acc, (function () {
                         var _acc = acc;
-                        return function(cookieJar) {
+                        return function (cookieJar) {
                             _acc.cookieJar = cookieJar;
                             if (cookieJar === null) {
                                 logutil.info("extend login failed:", _acc.user);
@@ -181,7 +202,7 @@ function queueLogin() {
                                 _acc.loginExtendedTime = new Date();
                             }
 
-                            _acc.locked = false;
+                            _acc.unlock();
                         }
                     })())
                 }
