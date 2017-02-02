@@ -28,15 +28,14 @@ function consume(account, toBeConsumed, callback) {
     //var finished = consume_brwoser(account, toBeConsumed, callback);
     if (account.locked || !ableToConsume(account, toBeConsumed)) return false;
 
-    var finished = consume_mobile(account, toBeConsumed, function(failedConsume){
-        if(callback) callback(failedConsume);
+    var finished = consume_mobile(account, toBeConsumed, function (failedConsume) {
+        if (callback) callback(failedConsume);
     });
 
     return finished;
 }
 
 function consume_mobile(account, toBeConsumed, callback) {
-    if (!) return false;
     account.lock();
     var productId = toBeConsumed.productId;
     mobileGetSID(account, toBeConsumed, function (sid) {
