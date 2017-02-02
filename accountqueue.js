@@ -6,41 +6,25 @@ var LOGIN_ACCOUNTS_NUMBER = 3;
 //var events = require("events");
 var accountQueues = {};
 var queuesMap = {};
-
+var consumedMap = {};
 exports.consume = consume;
 
 function consume(toBeConsumed) {
     var sourceType = ACCOUNT_TYPES[toBeConsumed instanceof Array ? toBeConsumed[0]['source'] : toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
-    //logutil.info("toBeConsumed", toBeConsumed.publishTime, toBeConsumed.productId, toBeConsumed.price, toBeConsumed.interest);
 
     var finished = false, csmidx = 0;
     for (var i = 0; i < accounts.length; i++) {
         if (toBeConsumed.length === 0) break;
         if (toBeConsumed.length === csmidx) break;
         if (accounts[i].cookieJar !== null) {
-            consumejob.consume(accounts[i], toBeConsumed[csmidx++]);
-            // if (toBeConsumed instanceof Array) {
-            //      var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
-            //      if (finished) {
-            //         logutil.info("consume finished", toBeConsumed[csmidx].productId)
-            //         toBeConsumed.splice(csmidx, 1)
-            //         if (toBeConsumed.length===0) break;
-            //         //toBeConsumed.shift();
-            //      } else {
-            //         csmidx++;
-            //      }
+            var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
 
-            //      if (csmidx === toBeConsumed.length) {
-            //         // logutil.info("start from 0", csmidx, toBeConsumed.length)
-            //         csmidx = 0;
-            //      }
-
-            // } else {
-            //     finished = consumejob.consume(accounts[i], toBeConsumed);
-            //     if (finished) break;
-            // }
+            if (finished) {
+                toBeConsumed[csmidx].consumed = true;
+                csmidx++;
+            }
 
         }
     }
@@ -147,10 +131,9 @@ function updateAccountQueue() {
         activeTypes[accountType] = false;
         var accs = accountQueues[accountType];
         for (var i = accs.length - 1; i >= 0; i--) {
-
-            if (accs[i].locked || accs[i].ableToConsume()) {
+            if (accs[i].isActive()) {
                 activeTypes[accountType] = true;
-            } else if (!accs[i].isActive()) {
+            } else {
                 console.log("remove account*******************:", accs[i].user, accs[i].source);
                 accs.splice(i, 1);
             }
@@ -164,7 +147,7 @@ exports.loopLogin = loopLogin;
 
 function loopLogin() {
     queueLogin();
-    setInterval(queueLogin, 5 * 60 * 1000)
+    setInterval(queueLogin, 1 * 60 * 1000)
 }
 
 exports.queueLogin = queueLogin;
@@ -185,8 +168,8 @@ function queueLogin() {
                 }
 
                 var letime = acc.loginExtendedTime === null ? acc.loginTime : acc.loginExtendedTime;
-                // logutil.info("extend login...", acc.user, now - letime, acc.loginExtendInterval)
-                if (acc.ableToConsume() && now - letime > acc.loginExtendInterval) {
+                //logutil.info("extend login...", acc.user, now - letime, acc.loginExtendInterval)
+                if (!acc.locked && acc.startedBidding &&  acc.ableToConsume() && now - letime > acc.loginExtendInterval) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");
                     acc.lock();
@@ -199,7 +182,7 @@ function queueLogin() {
                                 logutil.info("extend login failed:", _acc.user);
                             } else {
                                 logutil.info("extend login:", _acc.user, _acc.source);
-                                _acc.loginExtendedTime = new Date();
+                                //_acc.loginExtendedTime = new Date();
                             }
 
                             _acc.unlock();

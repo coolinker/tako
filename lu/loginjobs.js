@@ -18,6 +18,11 @@ function login_mobile(account, callback) {
     var publicKey, rsaExponent;
     var rsakey = new RSAKey();
     securityValid(function (pkey, exp) {
+        if (!pkey) {
+            callback(null);
+            return;
+        }
+        
         publicKey = pkey;
         rsaExponent = exp;
         rsakey.setPublic(publicKey, rsaExponent);
@@ -207,7 +212,9 @@ exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
     login(account, function (cookieJar, info) {
-        logutil.info("extendLogin======", account.user, account.source)
+        logutil.info("extendLogin======", account.user, account.source);
+
+        account.loginExtendedTime = new Date();
         callback(cookieJar);
     });
 }
@@ -215,9 +222,15 @@ function extendLogin(account, callback) {
 function securityValid(callback) {
     simplehttp.GET('https://static.lufaxcdn.com/trading/resource/securityValid/main/1be866c2e005.securityValid.js', {},
         function (err, httpResponse, body) {
-            var publicKey = htmlparser.getValueFromBody('encryptPwd:function(e){var t="', '",n=', body);
+            try {
+                var publicKey = htmlparser.getValueFromBody('encryptPwd:function(e){var t="', '",n=', body);
             var rsaExponent = htmlparser.getValueFromBody('n.setPublic(t,"', '"),n.', body);
 
-            callback(publicKey, rsaExponent);
+            callback(publicKey, rsaExponent);    
+            } catch(e){
+                console.log("************", e.stack)
+                callback(null);
+            }
+            
         });
 }

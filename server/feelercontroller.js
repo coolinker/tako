@@ -144,8 +144,8 @@ function startNewProductCheck(source) {
     var tjob = getTransferLoopJob(ACCOUNT_TYPES[source]);
     if (tjob && !tjob.isRollingStarted()) {
         console.log("--------------------startNewProductCheck", ACCOUNT_TYPES[source])
-        tjob.rollNewProductCheck(function(product) {
-            if (accountqueue.consume(product)) {
+        tjob.rollNewProductCheck(function(products) {
+            if (accountqueue.consume(products)) {
                 //tjob.pauseNewTransferLoop(2000);
             }
         });

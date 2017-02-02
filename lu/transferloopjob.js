@@ -119,7 +119,6 @@ function detectLastPage(callback) {
 exports.rollNewProductCheck = rollNewProductCheck;
 
 function rollNewProductCheck(callback) {
-    return;
     loopNewTransfer_mobile(callback);
     // if (isDetecting) return;
 
@@ -297,7 +296,7 @@ function loopNewTransfer_mobile(callback) {
     var jobStartTime = new Date();
     console.log("job start", jobStartTime)
     var requestCount = 0;
-    var productId = 0;
+    var consumedProducts = {};
     var LOOP_INTERVAL = 2000;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
@@ -340,6 +339,7 @@ function loopNewTransfer_mobile(callback) {
                         loopjob.pause(5000);
                         pppoeutil.pppoeUpdate(function (succeed) {
                             if (succeed) loopjob.pause(45000);
+                            else loopjob.pause(20*60*1000);
                         })
                         return;
 
@@ -349,12 +349,10 @@ function loopNewTransfer_mobile(callback) {
 
                     var productObjs = bodyJson.result.products[0].productList;
                     var products = [];
-                    var maxpid = 0;
                     for (var i = 0; i < productObjs.length; i++) {
                         var item = productObjs[i];
-                        if (item.id > productId) {
+                        if (!consumedProducts[item.id]) {
                             console.log("*******************product:", item.id, item.price, item.principal, item.interestRate, item.numOfInstalments, "totalCount", bodyJson.result.totalCount);
-                            maxpid = Math.max(maxpid, item.id);
                             products.push({
                                 productId: item.id,
                                 productCategory: item.productCategory,
@@ -372,10 +370,14 @@ function loopNewTransfer_mobile(callback) {
                         }
                     }
 
-                    productId = Math.max(maxpid, productId);
                     //"},{"id":138988453,"price":6952.88,"principal":6941.54,"interestRate":"0.084","numOfInstalments":24,"sourceId":151450837,"publishedAt":"Jan 11, 2017 12:08:55 PM","code":"17011132696","productType":"TRANSFER_REQUEST","productStatus":"ONLINE","collectionMode":"1","tradingMode":"00","mgmtFeeRate":0,"feeDisplayFlag":"false","extOnlineDianjinCount":0,"sourceType":"9","maxInvestAmount":6952.88,"minInvestAmount":6952.88,"remainingAmount":6952.88,"raisedAmount":0,"investPeriod":"24","investPeriodUnit":"3","displayName":"稳盈-安e","trxEndAt":"Jan 12, 2017 12:08:55 PM","sellerUserId":18806205,"transferFee":13.9,"riskLevel":"1","salesChannel":"0","isCuxiao":"0","isForNewUser":"0","isForDefault":"1","minInterestRate":"0","createdAt":"Jan 11, 2017 12:08:55 PM","updatedAt":"Jan 11, 2017 4:01:23 PM","productCategory":"901","interestRateDisplay":"8.40%","listTypeName":"转让专区","listType":"p2p_transfer","extUserGroupList":["DEFAULT"],"extInvestPeriodDisplay":"24个月","extCurrentPrice":6952.88,"extIsVipGroup":false,"extIsSpecialGroup":false,"extCanWithHold":false,"extRiskLevelDisplayName":"保守型","extProgress":0.00,"extInvestAmoutUnitDisplay":"元","extPromotionDisplay":"","extProductNameDisplay":"稳盈-安e 17011132696","extInterestRateDisplay":"8.40%","remainingTransferDays":"5","isOverdueTransfer":"0","productPropDtoList":[],"interestRateDesc":"期望年化利率","subProductCategory":"3","extReducePriceDays":"0.0","extReducePrice":"0.00","transferCutRate":"0","extReducePriceDisplay":"转让人已降价0.00% (0.00元)","extProductLineNewUser":false,"extForCarOwner":false,"extTransferPriceDisplay":"转让价格(元)","lastCollectionDate":"Jan 5, 2019 11:59:59 PM","nextCollectionDate":"Feb 5, 2017 11:59:59 PM","extIsShowProgress":"0","extMinInvestAmountDisplay":"6952.88"},{"
-                    if (products.length > 0) callback(products);
-
+                    
+                    if (products.length > 0) {
+                        callback(products);
+                        products.forEach(function(prd){
+                            if (prd.consumed) consumedProducts[prd.productId] = true;
+                        })
+                    }
                 } catch (e) {
                     catchException = e;
                     logutil.info("e", e.stack)

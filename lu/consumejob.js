@@ -11,6 +11,7 @@ var CONSUMING_INTERVAL_MIN = 5000;
 
 var publicKey, rsaExponent;
 var rsakey = new RSAKey();
+
 securityValid(function (pkey, exp) {
     publicKey = pkey;
     rsaExponent = exp;
@@ -24,20 +25,24 @@ securityValid(function (pkey, exp) {
 exports.consume = consume;
 
 function consume(account, toBeConsumed, callback) {
-    console.log("--------------------consume", toBeConsumed.length)
     //var finished = consume_brwoser(account, toBeConsumed, callback);
-    var finished = consume_mobile(account, toBeConsumed, callback);
+    if (account.locked || !ableToConsume(account, toBeConsumed)) return false;
+
+    var finished = consume_mobile(account, toBeConsumed, function(failedConsume){
+        if(callback) callback(failedConsume);
+    });
+
     return finished;
 }
 
 function consume_mobile(account, toBeConsumed, callback) {
-    //rollInvestCheck(account, product, function() {});
-    if (!ableToConsume(account, toBeConsumed)) return false;
+    if (!) return false;
     account.lock();
     var productId = toBeConsumed.productId;
     mobileGetSID(account, toBeConsumed, function (sid) {
         logutil.info("mobileGetSID", productId, sid)
         if (!sid) {
+            callback(toBeConsumed);
             account.unlock();
             return;
         }
@@ -48,10 +53,15 @@ function consume_mobile(account, toBeConsumed, callback) {
                         console.log("consume succeed", toBeConsumed, result)
                         account.availableBalance -= toBeConsumed.price;
                         account.lastConsumingTime = new Date();
+                    } else {
+                        callback(toBeConsumed);
                     }
+
                     account.unlock();
                 })
             } else {
+
+                callback(toBeConsumed);
                 account.unlock();
             }
 
@@ -189,7 +199,7 @@ function mobileTradeM3032(account, product, sid, callback) {
 }
 
 function consume_brwoser(account, toBeConsumed, callback) {
-    if (!ableToConsume(account, toBeConsumed)) return false;
+    // if (!ableToConsume(account, toBeConsumed)) return false;
     account.lock();
 
     logutil.info("lufax doConsume:", account.user, account.availableBalance, toBeConsumed.productId, toBeConsumed.publishTime, toBeConsumed.interest, toBeConsumed.price);
@@ -340,7 +350,7 @@ function confirmSpent(productId, account, callback) {
 
 function ableToConsume(account, toBeConsumed) {
     //logutil.info(account.locked, account.availableBalance, toBeConsumed.price, account.interestLevel, toBeConsumed.interest, toBeConsumed)
-    return !account.locked && account.pricePerBidMax >= toBeConsumed.price && account.pricePerBidMin <= toBeConsumed.price && account.availableBalance > toBeConsumed.price && account.availableBalance - toBeConsumed.price > account.reservedBalance && account.interestLevelMin <= toBeConsumed.interest && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
+    return account.pricePerBidMax >= toBeConsumed.price && account.pricePerBidMin <= toBeConsumed.price && account.availableBalance > toBeConsumed.price && account.availableBalance - toBeConsumed.price > account.reservedBalance && account.interestLevelMin <= toBeConsumed.interest && (account.lastConsumingTime === null || (new Date() - account.lastConsumingTime) > CONSUMING_INTERVAL_MIN)
 }
 
 // function mobileContract(account, productId, sid, callback) {

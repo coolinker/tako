@@ -4,7 +4,8 @@ var TestData = require('./testdata');
 
 exports.pppoeUpdate = pppoeUpdate;
 
-function pppoeUpdate(callback) {
+function pppoeUpdate(callback, count) {
+    if (!count) count = 0;
     var bstr = new Buffer(TestData.pppoe.user+':'+TestData.pppoe.password).toString('base64')
     //http://admin:B3ijing19@192.168.128.1/pppoe.cgi?id=1440307927
     //192.168.128.1/BAS_pppoe.htm
@@ -61,6 +62,9 @@ function pppoeUpdate(callback) {
                         console.log("pppoeUpdate succeed")
                         callback(true);
                     });
-            } else callback(false);
+            } else {
+                if (count>1) callback(false);
+                pppoeUpdate(callback, ++count);  
+            };
         });
 }
