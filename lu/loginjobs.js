@@ -22,7 +22,7 @@ function login_mobile(account, callback) {
             callback(null);
             return;
         }
-        
+
         publicKey = pkey;
         rsaExponent = exp;
         rsakey.setPublic(publicKey, rsaExponent);
@@ -61,13 +61,16 @@ function login_mobile(account, callback) {
                         account.cookieJar = cookieJar;
                         account.uid = info.result.userOverview.userId;
                         account.loginTime = new Date();
-                        
+
                         userInfo_mobile(account, function (result) {
                             //account.uid = result.userInfo.userName;
-                            if (result.asset) {
-                                account.availableBalance = Number(result.asset.availableAmount.text);
-                            }
-                            logutil.info("account.availableBalance:", account.availableBalance, account.uid);
+                            // if (result.asset) {
+                            //     account.availableBalance = Number(result.asset.availableAmount.text);
+                            //     account.allIncomeAmount = Number(result.asset.allIncomeAmount.text);
+                            //     account.ongoingTotalBuyBackAmount = Number(result.ongoingTotalBuyBackAmount);
+                            //     account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount/9;
+                            // }
+                            // logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets);
                             callback(cookieJar, account.JSONInfo());
 
                         });
@@ -92,13 +95,48 @@ function userInfo_mobile(account, callback) {
         headers: mobileheaderutil.getHeaders(account.uid)
     },
         function (err, httpResponse, body) {
+
             var info = JSON.parse(body);
             if (info.code !== '0000') console.log(body);
+            var result = info.result;
+            totalBuyBack_mobile(account, function (buyback) {
+                result.ongoingTotalBuyBackAmount = buyback;
 
-            callback(info.result);
+                if (result.asset) {
+                    account.availableBalance = Number(result.asset.availableAmount.text);
+                    account.allIncomeAmount = Number(result.asset.allIncomeAmount.text);
+                    account.ongoingTotalBuyBackAmount = Number(result.ongoingTotalBuyBackAmount);
+                    account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
+                }
+                logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets);
+
+                callback(result);
+            })
+
 
         });
 }
+
+function totalBuyBack_mobile(account, callback) {
+    simplehttp.POST('https://ma.lu.com/mapp/service/private?M3205', {
+        "cookieJar": account.cookieJar,
+        form: {
+            requestCode: "M3205",
+            version: "3.4.9",
+            params: '{"type":"list","page":1}'
+        },
+        headers: mobileheaderutil.getHeaders(account.uid)
+    },
+        function (err, httpResponse, body) {
+
+            var info = JSON.parse(body);
+            var buyback = Number(info.result.ongoingTotalBuyBackAmount);
+
+            callback(buyback);
+
+        });
+}
+
 
 function login_brwoser(account, callback) {
     var user = account.user;
@@ -211,11 +249,15 @@ function getUserId(cookieJar, callback) {
 exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
-    login(account, function (cookieJar, info) {
-        logutil.info("extendLogin======", account.user, account.source);
+    // login(account, function (cookieJar, info) {
+    //     logutil.info("extendLogin======", account.user, account.source);
 
+    //     account.loginExtendedTime = new Date();
+    //     callback(cookieJar);
+    // });
+    userInfo_mobile(account, function(result){
         account.loginExtendedTime = new Date();
-        callback(cookieJar);
+        callback(account.cookieJar)
     });
 }
 
@@ -224,13 +266,13 @@ function securityValid(callback) {
         function (err, httpResponse, body) {
             try {
                 var publicKey = htmlparser.getValueFromBody('encryptPwd:function(e){var t="', '",n=', body);
-            var rsaExponent = htmlparser.getValueFromBody('n.setPublic(t,"', '"),n.', body);
+                var rsaExponent = htmlparser.getValueFromBody('n.setPublic(t,"', '"),n.', body);
 
-            callback(publicKey, rsaExponent);    
-            } catch(e){
-                console.log("************", e.stack)
+                callback(publicKey, rsaExponent);
+            } catch (e) {
+                console.log("************", err, e.stack)
                 callback(null);
             }
-            
+
         });
 }

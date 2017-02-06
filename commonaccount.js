@@ -35,13 +35,22 @@ CommonAccount.prototype.startedBidding = false;
 
 CommonAccount.prototype.capability = {
     consume: true,
+    leverage: 4.75,
     schedule: false,
     runSchedule: false
 };
 
 CommonAccount.prototype.config = function (obj) {
     for (var att in obj) {
-        this[att] = obj[att];
+        if (obj[att] instanceof Object && this[att] instanceof Object) {
+            for (var subatt in obj[att]) {
+                this[att][subatt] = obj[att][subatt];
+            }
+        } else {
+            this[att] = obj[att];
+        }
+
+        
     }
     return this;
 };
