@@ -292,12 +292,12 @@ function loopNewTransfer_mobile(callback) {
         logutil.info("loopNewTransfer loopjob existed");
         return;
     }
-    var filterEndTransPrice = 0.7;
+    var filterEndTransPrice = 0.8;
     var jobStartTime = new Date();
     console.log("job start", jobStartTime)
     var requestCount = 0;
     var consumedProducts = {};
-    var LOOP_INTERVAL = 2000;
+    var LOOP_INTERVAL = 1500;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
         url: "https://ma.lu.com/mapp/service/public?M3024&listType=trans_p2p",
@@ -336,9 +336,9 @@ function loopNewTransfer_mobile(callback) {
                     var bodyJson = JSON.parse(body);
                     if (!bodyJson.result.products) {
                         console.log(new Date(), "*******", requestCount, body)
-                        loopjob.pause(5000);
+                        loopjob.pause(100000);
                         pppoeutil.pppoeUpdate(function (succeed) {
-                            if (succeed) loopjob.pause(45000);
+                            if (succeed) loopjob.pause(100);
                             else loopjob.pause(20*60*1000);
                         })
                         return;
@@ -352,7 +352,7 @@ function loopNewTransfer_mobile(callback) {
                     for (var i = 0; i < productObjs.length; i++) {
                         var item = productObjs[i];
                         if (!consumedProducts[item.id]) {
-                            console.log("*******************product:", item.id, item.price, item.principal, item.interestRate, item.numOfInstalments, "totalCount", bodyJson.result.totalCount);
+                            console.log("*******************product:", item.id, item.price, item.principal, item.interestRate, item.numOfInstalments, item.publishedAt,new Date().toLocaleTimeString(), "totalCount", bodyJson.result.totalCount);
                             products.push({
                                 productId: item.id,
                                 productCategory: item.productCategory,

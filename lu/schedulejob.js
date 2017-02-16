@@ -1,7 +1,11 @@
 var mobileheaderutil = require("./mobileheaderutil");
 var logutil = require("../logutil").config("lutransfer");
 var simplehttp = require('../simplehttp');
-var AEPrice = 6000;
+
+var AEPrice = 5800;
+var EXdiscount = 0.9;
+var EXinterval = 5;
+var EXcicle = 30;
 
 function randomNumber() {
     return Math.round(Math.random() * 100000);
@@ -51,7 +55,16 @@ function schedule(account, callback) {
             all.push(d);
             var standardamount = account.totalAssets * account.capability.leverage / 7;
 
-            walkThrough(get000Date(), all, standardamount);
+            var selectedExables = walkThrough(get000Date(), all, standardamount);
+
+            account.scheduleObj = {
+                EXables: selectedExables,
+                appliedEX: [],
+                scheduleTime: new Date(),
+                lastScheduleCheckTime: null
+            }
+
+            if (callback) callback(account.scheduleObj);
         }
     }
 
@@ -72,34 +85,81 @@ function schedule(account, callback) {
 
 }
 
+exports.checkSchedule = checkSchedule;
+function checkSchedule(account, callback) {
 
-function walkThrough(date, productList, standardAmount) {
+    var exables = account.scheduleObj.EXables;
+    var applied = account.scheduleObj.appliedEX;
+    var exable = exables[0];
+    var price = exable.remainingPrincipal;//getScheduleStatusAmount(exable, "EXable");
 
-    for (var i = 0; i < 30; i++) {
-        var dt = get000Date(date, i);
-        AEToEXable(dt, productList);
-        buyBackOnDay(dt, productList);
+    var needToBuyBack = account.ongoingTodayBuyBackAmount - account.availableBalance;
 
-        var preEXedAmount = getEXAmountForDuration(get000Date(dt, -4), dt, productList);
-        var postEXedAmount = getEXAmountForDuration(dt, get000Date(dt, 4), productList);
-
-        if (preEXedAmount > standardAmount || postEXedAmount > standardAmount) {
-            console.log("Can not repay risk!", dt, standardAmount, preEXedAmount, postEXedAmount);
-            break;
+    updateEXStatus(account, applied, 1, function (items) {
+        var transferingTotal = 0;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].M3048Response.isR030Transfering === "true") transferingTotal += items[i].remainingPrincipal;
         }
 
-        var toEXAmount = standardAmount - Math.max(preEXedAmount, postEXedAmount);
+        if (account.reservedBalance + 2 * AEPrice > (account.availableBalance + transferingTotal)) {
+
+            getEXInterestRate(account, price, function (rate) {
+                sellAEforEX(account, exable, rate, function (result) {
+                    console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
+                    applied.push(exables.shift());
+                    callback(exable, rate);
+                })
+            })
+
+        } else {
+            console.log("updateEXStatus**********:", items.length);
+            callback();
+        }
+    })
+    account.scheduleObj.lastScheduleCheckTime = new Date();
+}
+
+function walkThrough(date, productList, standardAmount) {
+    var day1EXables = [];
+    for (var i = 0; i < EXcicle; i++) {
+        var dt = get000Date(date, i);
+        AEToEXable(dt, productList);
+        var repayonday = getRepaymentsOnDay(dt, productList, []);
+        var repaytotalday5 = getRepaymentsOnDay(get000Date(dt, EXinterval - 1), productList, []);
+
+        var selectedEXforRepaying = [];
+        var buyBack = buyBackOnDay(dt, productList, selectedEXforRepaying);
+        if (buyBack === null) return null;
+
+        var preEXedAmount = getEXAmountForDuration(get000Date(dt, -(EXinterval - 1)), dt, productList);
+        var postEXedAmount = getEXAmountForDuration(dt, get000Date(dt, EXinterval - 1), productList);
+        //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
+        if (preEXedAmount > standardAmount * EXdiscount || postEXedAmount > standardAmount * EXdiscount) {
+            console.log("Can not repay risk!", dt.toLocaleString(), standardAmount, preEXedAmount, postEXedAmount);
+            return null;
+        }
+
+        var toEXAmount = standardAmount * EXdiscount - Math.max(preEXedAmount, postEXedAmount);
+        var selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, []);
+        toEXAmount = Math.min(selectedBalance, toEXAmount) - (repaytotalday5 - repayonday)
+        //console.log("=====",  toEXAmount, selectedBalance, repaytotalday5 - repayonday);
         var selectedEXables = [];
-        var selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedEXables);
+        selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedEXables);
+        if (selectedBalance > toEXAmount) selectedEXables.pop();
+
+        if (i === 0) {
+            appendArray(day1EXables, selectedEXforRepaying);
+            appendArray(day1EXables, selectedEXables)
+        }
+
         var balanceFromEX = EXForBalance(dt, selectedEXables);
+        console.log("EX", dt.toLocaleString(), "EX and buy AE amount:", balanceFromEX.amount)
         productList.push(balanceFromEX);
 
-        console.log(dt, "repaytotal", toEXAmount, EXedAmount);
-
         balanceToAE(dt, productList);
-
     }
 
+    return day1EXables;
 }
 
 
@@ -109,9 +169,10 @@ function getEXAmountForDuration(from, to, productList) {
         var prd = productList[i];
         if (getScheduleStatus(prd) === "repayment") {
             var dt = getScheduleStatusTime(prd, "repayment");
-            var exdt = get000Date(dt, -30);
+            var exdt = get000Date(dt, -EXcicle);
             if (dt >= from && dt <= to || exdt >= from && exdt <= to) {
-                amount += getScheduleStatusAmount(prd, "repayment")
+                var amt = getScheduleStatusAmount(prd, "repayment");
+                amount += amt;
             }
         }
     }
@@ -120,33 +181,35 @@ function getEXAmountForDuration(from, to, productList) {
 }
 
 
-function buyBackOnDay(date, productList) {
+function buyBackOnDay(date, productList, selectedEXables) {
+    selectedEXables.length = 0;
     var dayrepayments = [];
     var repaytotal = getRepaymentsOnDay(date, productList, dayrepayments);
 
     if (repaytotal > 0) {
 
         var remainAmount = repayByBalanceOnDay(date, repaytotal, productList);
+        //console.log(date.toLocaleString(), "pay by balance:", repaytotal - remainAmount, remainAmount);
 
         if (remainAmount > 0) {
-            var selectedEXables = [];
             var selectedBalance = selectEXablesToEX(date, remainAmount, productList, selectedEXables);
 
-            if (selectedBalance < repaytotal) {
-                console.log("********************* can not repay", dt, remain);
-                return;
+            if (selectedBalance < remainAmount) {
+                console.log("********************* can not repay", date, selectedBalance, remainAmount);
+                return null;
             }
 
             var balanceFromEX = EXForBalance(date, selectedEXables);
+
             productList.push(balanceFromEX);
             var remain = repayByBalanceOnDay(date, remainAmount, productList);
-
-            dayrepayments.forEach(function (repayment) {
-                addScheduleStatus(repayment, "AE", get000Date(date), repayment.expectedRepaymentAmount / 0.9)
-            });
+            console.log("EX", date.toLocaleString(), "buyBackOnDay=>balance", repaytotal - remainAmount, "EX", selectedBalance)
 
         }
 
+        dayrepayments.forEach(function (repayment) {
+            addScheduleStatus(repayment, "AE", get000Date(date), repayment.expectedRepaymentAmount / EXdiscount)
+        });
     }
 
     return repaytotal;
@@ -156,11 +219,19 @@ function EXForBalance(date, exables) {
     var balance = 0;
     exables.forEach(function (exable) {
         var amount = getScheduleStatusAmount(exable, "EXable");
-        addScheduleStatus(exable, "repayment", get000Date(date, 30), amount * 0.9);
-        balance += amount * 0.9;
+        addScheduleStatus(exable, "repayment", get000Date(date, EXcicle), amount * EXdiscount);
+        balance += amount * EXdiscount;
     })
 
-    return balance;
+    var d = {
+        orign: 'BALANCE',
+        amount: balance,
+        applyTime: get000Date(date)
+
+    }
+    addScheduleStatus(d, 'available', get000Date(date), balance);
+
+    return d;
 }
 
 
@@ -213,8 +284,8 @@ function getAvailableBalanceOnDay(date, productList, out_Balances) {
 }
 
 function selectEXablesToEX(date, totalamount, productList, selectedEXables) {
-    if (totalamount <= 0) return 0;
 
+    selectedEXables.length = 0;
     var validEXables = [];
     for (var i = 0; i < productList.length; i++) {
         if (getScheduleStatus(productList[i]) === "EXable") {
@@ -223,68 +294,41 @@ function selectEXablesToEX(date, totalamount, productList, selectedEXables) {
     }
 
     validEXables.sort(function (e0, e1) {
-        var amt0 = getEXableAmount(e0);
-        var amt1 = getEXableAmount(e1);
+        var amt0 = getScheduleStatusAmount(e0, "EXable");
+        var amt1 = getScheduleStatusAmount(e1, "EXable");
         if (amt0 > amt1) return -1;
         if (amt0 < amt1) return 1;
         if (amt0 === amt1) return 0;
     });
 
+    var minvalue = Number.MAX_SAFE_INTEGER;
+    var minselected;
+    var remain = totalamount;
     for (var j = 0; j < validEXables.length; j++) {
-        var amt = getEXableAmount(validEXables[j]);
-        if (amt < totalamount || j === validEXables.length - 1) {
-            totalamount -= amt * 0.9;
+        var amt = EXdiscount * getScheduleStatusAmount(validEXables[j], "EXable");
+
+        if (amt <= remain) {
+            remain -= amt;
             selectedEXables.push(validEXables[j]);
+            if (remain === 0) break;
+        } else if (amt - remain < minvalue) {
+            minselected = selectedEXables.concat([validEXables[j]]);
+            minvalue = amt - remain;
         }
-        if (totalamount <= 0) break;
-    }
-
-    return totalamount;
-}
-
-// function EXablesToBalanceAndProduceRepayment(date, exables) {
-//     var newRepayments = [];
-//     for (var i = 0; i < exables.length; i++) {
-//         var repayment = EXableToBalanceAndProduceRepayment(date, exables[i]);
-//         newRepayments.push(repayment);
-//     }
-
-//     return newRepayments;
-// }
-
-function repaymentToAE(date, repayments) {
-
-    for (var i = 0; i < repayments.length; i++) {
-        var d = repayments[i];
-        addScheduleStatus(d, "AE", get000Date(date), d.expectedRepaymentAmount / 0.9);
 
     }
 
+    if (remain !== 0 && minselected) {
+        selectedEXables.length = 0;
+        appendArray(selectedEXables, minselected);
+        remain = -minvalue;
+    }
+
+    return totalamount - remain;
 }
-
-// function repayOnDayAndProduceAE(date, balance, repayments, newAEs) {
-//     var dayRepayments = [];
-//     var repaytotal = getRepaymentsOnDay(date, repayments, dayRepayments);
-
-//     for (var i = 0; i < dayRepayments.length; i++) {
-//         var d = dayRepayments[i];
-//         if (balance >= d.expectedRepaymentAmount) {
-//             addScheduleStatus(d, "paid", get000Date(date), d.expectedRepaymentAmount);
-//             var ae = {
-//                 orign: 'REPAYMENT_AE',
-//                 investmentAmount: d.expectedRepaymentAmount / 0.9,
-//                 applyTime: get000Date(date)
-//             }
-//             addScheduleStatus(ae, 'AE', get000Date(date), ae.investmentAmount);
-//             newAEs.push(ae)
-//         }
-//         balance -= d.expectedRepaymentAmount;
-//     }
-
-//     return balance;
-// }
 
 function getRepaymentsOnDay(date, data, repayments) {
+    repayments.length = 0;
     var total = 0;
     for (var i = 0; i < data.length; i++) {
         var d = data[i];
@@ -306,66 +350,10 @@ function getRepaymentsOnDay(date, data, repayments) {
     return total;
 }
 
-// function EXableToBalanceAndProduceRepayment(date, exable) {
-//     if (getScheduleStatus(exable) !== "EXable") return null;
-//     var prc = getScheduleStatusAmount(exable, "EXable") * 0.9;
-//     addScheduleStatus(exable, "balance", get000Date(date), prc);
-//     var repayment = {
-//         expectedRepaymentAmount: prc,
-//         expectedRepaymentDate: get000Date(date, 30),
-//         orign: 'EXable'
-//     }
-
-//     return repayment;
-// }
-
-// function EXableToBalanceAndProduceRepayments(date, data, repayments) {
-//     var balance = 0;
-//     for (var i = 0; i < data.length; i++) {
-//         var d = data[i];
-//         if (getScheduleStatus(d) !== "EXable") continue;
-//         var prc = d.remainingPrincipal * 0.9;
-//         addScheduleStatus(d, "balance", get000Date(date), prc);
-//         balance += prc;
-//         var repayment = {
-//             expectedRepaymentAmount: prc,
-//             expectedRepaymentDate: get000Date(date, 30),
-//             orign: 'EXable'
-//         }
-//         repayments.push(repayment);
-//     }
-
-//     return balance;
-// }
-
-// function EXableToAEAndProduceRepayments(date, data) {
-//     var repayments = [];
-//     var applyTime = get000Date(date);
-//     var repaymentDate = new Date(applyTime);
-//     repaymentDate.setDate(repaymentDate.getDate() + 30);
-
-//     for (var i = 0; i < data.length; i++) {
-//         var d = data[i];
-//         if (getScheduleStatus(d) !== 'EXable') continue;
-
-//         var prc = 0.9 * d.remainingPrincipal;
-//         addScheduleStatus(d, "AE", applyTime, prc);
-
-//         var repayment = {
-//             expectedRepaymentAmount: prc,
-//             expectedRepaymentDate: repaymentDate,
-//             orign: d.orign
-//         }
-//         repayments.push(repayment);
-//     }
-
-//     return repayments;
-// }
-
 function balanceToAE(date, productList) {
 
     var balances = [];
-    var available = getAvailableBalanceOnDay(dt, productList, balances);
+    var available = getAvailableBalanceOnDay(date, productList, balances);
 
     var c = Math.floor(available / AEPrice);
 
@@ -381,10 +369,10 @@ function balanceToAE(date, productList) {
         productList.push(d);
     }
 
-    balances.forEach(function(balance){
+    balances.forEach(function (balance) {
         addScheduleStatus(balance, "available", get000Date(date), 0);
     })
-        
+
 
 
     if (available > 0) {
@@ -394,32 +382,30 @@ function balanceToAE(date, productList) {
             applyTime: get000Date(date)
 
         }
-        addScheduleStatus(d, 'available', get000Date(date), -available);
+        addScheduleStatus(d, 'available', get000Date(date), available);
         productList.push(d);
     }
 
 
 
-    return balance;
+    return available;
 }
 
 function AEToEXable(date, data) {
+    var latest = get000Date(date, -EXinterval);
     for (var i = 0; i < data.length; i++) {
         var d = data[i];
-        if (getScheduleStatus(d) !== 'AE') continue;
-        var applyTime = new Date(d.applyTime);
-        if (date.getDate() - applyTime.getDate() < 5) continue;
-        addScheduleStatus(d, "EXable", get000Date(date), Number(d.investmentAmount));
+
+        if (getScheduleStatus(d) !== "AE") continue;
+        var applyTime = getScheduleStatusTime(d, "AE");
+        if (applyTime > latest) continue;
+
+        addScheduleStatus(d, "EXable", get000Date(date), getScheduleStatusAmount(d, "AE"));
     }
 
     return data;
 }
 
-function getEXableAmount(d) {
-    if (!d.scheduleStatus || d.scheduleStatus.length === 0) return null;
-    if (d.scheduleStatus[d.scheduleStatus.length - 1].status !== 'EXable') return null;
-    return d.scheduleStatus[d.scheduleStatus.length - 1].amount;
-}
 
 function getScheduleStatusAmount(d, status) {
     if (!d.scheduleStatus || d.scheduleStatus.length === 0 || getScheduleStatus(d) !== status) return null;
@@ -466,7 +452,7 @@ function getRepaymentDetails(account, months, callback, seq) {
                         if (item.planStatus === 'SETTLED') return;
                         item.orign = 'REPAYMENT';
                         item.expectedRepaymentDate = get000Date(item.expectedRepaymentDate);
-                        item.expectedRepaymentAmount = Number(item.expectedRepaymentAmount);
+                        item.expectedRepaymentAmount = item.expectedRepaymentAmount;
                         addScheduleStatus(item, "repayment", get000Date(item.expectedRepaymentDate), item.expectedRepaymentAmount);
                         repayments.push(item);
                     });
@@ -492,9 +478,9 @@ function getRecentApply(account, callback) {
         var applys = [];
         var today = get000Date();
         for (var i = 0; i < data.length; i++) {
-            var time = get000Date(data[i].applyTime, 5);
+            var time = get000Date(data[i].applyTime, EXinterval);
             if (time > today) {
-                addScheduleStatus(data[i], "AE", get000Date(data[i].applyTime), Number(data[i].investmentAmount))
+                addScheduleStatus(data[i], "AE", get000Date(data[i].applyTime), Number(data[i].investmentAmount.replace(',', '')))
                 applys.push(data[i])
             }
 
@@ -508,12 +494,17 @@ function getEXable(account, callback) {
     //{"sortType":"desc","requestType":"ONGOING","assetType":"FINANCE","filter":"R030_TRANSFERABLE","pageNum":2}
     requestM6059(account, 'ONGOING', 'R030_TRANSFERABLE', function (data) {
         data.forEach(function (item) {
-            addScheduleStatus(item, "EXable", get000Date(), Number(item.remainingPrincipal))
+            addScheduleStatus(item, "EXable", get000Date(), item.remainingPrincipal);
         })
         callback(data);
     })
 }
 
+// function getEXApplied(account, callback) {
+//     requestM6059(account, 'ONGOING', 'R030_TRANSFER_APPLIED', function (data) {
+//         callback(data);
+//     })
+// }
 
 function requestM6059(account, requestType, filter, callback, pageNum) {
     if (!pageNum) pageNum = 1;
@@ -549,5 +540,150 @@ function requestM6059(account, requestType, filter, callback, pageNum) {
                 callback(null);
             }
         });
+}
+
+function getEXInterestRate(account, minPrice, callback) {
+    simplehttp.POST("https://ma.lu.com/mapp/service/public?M3024&listType=r030&_" + randomNumber(), {
+        headers: {
+            "mobile_agent": "appVersion:3.4.9,platform:android,osVersion:17,device:GT-P5210,resourceVersion:2.7.0,channel:H5",
+            "X-LUFAX-MOBILE-DATA-AGENT": '',
+            "x-lufax-mobile-t": '',
+            "x-lufax-mobile-signature": ''
+        },
+        form: {
+            requestCode: "M3024",
+            version: "3.4.9",
+            //{"cookieUserName":"MjAyMDk2RjZGN0IyNDc2OUZCNzRGQTNDMDQ2RTlBNTk=","readListType":"r030","filterEndMinInvestAmount":"0.6","source":"android","width":720,"listType":"r030","pageSize":"15","ver":"1","isForNewUser":"false","currentPage":"1","forNewUser":"false","pageIndex":"1"}
+            params: '{"cookieUserName":"","readListType":"r030","filterEndMinInvestAmount":"' + minPrice / 10000 + '","source":"android","width":720,"listType":"r030","pageSize":"15","ver":"1","isForNewUser":"false","currentPage":"1","forNewUser":"false","pageIndex":"1"}'
+        }
+    },
+        function (err, httpResponse, body) {
+            var json = JSON.parse(body).result.products[0].productList;
+            var r0 = Number(json[0].interestRate);
+            var r5 = Number(json[5].interestRate);
+            //var r10 = json[10].interestRate;
+            var r = r0;
+            if (r0 === r5) {
+                r = r0 + 0.0001;
+            } else if (r0 - r5 >= 0.0005) {
+                r = r5 + 0.0001;
+            }
+
+            callback(Math.floor(r * 10000) / 100);
+        });
+
+}
+
+function updateEXStatus(account, exables, idx, callback) {
+    if (exables.length === 0) {
+        callback([]);
+        return;
+    }
+    var exable = exables[idx];
+    while (exable && exable.M3048Response.isR030Transfering === "false" && exable.M3048Response.isR030Transferable === "false") {
+        exable = exables[++idx];
+
+    }
+    if (!exable) {
+        callback(exables);
+        return;
+    }
+
+    var investmentId = exable.investmentId;
+    requestM3048(account, investmentId, function (result) {
+        exable.M3048Response = result;
+        if (idx + 1 < exables.length) updateEXStatus(account, exables, idx + 1, callback);
+        else callback(exables)
+    })
+}
+
+
+function sellAEforEX(account, exable, rate, callback) {
+    var investmentId = exable.investmentId;
+    requestM3048(account, investmentId, function (result) {
+        exable.M3048Response = result;
+        requestM3105(account, investmentId, function () {
+            requestM3105rate(account, investmentId, rate, callback)
+        });
+
+    })
+}
+
+function requestM3048(account, investmentId, callback) {
+    simplehttp.POST("https://ma.lu.com/mapp/service/private?M3048&_" + randomNumber(), {
+        "cookieJar": account.cookieJar,
+        "headers": mobileheaderutil.getHeaders(account.uid),
+        form: {
+            requestCode: "M3048",
+            version: "3.4.9",
+            params: '{"investmentId":"' + investmentId + '","isAne":true}'
+        }
+    },
+        function (err, httpResponse, body) {
+            var json = JSON.parse(body);
+            callback(json.result);
+            // requestM3105(account, investmentId, callback);
+        });
+
+}
+
+function requestM3105(account, investmentId, callback) {
+    simplehttp.POST("https://ma.lu.com/mapp/service/private?M3105&_" + randomNumber(), {
+        "cookieJar": account.cookieJar,
+        "headers": mobileheaderutil.getHeaders(account.uid),
+        form: {
+            requestCode: "M3105",
+            version: "3.4.9",
+            params: '{"investmentId":"' + investmentId + '"}'
+        }
+    },
+        function (err, httpResponse, body) {
+            var json = JSON.parse(body);
+            callback(json.result);
+        });
+
+}
+
+function requestM3105rate(account, investmentId, rate, callback) {
+    simplehttp.POST("https://ma.lu.com/mapp/service/private?M3105&_" + randomNumber(), {
+        "cookieJar": account.cookieJar,
+        "headers": mobileheaderutil.getHeaders(account.uid),
+        form: {
+            requestCode: "M3105",
+            version: "3.4.9",
+            params: '{"investmentId":' + investmentId + ',"transferRate":' + rate + '}'
+        }
+    },
+        function (err, httpResponse, body) {
+            var json = JSON.parse(body);
+            json.result.interestRate = rate;
+            requestM3107(account, json.result, callback);
+        });
+
+}
+
+
+function requestM3107(account, M3105Result, callback) {
+    var cncryptPassword = account.rsakey.encrypt(account.tradePassword);
+
+    simplehttp.POST("https://ma.lu.com/mapp/service/private?M3107&_" + randomNumber(), {
+        "cookieJar": account.cookieJar,
+        "headers": mobileheaderutil.getHeaders(account.uid),
+        form: {
+            requestCode: "M3107",
+            version: "3.4.9",
+            //{"serviceFee":7.5,"transferPrice":8339.13,"repurchasePrice":"8372.83","transferInterestRate":4.85,"paramId":101,"sourceDevice":"ANDROID","investmentId":22908667,"password":""}
+            params: '{"serviceFee":' + M3105Result.repurchasePriceGsons[0].serviceFee
+            + ',"transferPrice":' + M3105Result.repurchasePriceGsons[0].transferPrice
+            + ',"repurchasePrice":"' + M3105Result.buyBackAmount + '","transferInterestRate":'
+            + M3105Result.interestRate + ',"investmentId":' +
+            M3105Result.investmentId + ',"password":"' + cncryptPassword + '","paramId":' + M3105Result.repurchasePriceGsons[0].paramId + ',"sourceDevice":"ANDROID"}'
+        }
+    },
+        function (err, httpResponse, body) {
+            var json = JSON.parse(body);
+            callback(json.result);
+        });
+
 }
 

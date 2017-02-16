@@ -18,7 +18,7 @@ var ACCOUNT_TYPES = require("../accounttypes");
 function getTransferLoopJob(type) {
     if (!type) return null;
 
-     if (!JOBS_OBJ[type]) {
+    if (!JOBS_OBJ[type]) {
         var job = require("../" + type + "/transferloopjob");
         JOBS_OBJ[type] = {};
         JOBS_OBJ[type]['transferloopjob'] = job;
@@ -27,7 +27,7 @@ function getTransferLoopJob(type) {
 }
 
 var accountqueue = require("../accountqueue");
-accountqueue.loopLogin();
+accountqueue.startLoopWork();
 
 var CommonAccount = require("../commonaccount");
 
@@ -52,7 +52,7 @@ function getAccountInfo(accountJson, callback) {
         if (callback) callback(result);
 
     } else {
-        accountqueue.loginAccount(accountObj, function(info) {
+        accountqueue.loginAccount(accountObj, function (info) {
             if (accountObj.cookieJar) {
                 accountqueue.addAccount(accountObj);
                 result.body = accountObj.JSONInfo();
@@ -60,11 +60,13 @@ function getAccountInfo(accountJson, callback) {
             } else {
                 result.body = info;
             }
+
             if (callback) callback(result);
         });
     }
 
 }
+
 
 function handleConsumeHistory(account, data) {
     console.log("handleConsumeHistory", data, account.user)
@@ -76,9 +78,9 @@ function handleConsumeHistory(account, data) {
             data: data
         }
     }
-    wsconnection.send(JSON.stringify(req), function(param){
-                console.log("feeler send handleConsumeHistory callback", param)
-            });
+    wsconnection.send(JSON.stringify(req), function (param) {
+        console.log("feeler send handleConsumeHistory callback", param)
+    });
 }
 
 exports.startAccountBidding = startAccountBidding;
@@ -90,19 +92,28 @@ function startAccountBidding(accountJson, callback) {
     };
     if (acc) {
         acc.config(accountJson);
-        if (acc.ableToConsume()) {
-            acc.startedBidding = true;
-            startNewProductCheck(acc.source);
+        if (startBidding(acc)) {
             result.resultMsg = "SUCCEED";
         } else {
             result.resultMsg = "NOT_BE_ABLE_TO_CONSUME";
-        } 
-        
+        }
+
     } else {
         result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
     }
 
     if (callback) callback(result);
+}
+
+function startBidding(account) {
+    if (account.ableToConsume()) {
+        account.startedBidding = true;
+        startNewProductCheck(account.source);
+        return true;
+    } else {
+        return false;
+    }
+
 }
 
 exports.stopAccountBidding = stopAccountBidding;
@@ -144,7 +155,7 @@ function startNewProductCheck(source) {
     var tjob = getTransferLoopJob(ACCOUNT_TYPES[source]);
     if (tjob && !tjob.isRollingStarted()) {
         console.log("--------------------startNewProductCheck", ACCOUNT_TYPES[source])
-        tjob.rollNewProductCheck(function(products) {
+        tjob.rollNewProductCheck(function (products) {
             if (accountqueue.consume(products)) {
                 //tjob.pauseNewTransferLoop(2000);
             }
@@ -162,9 +173,9 @@ function monitorAccountQueueAndJobs() {
     // console.log("monitorAccountQueueAndJobs activeAccs", activeAccs)
     for (var att in activeAccs) {
         var job = getTransferLoopJob(att);
-        if (activeAccs[att]) {
+        if (activeAccs[att].consume) {
             if (job && !job.isRollingStarted()) {
-                job.rollNewProductCheck(function(product) {
+                job.rollNewProductCheck(function (product) {
                     if (accountqueue.consume(product)) {
                         //job.pauseNewTransferLoop(2000);
                     }
@@ -176,5 +187,7 @@ function monitorAccountQueueAndJobs() {
                 job.stopRollingNewProductCheck();
             }
         }
+
+
     }
 }

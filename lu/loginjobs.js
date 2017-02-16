@@ -27,6 +27,8 @@ function login_mobile(account, callback) {
         rsaExponent = exp;
         rsakey.setPublic(publicKey, rsaExponent);
 
+        account.rsakey = rsakey;
+
         var cookieJar = request.jar();
         var cncryptPassword = rsakey.encrypt(account.password);
 
@@ -99,13 +101,23 @@ function userInfo_mobile(account, callback) {
             var info = JSON.parse(body);
             if (info.code !== '0000') console.log(body);
             var result = info.result;
-            totalBuyBack_mobile(account, function (buyback) {
-                result.ongoingTotalBuyBackAmount = buyback;
+            totalBuyBack_mobile(account, function (buyback, items) {
+                var today = new Date();
+                var todayrepay = 0;
+                items.forEach(function(item){
+                    var day = new Date(item.systemBuyBackDate);
+                    if(day.getDate() === today.getDate() && day-today<24*60*60*1000) {
+                        todayrepay += Number(item.buyBackAmount);
+                    }
+                })
 
+                result.ongoingTotalBuyBackAmount = Number(buyback);
+                result.ongoingTodayBuyBackAmount = Number(todayrepay);
                 if (result.asset) {
                     account.availableBalance = Number(result.asset.availableAmount.text);
                     account.allIncomeAmount = Number(result.asset.allIncomeAmount.text);
-                    account.ongoingTotalBuyBackAmount = Number(result.ongoingTotalBuyBackAmount);
+                    account.ongoingTotalBuyBackAmount = result.ongoingTotalBuyBackAmount;
+                    account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
                     account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
                 }
                 logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets);
@@ -113,26 +125,6 @@ function userInfo_mobile(account, callback) {
                 callback(result);
             })
 
-
-        });
-}
-
-function totalBuyBack_mobile(account, callback) {
-    simplehttp.POST('https://ma.lu.com/mapp/service/private?M3205', {
-        "cookieJar": account.cookieJar,
-        form: {
-            requestCode: "M3205",
-            version: "3.4.9",
-            params: '{"type":"list","page":1}'
-        },
-        headers: mobileheaderutil.getHeaders(account.uid)
-    },
-        function (err, httpResponse, body) {
-
-            var info = JSON.parse(body);
-            var buyback = Number(info.result.ongoingTotalBuyBackAmount);
-
-            callback(buyback);
 
         });
 }
@@ -219,6 +211,7 @@ function getUserInfo(cookieJar, callback) {
                 info[att] = json[att];
             }
             callback(info);
+
         })
 
     });
@@ -255,7 +248,7 @@ function extendLogin(account, callback) {
     //     account.loginExtendedTime = new Date();
     //     callback(cookieJar);
     // });
-    userInfo_mobile(account, function(result){
+    userInfo_mobile(account, function (result) {
         account.loginExtendedTime = new Date();
         callback(account.cookieJar)
     });
@@ -274,5 +267,42 @@ function securityValid(callback) {
                 callback(null);
             }
 
+        });
+}
+
+function totalBuyBack_mobile(account, callback, pageNum) {
+    if (!pageNum) pageNum = 1;
+    simplehttp.POST("https://ma.lu.com/mapp/service/private?M3205", {
+        "cookieJar": account.cookieJar,
+        "headers": mobileheaderutil.getHeaders(account.uid),
+        form: {
+            requestCode: "M3205",
+            version: "3.4.9",
+            //{"sortType":"desc","requestType":"APPLY","assetType":"FINANCE","filter":"","pageNum":"1"}
+            params: '{"type":"list","page":'+pageNum+'}'
+        }
+    },
+        function (err, httpResponse, body) {
+            try {
+                var result = JSON.parse(body).result;
+                if (!result) {
+                    callback(0, []);
+                    return;
+                }
+
+                var buyback = Number(result.ongoingTotalBuyBackAmount);
+                if (pageNum < Number(result.totalPage)) {
+                    totalBuyBack_mobile(account, function (bb, applys) {
+                        if (applys.length = 0 && bb === 0) bb = buyback;
+                        callback(bb, applys.concat(result.mappList));
+                    }, pageNum + 1)
+                } else {
+                    callback(buyback, result.mappList);
+                }
+
+            } catch (e) {
+                console.error("getRecentApply exception:", err, e.stack);
+                callback(null);
+            }
         });
 }

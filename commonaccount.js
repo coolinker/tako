@@ -25,7 +25,9 @@ CommonAccount.prototype.locked = false;
 CommonAccount.prototype.interestLevelMin = 100;
 CommonAccount.prototype.interestLevelMax = 100;
 CommonAccount.prototype.availableBalance = 0;
-CommonAccount.prototype.reservedBalance = 10000;
+CommonAccount.prototype.reservedBalance = 0;
+CommonAccount.prototype.stopConsumeBalance = null;
+
 CommonAccount.prototype.pricePerBidMin = 0;
 CommonAccount.prototype.pricePerBidMax = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
@@ -36,8 +38,7 @@ CommonAccount.prototype.startedBidding = false;
 CommonAccount.prototype.capability = {
     consume: true,
     leverage: 4.75,
-    schedule: false,
-    runSchedule: false
+    schedule: false
 };
 
 CommonAccount.prototype.config = function (obj) {
@@ -50,7 +51,7 @@ CommonAccount.prototype.config = function (obj) {
             this[att] = obj[att];
         }
 
-        
+
     }
     return this;
 };
@@ -92,12 +93,14 @@ CommonAccount.prototype.isActive = function () {
 }
 
 CommonAccount.prototype.ableToSchedule = function () {
-    return this.cookieJar && this.capability.schedule;
+    var hours = new Date().getHours();
+    return this.cookieJar && this.capability.schedule && hours >= 8 && hours <= 22;
 }
 
 CommonAccount.prototype.ableToConsume = function () {
     // console.log("ableToConsume-=======", this.availableBalance, this.reservedBalance, this.source, this.user, this.startedBidding)
-    return this.cookieJar && this.capability.consume && (this.availableBalance - this.pricePerBidMin) >= this.reservedBalance;
+    return this.cookieJar && this.capability.consume 
+        && (this.scheduleObj && this.scheduleObj.EXables.length > 0 || (this.availableBalance - this.reservedBalance) >= this.stopConsumeBalance);
 }
 
 CommonAccount.prototype.lock = function () {

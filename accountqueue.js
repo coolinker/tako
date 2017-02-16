@@ -1,4 +1,6 @@
 var logutil = require("./logutil").config('feeler');
+var pppoeutil = require("./pppoeutil");
+
 var ACCOUNT_TYPES = require("./accounttypes");
 
 var LOGIN_ACCOUNTS_NUMBER = 3;
@@ -33,49 +35,69 @@ function consume(toBeConsumed) {
 }
 
 exports.loginAccount = loginAccount;
-function loginAccount(accountInfo, callback) {
-    if (accountInfo.locked) {
-        if (callback) callback(accountInfo.JSONInfo());
+function loginAccount(account, callback) {
+    if (account.locked) {
+        if (callback) callback(account.JSONInfo());
         return;
     }
-    if (!needRelogin(accountInfo)) {
-        console.log("no need for login", accountInfo.user, accountInfo.startedBidding)
-        if (callback) callback(accountInfo.JSONInfo());
+    if (!needRelogin(account)) {
+        console.log("no need for login", account.user, account.startedBidding)
+        if (callback) callback(account.JSONInfo());
         return;
     }
 
-    var accounttype = ACCOUNT_TYPES[accountInfo['source']];
+    var accounttype = ACCOUNT_TYPES[account['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
-    accountInfo.lock();
-    loginjobs.login(accountInfo, function (cookieJar, info) {
-        accountInfo.unlock();
+    account.lock();
+    loginjobs.login(account, function (cookieJar, info) {
+        account.unlock();
         if (cookieJar === null) {
-            logutil.error("\nAccount login failed", accountInfo.user, info.resultMsg);
-        }
-
-
-        if (accountInfo.ableToSchedule()) {
-            scheduleAccount(accountInfo);
+            logutil.error("\nAccount login failed", account.user, info.resultMsg);
         }
 
         if (callback) callback(info);
+        scheduleAccount(account);
     })
 }
 
-exports.scheduleAccount = scheduleAccount;
-function scheduleAccount(account, callback) {
+
+function scheduleAccount(account) {
     if (account.locked) return;
-    if (!account.ableToSchedule()) return;
+    //if (!account.ableToSchedule()) return;
 
     var accounttype = ACCOUNT_TYPES[account['source']];
     var job = require("./" + accounttype + "/schedulejob");
     account.lock();
-    job.schedule(account, function (prm) {
+    job.schedule(account, function (scheduleObj) {
         //should start consume job here
         account.unlock();
+        checkSchedule(account);
     })
 
 }
+
+exports.checkSchedule = checkSchedule;
+function checkSchedule(account) {
+    if (account.locked) return;
+    if (!account.ableToSchedule()) {
+        account.startedBidding = account.ableToConsume();
+        return;
+    }
+
+    if (account.scheduleObj.lastScheduleCheckTime && new Date() - account.scheduleObj.lastScheduleCheckTime < 1 * 60 * 1000) {
+        return;
+    }
+    var accounttype = ACCOUNT_TYPES[account['source']];
+    var job = require("./" + accounttype + "/schedulejob");
+    account.lock();
+    job.checkSchedule(account, function (exable, rate) {
+        account.startedBidding = account.ableToConsume();
+        account.unlock();
+    });
+
+    account.scheduleObj.lastScheduleCheckTime = new Date();
+}
+
 
 exports.needRelogin = needRelogin;
 function needRelogin(account) {
@@ -128,12 +150,21 @@ exports.updateAccountQueue = updateAccountQueue;
 function updateAccountQueue() {
     var activeTypes = {};
     for (var accountType in accountQueues) {
-        activeTypes[accountType] = false;
+        activeTypes[accountType] = {
+            consume: false,
+            active: false
+        }
         var accs = accountQueues[accountType];
         for (var i = accs.length - 1; i >= 0; i--) {
             if (accs[i].isActive()) {
-                activeTypes[accountType] = true;
-            } else {
+                activeTypes[accountType].active = true;
+            }
+
+            if (accs[i].ableToConsume()) {
+                activeTypes[accountType].consume = true;
+            }
+
+            if (!activeTypes[accountType].active && !activeTypes[accountType].consume) {
                 console.log("remove account*******************:", accs[i].user, accs[i].source);
                 accs.splice(i, 1);
             }
@@ -143,15 +174,16 @@ function updateAccountQueue() {
     return activeTypes;
 }
 
-exports.loopLogin = loopLogin;
-
-function loopLogin() {
+exports.startLoopWork = startLoopWork;
+function startLoopWork() {
     queueLogin();
-    setInterval(queueLogin, 1 * 60 * 1000)
+    setInterval(function () {
+        pppoeutil.whenNetworkReady(queueLogin);
+    }, 1 * 60 * 1000)
+
 }
 
 exports.queueLogin = queueLogin;
-
 function queueLogin() {
     var now = new Date();
     for (var att in accountQueues) {
@@ -163,13 +195,16 @@ function queueLogin() {
 
                 if (acc.cookieJar === null) {
                     logutil.info("loopLogin...", att, i);
-                    loginAccount(acc);
+                    loginAccount(acc, function () {
+
+                    });
                     continue;
                 }
 
+                
                 var letime = acc.loginExtendedTime === null ? acc.loginTime : acc.loginExtendedTime;
                 //logutil.info("extend login...", acc.user, now - letime, acc.loginExtendInterval)
-                if (!acc.locked && acc.startedBidding &&  acc.ableToConsume() && now - letime > acc.loginExtendInterval) {
+                if (!acc.locked && acc.startedBidding /*&& acc.ableToConsume()*/ && now - letime > acc.loginExtendInterval) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");
                     acc.lock();
@@ -186,6 +221,9 @@ function queueLogin() {
                             }
 
                             _acc.unlock();
+                            if (_acc.ableToSchedule()) {
+                                checkSchedule(_acc);
+                            }
                         }
                     })())
                 }
@@ -193,4 +231,5 @@ function queueLogin() {
             }
         }
     }
+
 }
