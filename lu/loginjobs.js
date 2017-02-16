@@ -99,8 +99,13 @@ function userInfo_mobile(account, callback) {
         function (err, httpResponse, body) {
 
             var info = JSON.parse(body);
-            if (info.code !== '0000') console.log(body);
+            if (info.code !== '0000') console.log("userInfo_mobile:", body);
             var result = info.result;
+            if (!result) {
+                console.log("ERROR: userInfo_mobile", body);
+                callback(null)
+                return;
+            }
             totalBuyBack_mobile(account, function (buyback, items) {
                 var today = new Date();
                 var todayrepay = 0;
