@@ -87,10 +87,15 @@ function schedule(account, callback) {
 
 exports.checkSchedule = checkSchedule;
 function checkSchedule(account, callback) {
-
     var exables = account.scheduleObj.EXables;
+    if (exables.length === 0) {
+        callback();
+        return;
+    }
+
     var applied = account.scheduleObj.appliedEX;
     var exable = exables[0];
+
     var price = exable.remainingPrincipal;//getScheduleStatusAmount(exable, "EXable");
 
     var needToBuyBack = account.ongoingTodayBuyBackAmount - account.availableBalance;
@@ -158,7 +163,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log("EX", dt.toLocaleString(), "EX and buy AE amount:", balanceFromEX.amount)
+        console.log("EX", dt.toLocaleString(), "EX and buy AE amount:", balanceFromEX.amount, "standardamount:", standardamount)
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
