@@ -99,6 +99,7 @@ function tryNetwork(callback) {
                     tryNetwork(callback)
                 }, 2000)
             } else {
+                console.log("tryNetwork", body.substr(0, 20))
                 callback();
             }
         });

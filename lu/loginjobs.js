@@ -97,9 +97,8 @@ function userInfo_mobile(account, callback) {
         headers: mobileheaderutil.getHeaders(account.uid)
     },
         function (err, httpResponse, body) {
-
             var info = JSON.parse(body);
-            if (info.code !== '0000') console.log("userInfo_mobile:", body);
+            if (info.code !== '0000') console.log("Error userInfo_mobile:", body);
             var result = info.result;
             if (!result) {
                 console.log("ERROR: userInfo_mobile", body);
@@ -107,11 +106,15 @@ function userInfo_mobile(account, callback) {
                 return;
             }
             totalBuyBack_mobile(account, function (buyback, items) {
+                if (buyback === null) {
+                    callback(null);
+                    return;
+                }
                 var today = new Date();
                 var todayrepay = 0;
-                items.forEach(function(item){
+                items.forEach(function (item) {
                     var day = new Date(item.systemBuyBackDate);
-                    if(day.getDate() === today.getDate() && day-today<24*60*60*1000) {
+                    if (day.getDate() === today.getDate() && day - today < 24 * 60 * 60 * 1000) {
                         todayrepay += Number(item.buyBackAmount);
                     }
                 })
@@ -125,7 +128,7 @@ function userInfo_mobile(account, callback) {
                     account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
                     account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
                 }
-                logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets);
+                logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, buyback, result.asset);
 
                 callback(result);
             })
@@ -247,15 +250,20 @@ function getUserId(cookieJar, callback) {
 exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
-    // login(account, function (cookieJar, info) {
-    //     logutil.info("extendLogin======", account.user, account.source);
 
-    //     account.loginExtendedTime = new Date();
-    //     callback(cookieJar);
-    // });
     userInfo_mobile(account, function (result) {
-        account.loginExtendedTime = new Date();
-        callback(account.cookieJar)
+        if (result) {
+            account.loginExtendedTime = new Date();
+            callback(account.cookieJar)
+        } else {
+            login(account, function (cookieJar, info) {
+                logutil.info("extendLogin======", account.user, account.source);
+
+                account.loginExtendedTime = new Date();
+                callback(cookieJar);
+            });
+        }
+
     });
 }
 
@@ -284,21 +292,23 @@ function totalBuyBack_mobile(account, callback, pageNum) {
             requestCode: "M3205",
             version: "3.4.9",
             //{"sortType":"desc","requestType":"APPLY","assetType":"FINANCE","filter":"","pageNum":"1"}
-            params: '{"type":"list","page":'+pageNum+'}'
+            params: '{"type":"list","page":' + pageNum + '}'
         }
     },
         function (err, httpResponse, body) {
             try {
                 var result = JSON.parse(body).result;
                 if (!result) {
-                    callback(0, []);
+                    console.log("Error ************* totalBuyBack_mobile", pageNum, body)
+                    callback(null);
                     return;
                 }
 
                 var buyback = Number(result.ongoingTotalBuyBackAmount);
                 if (pageNum < Number(result.totalPage)) {
+                    console.log("totalBuyBack_mobile:", result.totalPage)
                     totalBuyBack_mobile(account, function (bb, applys) {
-                        if (applys.length = 0 && bb === 0) bb = buyback;
+                        if (bb === null || applys.length === 0 && bb === 0) bb = buyback;
                         callback(bb, applys.concat(result.mappList));
                     }, pageNum + 1)
                 } else {

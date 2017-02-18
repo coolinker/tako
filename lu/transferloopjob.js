@@ -297,12 +297,12 @@ function loopNewTransfer_mobile(callback) {
     console.log("job start", jobStartTime)
     var requestCount = 0;
     var consumedProducts = {};
-    var LOOP_INTERVAL = 1500;
+    var LOOP_INTERVAL = 1000;
     var loopjob = new LoopJob().config({
         parallelRequests: 1,
         url: "https://ma.lu.com/mapp/service/public?M3024&listType=trans_p2p",
         loopInterval: LOOP_INTERVAL,
-        timeout: 2 * LOOP_INTERVAL,
+        timeout: 1.8 * LOOP_INTERVAL,
         httpMethod: "POST",
         urlInjection: function (parallelIndex, url) {
             url += ("?_" + randomNumber());
@@ -336,7 +336,7 @@ function loopNewTransfer_mobile(callback) {
                     var bodyJson = JSON.parse(body);
                     if (!bodyJson.result.products) {
                         console.log(new Date(), "*******", requestCount, body)
-                        loopjob.pause(100000);
+                        loopjob.pause(1200000);
                         pppoeutil.pppoeUpdate(function (succeed) {
                             if (succeed) loopjob.pause(100);
                             else loopjob.pause(20*60*1000);

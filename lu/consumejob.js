@@ -39,17 +39,18 @@ function consume_mobile(account, toBeConsumed, callback) {
     account.lock();
     var productId = toBeConsumed.productId;
     mobileGetSID(account, toBeConsumed, function (sid) {
-        logutil.info("mobileGetSID", productId, sid)
+        logutil.info("mobileGetSID", new Date().toTimeString(), productId, sid)
         if (!sid) {
             callback(toBeConsumed);
             account.unlock();
             return;
         }
         mobileTradeM3030(account, toBeConsumed, sid, function (succeed) {
+            logutil.info("mobileTradeM3030", new Date().toTimeString(), productId, sid)
             if (succeed) {
                 mobileTradeM3032(account, toBeConsumed, sid, function (result) {
                     if (result) {
-                        console.log("consume succeed", toBeConsumed, result)
+                        console.log("consume succeed", new Date().toTimeString(), toBeConsumed, result)
                         account.availableBalance -= toBeConsumed.price;
                         account.lastConsumingTime = new Date();
                     } else {
@@ -184,7 +185,7 @@ function mobileTradeM3032(account, product, sid, callback) {
             try {
                 var result = JSON.parse(body).result;
                 if (!result) {
-                    logutil.error("mobileTradeM3032 failed", body);
+                    logutil.error("mobileTradeM3032 failed", new Date(), body);
                     callback(null);
                 } else {
                     callback(result);

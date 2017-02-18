@@ -58,7 +58,7 @@ function schedule(account, callback) {
             var selectedExables = walkThrough(get000Date(), all, standardamount);
 
             account.scheduleObj = {
-                EXables: selectedExables,
+                EXables: selectedExables.reverse(),
                 appliedEX: [],
                 scheduleTime: new Date(),
                 lastScheduleCheckTime: null
@@ -105,9 +105,14 @@ function checkSchedule(account, callback) {
 
             getEXInterestRate(account, price, function (rate) {
                 sellAEforEX(account, exable, rate, function (result) {
-                    console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
-                    applied.push(exables.shift());
-                    callback(exable, rate);
+                    if (result) {
+                        console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
+                        applied.push(exables.shift());
+                        callback(exable, rate);
+                    } else {
+                        callback(null);
+                    }
+
                 })
             })
 
@@ -560,10 +565,13 @@ function getEXInterestRate(account, minPrice, callback) {
         function (err, httpResponse, body) {
             var json = JSON.parse(body).result.products[0].productList;
             var r0 = Number(json[0].interestRate);
+            var r0prc = json[0].remainingAmount;
             var r5 = Number(json[5].interestRate);
+            var r5prc = json[5].remainingAmount;
+
             //var r10 = json[10].interestRate;
             var r = r0;
-            if (r0 === r5) {
+            if (r0 === r5 || r5prc - r0prc > 200) {
                 r = r0 + 0.0001;
             } else if (r0 - r5 >= 0.0005) {
                 r = r5 + 0.0001;
@@ -656,8 +664,12 @@ function requestM3105rate(account, investmentId, rate, callback) {
     },
         function (err, httpResponse, body) {
             var json = JSON.parse(body);
-            json.result.interestRate = rate;
+            if (!json.result) {
+                console.log("Error requestM3105rate", body);
+                callback(null);
+            } else {json.result.interestRate = rate;
             requestM3107(account, json.result, callback);
+            }
         });
 
 }
