@@ -132,7 +132,7 @@ function checkSchedule(account, callback) {
 function walkThrough(date, productList, standardAmount) {
     console.log("workThrough standardAmount", standardAmount);
     var day1EXables = [];
-    for (var i = 0; i < EXcicle+1; i++) {
+    for (var i = 0; i < EXcicle + 1; i++) {
         var dt = get000Date(date, i);
         AEToEXable(dt, productList);
         var repayonday = getRepaymentsOnDay(dt, productList, []);
@@ -145,8 +145,8 @@ function walkThrough(date, productList, standardAmount) {
         var preEXedAmount = getEXAmountForDuration(get000Date(dt, -(EXinterval - 1)), dt, productList);
         var postEXedAmount = getEXAmountForDuration(dt, get000Date(dt, EXinterval - 1), productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
-        if (preEXedAmount > standardAmount * EXdiscount || postEXedAmount > standardAmount * EXdiscount) {
-            console.log("Can not repay risk!", dt.toLocaleString(), standardAmount, preEXedAmount, postEXedAmount);
+        if (preEXedAmount > standardAmount * EXdiscount || postEXedAmount > standardAmount * EXdiscount + 500) {
+            console.log("Can not repay risk!", dt.toLocaleString(), standardAmount * EXdiscount, preEXedAmount, postEXedAmount);
             return null;
         }
 
@@ -164,7 +164,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log(dt.toLocaleString(),"BuyBack", repayonday, "+ EX:", balanceFromEX.amount, '\n')
+        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX:", balanceFromEX.amount, '\n')
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
@@ -575,10 +575,10 @@ function getEXInterestRate(account, minPrice, callback) {
             var r5 = Number(json[5].interestRate);
             var r5prc = json[5].remainingAmount;
             var now = new Date();
-            var hours = now.getHours()+now.getMinutes()/60;
+            var hours = now.getHours() + now.getMinutes() / 60;
             //var r10 = json[10].interestRate;
             var r = r0;
-            if (hours< 8.5 || r0 === r5 || r5prc - r0prc > 200) {
+            if (hours < 8.5 || r0 === r5 || r5prc - r0prc > 200) {
                 r = r0 + 0.0001;
             } else if (r0 - r5 >= 0.0005) {
                 r = r5 + 0.0001;
@@ -674,8 +674,9 @@ function requestM3105rate(account, investmentId, rate, callback) {
             if (!json.result) {
                 console.log("Error requestM3105rate", body);
                 callback(null);
-            } else {json.result.interestRate = rate;
-            requestM3107(account, json.result, callback);
+            } else {
+                json.result.interestRate = rate;
+                requestM3107(account, json.result, callback);
             }
         });
 
