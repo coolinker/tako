@@ -574,10 +574,11 @@ function getEXInterestRate(account, minPrice, callback) {
             var r0prc = json[0].remainingAmount;
             var r5 = Number(json[5].interestRate);
             var r5prc = json[5].remainingAmount;
-
+            var now = new Date();
+            var hours = now.getHours()+now.getMinutes()/60;
             //var r10 = json[10].interestRate;
             var r = r0;
-            if (r0 === r5 || r5prc - r0prc > 200) {
+            if (hours< 8.5 || r0 === r5 || r5prc - r0prc > 200) {
                 r = r0 + 0.0001;
             } else if (r0 - r5 >= 0.0005) {
                 r = r5 + 0.0001;

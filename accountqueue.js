@@ -16,18 +16,17 @@ function consume(toBeConsumed) {
     var consumejob = require("./" + sourceType + "/consumejob");
     accounts = accountQueues[sourceType];
 
-    var finished = false, csmidx = 0;
     for (var i = 0; i < accounts.length; i++) {
         if (toBeConsumed.length === 0) break;
-        if (toBeConsumed.length === csmidx) break;
         if (accounts[i].cookieJar !== null) {
-            var finished = consumejob.consume(accounts[i], toBeConsumed[csmidx]);
-
-            if (finished) {
-                toBeConsumed[csmidx].consumed = true;
-                csmidx++;
+            for (var j = 0; j < toBeConsumed.length; j++) {
+                if (toBeConsumed[j].consumed) continue;
+                var finished = consumejob.consume(accounts[i], toBeConsumed[j]);
+                if (finished) {
+                    toBeConsumed[j].consumed = true;
+                    break;
+                }
             }
-
         }
     }
 
@@ -201,7 +200,7 @@ function queueLogin() {
                     continue;
                 }
 
-                
+
                 var letime = acc.loginExtendedTime === null ? acc.loginTime : acc.loginExtendedTime;
                 //logutil.info("extend login...", acc.user, now - letime, acc.loginExtendInterval)
                 if (!acc.locked && acc.startedBidding /*&& acc.ableToConsume()*/ && now - letime > acc.loginExtendInterval) {
@@ -221,7 +220,9 @@ function queueLogin() {
                             }
 
                             _acc.unlock();
-                            if (_acc.ableToSchedule()) {
+                            if (_acc.needNewSchedule()) {
+                                scheduleAccount(_acc);
+                            } else if (_acc.ableToSchedule()) {
                                 checkSchedule(_acc);
                             }
                         }
