@@ -97,42 +97,49 @@ function userInfo_mobile(account, callback) {
         headers: mobileheaderutil.getHeaders(account.uid)
     },
         function (err, httpResponse, body) {
-            var info = JSON.parse(body);
-            if (info.code !== '0000') console.log("Error userInfo_mobile:", body);
-            var result = info.result;
-            if (!result) {
-                console.log("ERROR: userInfo_mobile", body);
-                callback(null)
-                return;
-            }
-            totalBuyBack_mobile(account, function (buyback, items) {
-                if (buyback === null) {
-                    callback(null);
+            try {
+
+                var info = JSON.parse(body);
+                if (info.code !== '0000') console.log("Error userInfo_mobile:", body);
+                var result = info.result;
+                if (!result) {
+                    console.log("ERROR: userInfo_mobile", body);
+                    callback(null)
                     return;
                 }
-                var today = new Date();
-                var todayrepay = 0;
-                items.forEach(function (item) {
-                    var day = new Date(item.systemBuyBackDate);
-                    if (day.getDate() === today.getDate() && day - today < 24 * 60 * 60 * 1000) {
-                        todayrepay += Number(item.buyBackAmount);
+                totalBuyBack_mobile(account, function (buyback, items) {
+                    if (buyback === null) {
+                        callback(null);
+                        return;
                     }
+                    var today = new Date();
+                    var todayrepay = 0;
+                    items.forEach(function (item) {
+                        var day = new Date(item.systemBuyBackDate);
+                        if (day.getDate() === today.getDate() && day - today < 24 * 60 * 60 * 1000) {
+                            todayrepay += Number(item.buyBackAmount);
+                        }
+                    })
+
+                    result.ongoingTotalBuyBackAmount = Number(buyback);
+                    result.ongoingTodayBuyBackAmount = Number(todayrepay);
+                    if (result.asset) {
+                        account.availableBalance = Number(result.asset.availableAmount.text);
+                        account.allIncomeAmount = Number(result.asset.allIncomeAmount.text);
+                        account.ongoingTotalBuyBackAmount = result.ongoingTotalBuyBackAmount;
+                        account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
+                        account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
+                    }
+                    logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, buyback, result.asset);
+
+                    callback(result);
                 })
+            } catch (e) {
+                console.log("ERROR: userInfo_mobile", e.stack, body);
 
-                result.ongoingTotalBuyBackAmount = Number(buyback);
-                result.ongoingTodayBuyBackAmount = Number(todayrepay);
-                if (result.asset) {
-                    account.availableBalance = Number(result.asset.availableAmount.text);
-                    account.allIncomeAmount = Number(result.asset.allIncomeAmount.text);
-                    account.ongoingTotalBuyBackAmount = result.ongoingTotalBuyBackAmount;
-                    account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
-                    account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
-                }
-                logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, buyback, result.asset);
+                callback(null);
 
-                callback(result);
-            })
-
+            }
 
         });
 }
