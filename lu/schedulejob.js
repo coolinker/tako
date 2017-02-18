@@ -101,7 +101,7 @@ function checkSchedule(account, callback) {
             if (items[i].M3048Response.isR030Transfering === "true") transferingTotal += items[i].remainingPrincipal;
         }
 
-        if (account.reservedBalance + 2 * AEPrice > (account.availableBalance + transferingTotal)) {
+        if (account.reservedBalance + 3 * AEPrice > (account.availableBalance + transferingTotal)) {
 
             getEXInterestRate(account, price, function (rate) {
                 sellAEforEX(account, exable, rate, function (result) {

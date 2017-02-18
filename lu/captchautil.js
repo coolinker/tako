@@ -157,6 +157,11 @@ function preCheck(captachaStr, paramsStr, cookieJar, callback) {
         "cookieJar": cookieJar
     }, function(error, request, body) {
          console.log("check:", error, body)
+        if (error) {
+            callback(false);            
+            return;
+        }
+        
         json = JSON.parse(body);
         if (json.result === "SUCCESS") {
             callback(true);
