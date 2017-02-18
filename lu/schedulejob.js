@@ -53,7 +53,7 @@ function schedule(account, callback) {
             addScheduleStatus(d, 'available', get000Date(), account.availableBalance);
             var all = currentEXable.concat(recentApply).concat(repayments);
             all.push(d);
-            var standardamount = account.totalAssets * account.capability.leverage / 7;
+            var standardamount = Math.floor(account.totalAssets * account.capability.leverage / 7);
 
             var selectedExables = walkThrough(get000Date(), all, standardamount);
 
@@ -130,6 +130,7 @@ function checkSchedule(account, callback) {
 }
 
 function walkThrough(date, productList, standardAmount) {
+    console.log("workThrough standardAmount", standardAmount);
     var day1EXables = [];
     for (var i = 0; i < EXcicle; i++) {
         var dt = get000Date(date, i);
@@ -163,7 +164,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log("EX", dt.toLocaleString(), "EX and buy AE amount:", balanceFromEX.amount, "standardamount:", standardAmount)
+        console.log(dt.toDateString(),"BuyBack", repayonday, "EX:", balanceFromEX.amount)
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
@@ -213,7 +214,7 @@ function buyBackOnDay(date, productList, selectedEXables) {
 
             productList.push(balanceFromEX);
             var remain = repayByBalanceOnDay(date, remainAmount, productList);
-            console.log("EX", date.toLocaleString(), "buyBackOnDay=>balance", repaytotal - remainAmount, "EX", selectedBalance)
+            //console.log("EX", date.toLocaleString(), "buyBackOnDay=>balance", repaytotal - remainAmount, "EX", selectedBalance)
 
         }
 
@@ -222,7 +223,7 @@ function buyBackOnDay(date, productList, selectedEXables) {
         });
     }
 
-    return repaytotal;
+    return Math.round(repaytotal);
 }
 
 function EXForBalance(date, exables) {
@@ -357,7 +358,7 @@ function getRepaymentsOnDay(date, data, repayments) {
         return 0;
     })
 
-    return total;
+    return Math.round(total);
 }
 
 function balanceToAE(date, productList) {
@@ -518,7 +519,7 @@ function getEXable(account, callback) {
 
 function requestM6059(account, requestType, filter, callback, pageNum) {
     if (!pageNum) pageNum = 1;
-    console.log("requestM6059", requestType, filter, pageNum)
+    //console.log("requestM6059", requestType, filter, pageNum)
     simplehttp.POST("https://ma.lu.com/mapp/service/private?M6059&_" + randomNumber(), {
         "cookieJar": account.cookieJar,
         "headers": mobileheaderutil.getHeaders(account.uid),
