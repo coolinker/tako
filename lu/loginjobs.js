@@ -257,21 +257,28 @@ function getUserId(cookieJar, callback) {
 exports.extendLogin = extendLogin;
 
 function extendLogin(account, callback) {
-
-    userInfo_mobile(account, function (result) {
-        if (result) {
+    if (new Date() - account.loginTime > 25 * 60 * 1000) {
+        login(account, function (cookieJar, info) {
+            logutil.info("extendLogin======", account.user, account.source);
             account.loginExtendedTime = new Date();
-            callback(account.cookieJar)
-        } else {
-            login(account, function (cookieJar, info) {
-                logutil.info("extendLogin======", account.user, account.source);
-                
+            callback(cookieJar);
+        });
+    } else {
+        userInfo_mobile(account, function (result) {
+            if (result) {
                 account.loginExtendedTime = new Date();
-                callback(cookieJar);
-            });
-        }
+                callback(account.cookieJar)
+            } else {
+                login(account, function (cookieJar, info) {
+                    logutil.info("extendLogin======", account.user, account.source);
+                    account.loginExtendedTime = new Date();
+                    callback(cookieJar);
+                });
+            }
 
-    });
+        });
+    }
+
 }
 
 function securityValid(callback) {
