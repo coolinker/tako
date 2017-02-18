@@ -14,7 +14,8 @@ var lufaxAcc = {
     capability: {
         consume: true,
         schedule: true,
-        runSchedule: false
+        leverage: 3.375
+
     }
 
 };

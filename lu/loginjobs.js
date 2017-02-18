@@ -130,7 +130,7 @@ function userInfo_mobile(account, callback) {
                         account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
                         account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
                     }
-                    logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, "buyback", buyback);
+                    logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, "buyback", buyback, account.capability.leverage);
 
                     callback(result);
                 })
@@ -313,7 +313,7 @@ function totalBuyBack_mobile(account, callback, pageNum) {
 
                 var buyback = Number(result.ongoingTotalBuyBackAmount);
                 if (pageNum < Number(result.totalPage)) {
-                    console.log("totalBuyBack_mobile:", result.totalPage)
+                    //console.log("totalBuyBack_mobile:", result.totalPage)
                     totalBuyBack_mobile(account, function (bb, applys) {
                         if (bb === null || applys.length === 0 && bb === 0) bb = buyback;
                         callback(bb, applys.concat(result.mappList));

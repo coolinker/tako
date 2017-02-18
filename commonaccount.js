@@ -37,7 +37,7 @@ CommonAccount.prototype.startedBidding = false;
 
 CommonAccount.prototype.capability = {
     consume: true,
-    leverage: 4.75,
+    leverage: 4.375,
     schedule: false
 };
 
