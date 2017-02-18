@@ -18,7 +18,7 @@ function pppoeUpdate(callback, count) {
     },
         function (err, httpResponse, body) {
             var id = htmlparser.getValueFromBody('pppoe.cgi?id=', '\">', body);
-            console.log("pppoeUpdate id", id)
+            //console.log("pppoeUpdate id", id)
             if (id) {
                 networkConnected = false;
                 simplehttp.POST(TestData.pppoe.url_1 + id, {
@@ -99,7 +99,7 @@ function tryNetwork(callback) {
                     tryNetwork(callback)
                 }, 2000)
             } else {
-                console.log("tryNetwork", body.substr(0, 20))
+                //console.log("tryNetwork", body.substr(0, 20))
                 callback();
             }
         });

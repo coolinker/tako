@@ -1,4 +1,4 @@
-var LoopJob = function() {
+var LoopJob = function () {
     var logutil = require("./logutil").config('loopjob');
     var simplehttp = require('./simplehttp');
 
@@ -15,10 +15,10 @@ var LoopJob = function() {
         loopInterval: 500,
         intervalObj: null,
         timeout: 500,
-        urlInjection: function(parallelIndex, url) {
+        urlInjection: function (parallelIndex, url) {
             return url
         },
-        optionsInjection: function(parallelIndex, options) {
+        optionsInjection: function (parallelIndex, options) {
             return options
         },
         responseHandler: null
@@ -26,7 +26,7 @@ var LoopJob = function() {
     var parallelRequests = 1;
     function loopIntervalHandler() {
         // logutil.log("loopIntervalHandler started...")
-        for (var i=0; i<jobStatus.parallelRequests; i++) {
+        for (var i = 0; i < jobStatus.parallelRequests; i++) {
             loopWork(i);
         }
     }
@@ -58,7 +58,7 @@ var LoopJob = function() {
         };
         jobStatus.optionsInjection(parallelIndex, options);
         var startTime = new Date();
-        simplehttp[jobStatus.httpMethod](url, options, function(error, response, body) {
+        simplehttp[jobStatus.httpMethod](url, options, function (error, response, body) {
             // logutil.log("loopjob duraiton", new Date()-startTime, error, body);
             if (error) {
                 errorCounter++;
@@ -69,14 +69,14 @@ var LoopJob = function() {
         });
     };
 
-    this.config = function(options) {
+    this.config = function (options) {
         for (var att in options) {
             jobStatus[att] = options[att];
         }
         return this;
     }
 
-    this.startLooping = function() {
+    this.startLooping = function () {
         if (jobStatus.loopStarted) {
             console.log("startLoanLoop: Already started!");
             return;
@@ -87,7 +87,7 @@ var LoopJob = function() {
         return this;
     }
 
-    this.stopLooping = function() {
+    this.stopLooping = function () {
         if (!jobStatus.loopStarted) {
             console.log("stopLooping: Already stopped!");
             return this;
@@ -98,18 +98,26 @@ var LoopJob = function() {
         return this;
     }
 
-    this.isLoopingStarted = function() {
+    this.isLoopingStarted = function () {
         return jobStatus.loopStarted;
     }
 
-    this.pause = function (msd) {
-        logutil.warn("job pause===========", msd);
+    this.pause = function (msd, info) {
+
         if (this.timeoutObj) clearTimeout(this.timeoutObj)
+        if (!msd) {
+            logutil.warn("job pause===========end", msd, new Date().toTimeString(), info);
+            jobStatus.loopPaused = false;
+            this.timeoutObj = null;
+            return;
+        }
+
+        logutil.warn("job pause===========", msd, new Date().toTimeString(), info);
         jobStatus.loopPaused = true;
-        this.timeoutObj = setTimeout(function(){
-            logutil.warn("job pause===========end");      
-             jobStatus.loopPaused = false;
-             this.timeoutObj = null;
+        this.timeoutObj = setTimeout(function () {
+            logutil.warn("job pause===========end", new Date().toTimeString(), info);
+            jobStatus.loopPaused = false;
+            this.timeoutObj = null;
         }, msd)
     }
 

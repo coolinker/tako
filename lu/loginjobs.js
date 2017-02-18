@@ -130,7 +130,7 @@ function userInfo_mobile(account, callback) {
                         account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
                         account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
                     }
-                    logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, buyback, result.asset);
+                    logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, "buyback", buyback);
 
                     callback(result);
                 })
@@ -265,7 +265,7 @@ function extendLogin(account, callback) {
         } else {
             login(account, function (cookieJar, info) {
                 logutil.info("extendLogin======", account.user, account.source);
-
+                
                 account.loginExtendedTime = new Date();
                 callback(cookieJar);
             });

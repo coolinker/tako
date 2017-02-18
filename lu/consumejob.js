@@ -155,7 +155,7 @@ function mobileTradeM3030(account, product, sid, callback) {
             try {
                 var code = JSON.parse(body).code;
                 if (code !== '0000') {
-                    logutil.error("mobileTradeM3030 failed", body);
+                    logutil.error("mobileTradeM3030 failed", new Date().toTimeString(), account.loginTime, body);
                     callback(null);
                 } else {
                     callback(code);
