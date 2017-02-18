@@ -163,7 +163,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log("EX", dt.toLocaleString(), "EX and buy AE amount:", balanceFromEX.amount, "standardamount:", standardamount)
+        console.log("EX", dt.toLocaleString(), "EX and buy AE amount:", balanceFromEX.amount, "standardamount:", standardAmount)
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
