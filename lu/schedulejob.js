@@ -132,7 +132,7 @@ function checkSchedule(account, callback) {
 function walkThrough(date, productList, standardAmount) {
     console.log("workThrough standardAmount", standardAmount);
     var day1EXables = [];
-    for (var i = 0; i < EXcicle; i++) {
+    for (var i = 0; i < EXcicle+1; i++) {
         var dt = get000Date(date, i);
         AEToEXable(dt, productList);
         var repayonday = getRepaymentsOnDay(dt, productList, []);
@@ -164,7 +164,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log(dt.toDateString(),"BuyBack", repayonday, "EX:", balanceFromEX.amount)
+        console.log(dt.toLocaleString(),"BuyBack", repayonday, "+ EX:", balanceFromEX.amount, '\n')
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
@@ -214,7 +214,7 @@ function buyBackOnDay(date, productList, selectedEXables) {
 
             productList.push(balanceFromEX);
             var remain = repayByBalanceOnDay(date, remainAmount, productList);
-            //console.log("EX", date.toLocaleString(), "buyBackOnDay=>balance", repaytotal - remainAmount, "EX", selectedBalance)
+            console.log("****Buyback:", repaytotal, "- balance = ", remainAmount, "= EX", selectedBalance)
 
         }
 
@@ -266,7 +266,7 @@ function repayByBalanceOnDay(date, amount, productList) {
         productList.push(d);
     }
 
-    return amount;
+    return Math.round(amount);
 }
 
 function getAvailableBalanceOnDay(date, productList, out_Balances) {
