@@ -107,7 +107,7 @@ function startAccountBidding(accountJson, callback) {
 
 function startBidding(account) {
     if (account.ableToConsume()) {
-        account.startedBidding = true;
+        // account.startedBidding = true;
         startNewProductCheck(account.source);
         return true;
     } else {
@@ -124,7 +124,7 @@ function stopAccountBidding(accountJson, callback) {
     if (!acc) {
         logutil.info("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
     } else {
-        acc.startedBidding = false;
+        // acc.startedBidding = false;
     }
     callback({
         action: "stoppedAccountBidding",
@@ -133,23 +133,6 @@ function stopAccountBidding(accountJson, callback) {
     //accountqueue.logoutAccount(accountObj, callback);
 }
 
-// exports.addAccountJson = addAccountJson;
-// function addAccountJson(accountJson) {
-//     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-//     var acc = accountqueue.getAccount(accountObj);
-//     var result = {
-//         action: "stoppedAccountBidding"
-//     };
-//     if (acc) {
-//         acc.config(accountJson);
-//         acc.startedBidding = false;
-//         result.resultMsg = "SUCCEED";
-//     } else {
-//         result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
-//     }
-
-//     if (callback) callback(result);
-// }
 
 function startNewProductCheck(source) {
     var tjob = getTransferLoopJob(ACCOUNT_TYPES[source]);

@@ -126,11 +126,11 @@ function userInfo_mobile(account, callback) {
                     if (result.asset) {
                         account.availableBalance = Number(result.asset.availableAmount.text);
                         account.allIncomeAmount = Number(result.asset.allIncomeAmount.text);
-                        account.ongoingTotalBuyBackAmount = result.ongoingTotalBuyBackAmount;
-                        account.reservedBalance = account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
-                        account.totalAssets = account.allIncomeAmount + account.ongoingTotalBuyBackAmount / 9;
+                        account.ongoingTodayBuyBackAmount = result.ongoingTodayBuyBackAmount;
+                        account.totalAssets = Math.round(account.allIncomeAmount + result.ongoingTotalBuyBackAmount / 9);
                     }
-                    logutil.info("account.availableBalance:", account.availableBalance, account.uid, account.totalAssets, "buyback", buyback, account.capability.leverage);
+                    logutil.info("account.availableBalance:", account.availableBalance, "ongoingTodayBuyBackAmount:",  account.ongoingTodayBuyBackAmount, 
+                        account.uid, "totalAssets:", account.totalAssets, "buyback:", buyback, "leverage:", account.capability.leverage);
 
                     callback(result);
                 })
@@ -311,6 +311,12 @@ function totalBuyBack_mobile(account, callback, pageNum) {
     },
         function (err, httpResponse, body) {
             try {
+                if (err) {
+                    console.log("Error ************* totalBuyBack_mobile", err)
+                    callback(null);
+                    return;
+                }
+
                 var result = JSON.parse(body).result;
                 if (!result) {
                     console.log("Error ************* totalBuyBack_mobile", pageNum, body)

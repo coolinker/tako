@@ -39,6 +39,18 @@ function get000Date(d, offset) {
                                  AE - EXable - repayment - AE
 
 */
+function updateExpectedEXAmount(account) {
+    if (!account.scheduleObj) return;
+    var exables = account.scheduleObj.EXables;
+    var expectedEXAmount = 0;
+    exables.forEach(function (item) {
+        expectedEXAmount += getScheduleStatusAmount(item, "EXable");
+    });
+
+    account.scheduleObj.expectedEXAmount = expectedEXAmount * 0.9;
+    console.log("updateExpectedEXAmount:", account.scheduleObj.expectedEXAmount, ">", account.ongoingTodayBuyBackAmount)
+}
+
 exports.schedule = schedule;
 function schedule(account, callback) {
     var repayments, recentApply, currentEXable;
@@ -56,14 +68,13 @@ function schedule(account, callback) {
             var standardamount = Math.floor(account.totalAssets * account.capability.leverage / 7);
 
             var selectedExables = walkThrough(get000Date(), all, standardamount);
-
             account.scheduleObj = {
-                EXables: selectedExables.reverse(),
+                EXables: selectedExables,
                 appliedEX: [],
                 scheduleTime: new Date(),
                 lastScheduleCheckTime: null
             }
-
+            updateExpectedEXAmount(account);
             if (callback) callback(account.scheduleObj);
         }
     }
@@ -113,6 +124,7 @@ function checkSchedule(account, callback) {
                     if (result) {
                         console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
                         applied.push(exables.shift());
+                        updateExpectedEXAmount(account);
                         callback(exable, rate);
                     } else {
                         callback(null);
@@ -130,7 +142,7 @@ function checkSchedule(account, callback) {
 }
 
 function walkThrough(date, productList, standardAmount) {
-    console.log("workThrough standardAmount", standardAmount);
+    console.log("workThrough standardAmount*90%", standardAmount*0.9);
     var day1EXables = [];
     for (var i = 0; i < EXcicle + 1; i++) {
         var dt = get000Date(date, i);
@@ -143,6 +155,9 @@ function walkThrough(date, productList, standardAmount) {
         if (buyBack === null) return null;
 
         var preEXedAmount = getEXAmountForDuration(get000Date(dt, -(EXinterval - 1)), dt, productList);
+        // var preEXedAmount2 = getEXAmountForDuration(get000Date(dt, -(EXinterval - 2)), dt, productList);
+        // var preEXedAmount3 = getEXAmountForDuration(get000Date(dt, -(EXinterval - 3)), dt, productList);
+        // console.log(preEXedAmount, preEXedAmount2, preEXedAmount3);
         var postEXedAmount = getEXAmountForDuration(dt, get000Date(dt, EXinterval - 1), productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
         if (preEXedAmount > standardAmount * EXdiscount || postEXedAmount > standardAmount * EXdiscount + 500) {
@@ -152,7 +167,7 @@ function walkThrough(date, productList, standardAmount) {
 
         var toEXAmount = standardAmount * EXdiscount - Math.max(preEXedAmount, postEXedAmount);
         var selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, []);
-        toEXAmount = Math.min(selectedBalance, toEXAmount) - (repaytotalday5 - repayonday)
+        toEXAmount = Math.min(selectedBalance, toEXAmount) - (repaytotalday5 - repayonday);
         //console.log("=====",  toEXAmount, selectedBalance, repaytotalday5 - repayonday);
         var selectedEXables = [];
         selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedEXables);
@@ -164,11 +179,20 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX:", balanceFromEX.amount, '\n')
+        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", balanceFromEX.amount, '\n')
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
     }
+
+    day1EXables.sort(function (e0, e1) {
+        var amt0 = getScheduleStatusAmount(e0, "EXable");
+        var amt1 = getScheduleStatusAmount(e1, "EXable");
+        if (amt0 > amt1) return -1;
+        if (amt0 < amt1) return 1;
+        if (amt0 === amt1) return 0;
+    });
+
 
     return day1EXables;
 }

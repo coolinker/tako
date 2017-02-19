@@ -26,13 +26,12 @@ CommonAccount.prototype.interestLevelMin = 100;
 CommonAccount.prototype.interestLevelMax = 100;
 CommonAccount.prototype.availableBalance = 0;
 CommonAccount.prototype.reservedBalance = 0;
-CommonAccount.prototype.stopConsumeBalance = null;
+CommonAccount.prototype.stopConsumeBalance = 0;
 
 CommonAccount.prototype.pricePerBidMin = 0;
 CommonAccount.prototype.pricePerBidMax = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
 CommonAccount.prototype.consumeHistory = [];
-CommonAccount.prototype.startedBidding = false;
 
 
 CommonAccount.prototype.capability = {
@@ -72,7 +71,7 @@ CommonAccount.prototype.JSONInfo = function () {
         reservedBalance: this.reservedBalance,
         pricePerBidMin: this.pricePerBidMin,
         pricePerBidMax: this.pricePerBidMax,
-        startedBidding: this.startedBidding,
+        stopConsumeBalance: this.stopConsumeBalance,
         interestLevelMin: this.interestLevelMin,
         interestLevelMax: this.interestLevelMax,
         capability: this.capability,
@@ -88,7 +87,8 @@ CommonAccount.prototype.addToConsumeHistory = function (obj) {
 
 CommonAccount.prototype.isActive = function () {
     var lgt = this.loginExtendedTime ? this.loginExtendedTime : this.loginTime;
-    return new Date() - lgt < this.loginExtendInterval + 600000;
+
+    return this.capability.consume && this.capability.schedule || new Date() - lgt < this.loginExtendInterval + 600000;
     //return this.ableToConsume() || this.loginTime ? (new Date() - this.loginTime < this.loginExtendInterval) : (new Date() - this.createdTime < 1000*60*15)
 }
 
@@ -103,18 +103,25 @@ CommonAccount.prototype.needNewSchedule = function () {
 }
 CommonAccount.prototype.ableToSchedule = function () {
     if (!this.scheduleObj) return false;
+    if (this.scheduleObj.EXables.length===0) return false;
+
     var scheduleTime = this.scheduleObj.scheduleTime
     var now = new Date();
     if (scheduleTime.getDate() !== now.getDate() || (now - scheduleTime) > 24 * 60 * 60 * 1000) return false;
 
     var hours = now.getHours() + now.getMinutes() / 60;
-    return this.cookieJar && this.capability.schedule && hours >= 8 && hours <= 23;
+    return this.cookieJar && this.capability.schedule && hours >= 8.25 && hours <= 23;
 }
 
 CommonAccount.prototype.ableToConsume = function () {
-    // console.log("ableToConsume-=======", this.availableBalance, this.reservedBalance, this.source, this.user, this.startedBidding)
-    return this.cookieJar && this.capability.consume
-        && (this.scheduleObj && this.scheduleObj.EXables.length > 0 || (this.availableBalance - this.reservedBalance) >= this.stopConsumeBalance);
+    if(!this.cookieJar || !this.capability.consume) return false;
+    if (this.availableBalance < this.stopConsumeBalance) return false;
+    if (this.scheduleObj) {
+        var afterRepay = this.scheduleObj.expectedEXAmount + this.availableBalance - this.ongoingTodayBuyBackAmount;
+        if (afterRepay < this.stopConsumeBalance) return false;
+    }
+    
+    return true;
 }
 
 CommonAccount.prototype.lock = function () {

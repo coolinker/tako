@@ -39,12 +39,7 @@ function loginAccount(account, callback) {
         if (callback) callback(account.JSONInfo());
         return;
     }
-    if (!needRelogin(account)) {
-        console.log("no need for login", account.user, account.startedBidding)
-        if (callback) callback(account.JSONInfo());
-        return;
-    }
-
+    
     var accounttype = ACCOUNT_TYPES[account['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
     account.lock();
@@ -79,7 +74,6 @@ exports.checkSchedule = checkSchedule;
 function checkSchedule(account) {
     if (account.locked) return;
     if (!account.ableToSchedule()) {
-        account.startedBidding = account.ableToConsume();
         return;
     }
 
@@ -90,23 +84,13 @@ function checkSchedule(account) {
     var job = require("./" + accounttype + "/schedulejob");
     account.lock();
     job.checkSchedule(account, function (exable, rate) {
-        account.startedBidding = account.ableToConsume();
         account.unlock();
     });
 
     account.scheduleObj.lastScheduleCheckTime = new Date();
 }
 
-
-exports.needRelogin = needRelogin;
-function needRelogin(account) {
-    if (!account.cookieJar) return true;
-    var letime = account.loginExtendedTime === null ? account.loginTime : account.loginExtendedTime;
-    return (new Date() - letime > account.loginExtendInterval)
-}
-
 exports.getAccount = getAccount;
-
 function getAccount(accountInfo) {
     var accounttype = ACCOUNT_TYPES[accountInfo['source']];
     return queuesMap[accounttype] ? queuesMap[accounttype][accountInfo.user] : null;
@@ -182,6 +166,14 @@ function startLoopWork() {
 
 }
 
+function needExtendLogin(account){
+    var letime = account.loginExtendedTime === null ? account.loginTime : account.loginExtendedTime;
+    var now = new Date();
+    if ( now - letime <= account.loginExtendInterval) return false;
+
+    return account.ableToConsume() || account.needNewSchedule() || account.ableToSchedule();
+}
+
 exports.queueLogin = queueLogin;
 function queueLogin() {
     var now = new Date();
@@ -201,9 +193,7 @@ function queueLogin() {
                 }
 
 
-                var letime = acc.loginExtendedTime === null ? acc.loginTime : acc.loginExtendedTime;
-                //logutil.info("extend login...", acc.user, now - letime, acc.loginExtendInterval)
-                if (!acc.locked && acc.startedBidding /*&& acc.ableToConsume()*/ && now - letime > acc.loginExtendInterval) {
+                if (!acc.locked && needExtendLogin(acc)) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");
                     acc.lock();

@@ -10,6 +10,7 @@ var lufaxAcc = {
     reservedBalance: 0,
     pricePerBidMax: 6500,
     pricePerBidMin: 1500,
+    stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
         consume: true,
@@ -30,6 +31,7 @@ var lufaxAcc1 = {
     reservedBalance: 0,
     pricePerBidMax: 6000,
     pricePerBidMin: 1500,
+    stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
         consume: false,
@@ -48,6 +50,7 @@ var lufaxAcc2 = {
     reservedBalance: 0,
     pricePerBidMax: 6000,
     pricePerBidMin: 1500,
+    stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
         consume: true,
