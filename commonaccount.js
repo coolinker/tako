@@ -103,7 +103,7 @@ CommonAccount.prototype.needNewSchedule = function () {
 }
 CommonAccount.prototype.ableToSchedule = function () {
     if (!this.scheduleObj) return false;
-    if (this.scheduleObj.EXables.length===0) return false;
+    if (this.scheduleObj.expectedEXAmount === 0 && this.scheduleObj.transferingTotal === 0) return false;
 
     var scheduleTime = this.scheduleObj.scheduleTime
     var now = new Date();
@@ -114,13 +114,14 @@ CommonAccount.prototype.ableToSchedule = function () {
 }
 
 CommonAccount.prototype.ableToConsume = function () {
-    if(!this.cookieJar || !this.capability.consume) return false;
-    if (this.availableBalance < this.stopConsumeBalance) return false;
+    if (!this.cookieJar || !this.capability.consume) return false;
+    var total = this.availableBalance;// + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
+    if ( total< this.stopConsumeBalance) return false;
     if (this.scheduleObj) {
-        var afterRepay = this.scheduleObj.expectedEXAmount + this.availableBalance - this.ongoingTodayBuyBackAmount;
+        var afterRepay = total - this.ongoingTodayBuyBackAmount;
         if (afterRepay < this.stopConsumeBalance) return false;
     }
-    
+
     return true;
 }
 

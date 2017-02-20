@@ -71,6 +71,8 @@ function schedule(account, callback) {
             account.scheduleObj = {
                 EXables: selectedExables,
                 appliedEX: [],
+                transferingTotal: 0,
+                expectedEXAmount: 0,
                 scheduleTime: new Date(),
                 lastScheduleCheckTime: null
             }
@@ -111,11 +113,12 @@ function checkSchedule(account, callback) {
 
     var needToBuyBack = account.ongoingTodayBuyBackAmount - account.availableBalance;
 
-    updateEXStatus(account, applied, 1, function (items) {
+    updateAppliedEXStatus(account, applied, 1, function (items) {
         var transferingTotal = 0;
         for (var i = 0; i < items.length; i++) {
             if (items[i].M3048Response.isR030Transfering === "true") transferingTotal += items[i].remainingPrincipal;
         }
+        account.scheduleObj.transferingTotal = transferingTotal;
 
         if (account.reservedBalance + 3 * AEPrice > (account.availableBalance + transferingTotal)) {
 
@@ -134,7 +137,7 @@ function checkSchedule(account, callback) {
             })
 
         } else {
-            console.log("updateEXStatus**********:", items.length);
+            console.log("updateAppliedEXStatus**********:", items.length);
             callback();
         }
     })
@@ -622,7 +625,7 @@ function getEXInterestRate(account, minPrice, callback) {
 
 }
 
-function updateEXStatus(account, exables, idx, callback) {
+function updateAppliedEXStatus(account, exables, idx, callback) {
     if (exables.length === 0) {
         callback([]);
         return;
@@ -640,7 +643,7 @@ function updateEXStatus(account, exables, idx, callback) {
     var investmentId = exable.investmentId;
     requestM3048(account, investmentId, function (result) {
         exable.M3048Response = result;
-        if (idx + 1 < exables.length) updateEXStatus(account, exables, idx + 1, callback);
+        if (idx + 1 < exables.length) updateAppliedEXStatus(account, exables, idx + 1, callback);
         else callback(exables)
     })
 }
