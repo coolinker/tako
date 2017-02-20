@@ -44,10 +44,10 @@ function updateExpectedEXAmount(account) {
     var exables = account.scheduleObj.EXables;
     var expectedEXAmount = 0;
     exables.forEach(function (item) {
-        expectedEXAmount += getScheduleStatusAmount(item, "EXable");
+        expectedEXAmount += getScheduleStatusAmount(item, "*");
     });
 
-    account.scheduleObj.expectedEXAmount = expectedEXAmount * 0.9;
+    account.scheduleObj.expectedEXAmount = Math.round(expectedEXAmount * 0.9);
     console.log("updateExpectedEXAmount:", account.scheduleObj.expectedEXAmount, ">", account.ongoingTodayBuyBackAmount)
 }
 
@@ -186,8 +186,8 @@ function walkThrough(date, productList, standardAmount) {
     }
 
     day1EXables.sort(function (e0, e1) {
-        var amt0 = getScheduleStatusAmount(e0, "EXable");
-        var amt1 = getScheduleStatusAmount(e1, "EXable");
+        var amt0 = getScheduleStatusAmount(e0, "*");
+        var amt1 = getScheduleStatusAmount(e1, "*");
         if (amt0 > amt1) return -1;
         if (amt0 < amt1) return 1;
         if (amt0 === amt1) return 0;
@@ -255,7 +255,13 @@ function buyBackOnDay(date, productList, selectedEXables) {
         }
 
         dayrepayments.forEach(function (repayment) {
-            addScheduleStatus(repayment, "AE", get000Date(date), repayment.expectedRepaymentAmount / EXdiscount)
+            var amount;
+            if (repayment.orign === "R030_TRANSFERABLE") {
+                amount = getScheduleStatusAmount(repayment, "repayment");
+            } else if (repayment.orign === "REPAYMENT") {
+                amount = repayment.expectedRepaymentAmount;
+            } else console.log("ERROR****************", repayment.orign)
+            addScheduleStatus(repayment, "AE", get000Date(date), amount / EXdiscount);
         });
     }
 
@@ -455,7 +461,7 @@ function AEToEXable(date, data) {
 
 
 function getScheduleStatusAmount(d, status) {
-    if (!d.scheduleStatus || d.scheduleStatus.length === 0 || getScheduleStatus(d) !== status) return null;
+    if (!d.scheduleStatus || d.scheduleStatus.length === 0 || status !== '*' && getScheduleStatus(d) !== status) return null;
     return d.scheduleStatus[d.scheduleStatus.length - 1].amount;
 }
 
