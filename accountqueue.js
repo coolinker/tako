@@ -39,7 +39,7 @@ function loginAccount(account, callback) {
         if (callback) callback(account.JSONInfo());
         return;
     }
-    
+
     var accounttype = ACCOUNT_TYPES[account['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
     account.lock();
@@ -65,9 +65,8 @@ function scheduleAccount(account) {
     job.schedule(account, function (scheduleObj) {
         //should start consume job here
         account.unlock();
-        checkSchedule(account);
+        if (account.ableToSchedule()) checkSchedule(account);
     })
-
 }
 
 exports.checkSchedule = checkSchedule;
@@ -166,10 +165,10 @@ function startLoopWork() {
 
 }
 
-function needExtendLogin(account){
+function needExtendLogin(account) {
     var letime = account.loginExtendedTime === null ? account.loginTime : account.loginExtendedTime;
     var now = new Date();
-    if ( now - letime <= account.loginExtendInterval) return false;
+    if (now - letime <= account.loginExtendInterval) return false;
 
     return account.ableToConsume() || account.needNewSchedule() || account.ableToSchedule();
 }
