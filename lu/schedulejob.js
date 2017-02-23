@@ -161,8 +161,8 @@ function walkThrough(date, productList, standardAmount) {
         //var postEXedAmount = getTotalRepaymentAndEXAmount(dt, get000Date(dt, EXIntervalDays - 1), productList);
         var maxEXedAmount = getMaxTotalRepaymentAndEXAmountAroundDay(dt, productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
-        if (maxEXedAmount > standardAmount * EXdiscount) {
-            console.log("Can not repay risk!", dt.toLocaleString(), standardAmount * EXdiscount, preEXedAmount, postEXedAmount);
+        if (maxEXedAmount > standardAmount * EXdiscount+500) {
+            console.log("Can not repay risk!", dt.toLocaleString(), standardAmount * EXdiscount, maxEXedAmount );
             return null;
         }
 
@@ -620,7 +620,7 @@ function getEXInterestRate(account, minPrice, callback) {
             var hours = now.getHours() + now.getMinutes() / 60;
             //var r10 = json[10].interestRate;
             var r = r0;
-            if (hours < 8.5 || r0 === r5 || r5prc - r0prc > 200) {
+            if (r0 === r5 || r5prc - r0prc > 200) {
                 r = r0 + 0.0001;
             } else if (r0 - r5 >= 0.0005) {
                 r = r5 + 0.0001;
