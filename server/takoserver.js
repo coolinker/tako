@@ -1,44 +1,93 @@
-var WebSocketServer = require('ws').Server;
-var http = require('http');
-var logutil = require("../logutil").config('takoserver');
-var ACCOUNT_TYPES = require("../accounttypes");
-var feelerConnections = {};
+var https = require('https'),
+    http = require("http"),
+    url = require("url"),
+    path = require("path"),
+    fs = require("fs"),
+    httpProxy = require('http-proxy'),
+    os = require("os");
+var logutil = require("../logutil").config("takoserver");
 
-var takoApiDispatcher = require("./takoapidispatcher.js");
-require('./sslserver').setApiDispatcher(takoApiDispatcher);
+var port = 80;
+var networkInterfaces = os.networkInterfaces();
+var globalIPAddress = process.argv[2] || (os.platform() === "linux" ? networkInterfaces.eth1[0].address : networkInterfaces['Wireless Network Connection'][1].address);
+console.log("globalIPAddress", globalIPAddress)
 
-var WebSocketServer = require('ws').Server;
-var serverForWS = http.createServer(function(request, response) {
-    console.log((new Date()) + ' Received request for ' + request.url);
-    response.writeHead(404);
-    response.end();
-});
+var options = {
+    key: fs.readFileSync('cert/server-key.pem'),
+    cert: fs.readFileSync('cert/server-crt.pem'),
+    ca: fs.readFileSync('cert/ca-crt.pem')
+};
 
-serverForWS.listen(8081, function() {
-    console.log((new Date()) + ' Server is listening on port 8081');
-});
 
-wsServer = new WebSocketServer({
-    server: serverForWS
-});
+var sslserver = https.createServer(options, function (req, res) {
+    var uri = url.parse(req.url).pathname;
+    if (uri === "/api" && handleApiRequest(req, res)) {
+        logutil.info("443 port api call", uri)
+        return;
+    } else {
+        res.writeHead(301,
+            { Location: 'http://' + globalIPAddress + '/index.html' }
+        );
+        res.end();
+    }
+}).listen(443);
 
-wsServer.on('connection', function connection(ws) {
-    logutil.info((new Date()) + ' Connection accepted.');
-    ws.on('message', function(message) {
-        logutil.info("onmessage", message)
-        data = JSON.parse(message);
+logutil.info("Static file server running at\n  => http://" + globalIPAddress + ":" + port + "/\nCTRL + C to shutdown");
 
-        if (takoApiDispatcher[data.action]) {
-            takoApiDispatcher[data.action](data.body, function(responseJson) {
-                logutil.info("onmessage callback", responseJson)
-            }, ws);
-        } else {
-            logutil.info("action not existed in takoapidispatcher", data.aciton, data)
-        }
+function handleApiRequest(request, response) {
+    var query = url.parse(request.url, true).query;
+    var action = query.action;
+    logutil.info("handleApiRequest", action);
+    if (!apiDispatcher[action]) return false;
+    if (request.method == 'POST') {
+        var jsonString = '';
 
-    });
+        request.on('data', function (data) {
+            jsonString += data;
+        });
+        request.on('end', function () {
+            var postJson = JSON.parse(jsonString);
+            apiDispatcher[action](postJson, function (output) {
+                response.writeHead(200, {
+                    "Content-Type": "application/x-javascript; charset=utf-8",
+                    // 'Content-Length': output.length
+                    "Access-Control-Allow-Origin": "http://" + globalIPAddress
+                });
+                logutil.info("output", output)
+                response.write(output);
+                response.end();
+            });
+        });
+    }
 
-    ws.on('close', function(reasonCode, description) {
-        logutil.info((new Date()) + ' Peer ' + ws.remoteAddress + ' disconnected.');
-    });
-});
+    return true;
+}
+
+
+var takoController = require("./takocontroller");
+var apiDispatcher = {
+    updateAccount: function (accountJson, callback) {
+        var responseInfo = takoController.updateAccount(accountJson);
+        callback(JSON.stringify({
+            action: "updateAccount",
+            body: responseInfo
+        }));
+    },
+
+    feelerInfoIO: function(info, callback){
+        var accountJson = takoController.feelerInfoIO(info.user, info);
+        callback(JSON.stringify({
+            action: "feelerInfoIO",
+            body: accountJson
+        }));
+    },
+
+    getAccounts: function(params, callback){
+        var accountsJson = takoController.getAccounts(params);
+        callback(JSON.stringify({
+            action: "getAccounts",
+            body: accountsJson
+        }));
+    }
+
+}

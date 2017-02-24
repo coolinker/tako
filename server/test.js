@@ -14,7 +14,7 @@ var lufaxAcc = {
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
         consume: true,
-        schedule: false,
+        schedule: true,
         leverage: 3.375
 
     }

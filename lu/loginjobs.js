@@ -336,8 +336,8 @@ function totalBuyBack_mobile(account, callback, pageNum) {
                 }
 
             } catch (e) {
-                console.error("getRecentApply exception:", err, e.stack);
-                callback(null);
+                console.error("getRecentApply exception:", new Date().toTimeString(), err, e.stack);
+                totalBuyBack_mobile(account, callback);         
             }
         });
 }
