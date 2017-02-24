@@ -8,13 +8,13 @@ var lufaxAcc = {
     interestLevelMax: 0.2,
     interestLevelMin: 0.08,
     reservedBalance: 0,
-    pricePerBidMax: 6500,
+    pricePerBidMax: 7500,
     pricePerBidMin: 1500,
     stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
         consume: true,
-        schedule: true,
+        schedule: false,
         leverage: 3.375
 
     }
