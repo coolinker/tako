@@ -155,15 +155,15 @@ function walkThrough(date, productList, standardAmount) {
 
         var selectedEXforRepaying = [];
         var buyBack = buyBackOnDay(dt, productList, selectedEXforRepaying);
-        if (buyBack === null) return null;
+        if (buyBack === null) return [];
 
         //var preEXedAmount = getTotalRepaymentAndEXAmount(get000Date(dt, -(EXIntervalDays - 1)), dt, productList);
         //var postEXedAmount = getTotalRepaymentAndEXAmount(dt, get000Date(dt, EXIntervalDays - 1), productList);
         var maxEXedAmount = getMaxTotalRepaymentAndEXAmountAroundDay(dt, productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
         if (maxEXedAmount > standardAmount * EXdiscount+500) {
-            console.log("Can not repay risk!", dt.toLocaleString(), standardAmount * EXdiscount, maxEXedAmount );
-            return null;
+            console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount) );
+            return [];
         }
 
         var toEXAmount = standardAmount * EXdiscount - maxEXedAmount;
