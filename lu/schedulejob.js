@@ -665,6 +665,10 @@ function updateAppliedEXStatus(account, exables, idx, callback) {
 function sellAEforEX(account, exable, rate, callback) {
     var investmentId = exable.investmentId;
     requestM3048(account, investmentId, function (result) {
+        if (!result) {
+            callback(null);
+            return;
+        }
         exable.M3048Response = result;
         requestM3105(account, investmentId, function () {
             requestM3105rate(account, investmentId, rate, callback)
@@ -684,6 +688,10 @@ function requestM3048(account, investmentId, callback) {
         }
     },
         function (err, httpResponse, body) {
+            if (err) {
+                callback(null);
+                return;
+            }
             var json = JSON.parse(body);
             callback(json.result);
             // requestM3105(account, investmentId, callback);
@@ -702,6 +710,10 @@ function requestM3105(account, investmentId, callback) {
         }
     },
         function (err, httpResponse, body) {
+            if (err) {
+                callback(null);
+                return;
+            }
             var json = JSON.parse(body);
             callback(json.result);
         });
@@ -719,6 +731,11 @@ function requestM3105rate(account, investmentId, rate, callback) {
         }
     },
         function (err, httpResponse, body) {
+            if (err) {
+                callback(null);
+                return;
+            }
+
             var json = JSON.parse(body);
             if (!json.result) {
                 console.log("Error requestM3105rate", body);
@@ -750,6 +767,10 @@ function requestM3107(account, M3105Result, callback) {
         }
     },
         function (err, httpResponse, body) {
+            if (err) {
+                callback(null);
+                return;
+            }
             var json = JSON.parse(body);
             callback(json.result);
         });
