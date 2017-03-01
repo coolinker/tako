@@ -128,6 +128,7 @@ function checkSchedule(account, callback) {
                         console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
                         applied.push(exables.shift());
                         updateExpectedEXAmount(account);
+                        account.markInfoUpdate();
                         callback(exable, rate);
                     } else {
                         callback(null);
@@ -161,8 +162,8 @@ function walkThrough(date, productList, standardAmount) {
         //var postEXedAmount = getTotalRepaymentAndEXAmount(dt, get000Date(dt, EXIntervalDays - 1), productList);
         var maxEXedAmount = getMaxTotalRepaymentAndEXAmountAroundDay(dt, productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
-        if (maxEXedAmount > standardAmount * EXdiscount+500) {
-            console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount) );
+        if (maxEXedAmount > standardAmount * EXdiscount + 500) {
+            console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount));
             return [];
         }
 
@@ -612,10 +613,12 @@ function getEXInterestRate(account, minPrice, callback) {
     },
         function (err, httpResponse, body) {
             var json = JSON.parse(body).result.products[0].productList;
-            if (json.length===0) {
+            if (json.length <= 5) {
                 callback(4.8)
                 return;
             }
+
+
             var r0 = Number(json[0].interestRate);
             var r0prc = json[0].remainingAmount;
             var r5 = Number(json[5].interestRate);

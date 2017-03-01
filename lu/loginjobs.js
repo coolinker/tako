@@ -328,7 +328,13 @@ function totalBuyBack_mobile(account, callback, pageNum) {
                 if (pageNum < Number(result.totalPage)) {
                     //console.log("totalBuyBack_mobile:", result.totalPage)
                     totalBuyBack_mobile(account, function (bb, applys) {
+                        
                         if (bb === null || applys.length === 0 && bb === 0) bb = buyback;
+                        if (!applys) {
+                            applys = [];
+                            console.log("ERROR: ****************************applys = undefined", bb, result.mappList)
+                        }
+
                         callback(bb, applys.concat(result.mappList));
                     }, pageNum + 1)
                 } else {
@@ -336,7 +342,7 @@ function totalBuyBack_mobile(account, callback, pageNum) {
                 }
 
             } catch (e) {
-                console.error("getRecentApply exception:", new Date().toTimeString(), err, e.stack);
+                console.error("getRecentApply exception:", new Date().toTimeString(), pageNum, err, e.stack);
                 totalBuyBack_mobile(account, callback);         
             }
         });
