@@ -32,7 +32,8 @@ CommonAccount.prototype.pricePerBidMin = 0;
 CommonAccount.prototype.pricePerBidMax = 10000;
 CommonAccount.prototype.lastConsumingTime = null;
 CommonAccount.prototype.consumeHistory = [];
-
+CommonAccount.prototype.infoUpdateTime = null;
+CommonAccount.prototype.scheduleObj = null;
 
 CommonAccount.prototype.capability = {
     consume: true,
@@ -55,10 +56,6 @@ CommonAccount.prototype.config = function (obj) {
     return this;
 };
 
-// CommonAccount.prototype.updateBidingParams = function (obj){
-//     if (obj.interestLevelMin !== undefined) this.interestLevelMin = 
-//     return this;
-// };
 CommonAccount.prototype.loggedIn = function () {
     return !!this.cookieJar;
 }
@@ -79,16 +76,30 @@ CommonAccount.prototype.JSONInfo = function () {
     }
 }
 
+CommonAccount.prototype.getUpdateInfo = function(lastTime){
+    if (this.infoUpdateTime > lastTime) {
+        return {
+            consumeHistory: this.consumeHistory,
+            schedule: this.scheduleObj,
+        }
+    }
+    return null;
+}
+
 CommonAccount.prototype.addToConsumeHistory = function (obj) {
     this.consumeHistory.push(obj);
     this.emit('consumeHistory', this, obj);
+    this.markInfoUpdate();
 }
 
+CommonAccount.prototype.markInfoUpdate = function () {
+    this.infoUpdateTime = new Date();
+}
 
 CommonAccount.prototype.isActive = function () {
     var lgt = this.loginExtendedTime ? this.loginExtendedTime : this.loginTime;
 
-    return this.capability.consume && this.capability.schedule || new Date() - lgt < this.loginExtendInterval + 600000;
+    return this.capability.consume || this.capability.schedule || new Date() - lgt < this.loginExtendInterval + 600000;
     //return this.ableToConsume() || this.loginTime ? (new Date() - this.loginTime < this.loginExtendInterval) : (new Date() - this.createdTime < 1000*60*15)
 }
 
@@ -110,7 +121,7 @@ CommonAccount.prototype.ableToSchedule = function () {
     if (scheduleTime.getDate() !== now.getDate() || (now - scheduleTime) > 24 * 60 * 60 * 1000) return false;
 
     var hours = now.getHours() + now.getMinutes() / 60;
-    return this.cookieJar && this.capability.schedule && hours >= 8.25 && hours <= 23;
+    return this.cookieJar && this.capability.schedule && hours >= 8.25 && hours <= 22;
 }
 
 CommonAccount.prototype.ableToConsume = function () {

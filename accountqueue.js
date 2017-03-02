@@ -10,7 +10,6 @@ var accountQueues = {};
 var queuesMap = {};
 var consumedMap = {};
 exports.consume = consume;
-
 function consume(toBeConsumed) {
     var sourceType = ACCOUNT_TYPES[toBeConsumed instanceof Array ? toBeConsumed[0]['source'] : toBeConsumed['source']];
     var consumejob = require("./" + sourceType + "/consumejob");
@@ -31,6 +30,24 @@ function consume(toBeConsumed) {
     }
 
     return finished;
+}
+
+
+exports.getUpdateInfo = getUpdateInfo;
+function getUpdateInfo(lastTime) {
+    var info = null;
+    for (var accountType in accountQueues) {
+        var accs = accountQueues[accountType];
+        for (var i = accs.length - 1; i >= 0; i--) {
+            var update = accs[i].getUpdateInfo(lastTime);
+            if (update) {
+                if (!info) info = {};
+                info[accs[i].user] = update;
+            }
+        }
+    }
+
+    return info;
 }
 
 exports.loginAccount = loginAccount;
@@ -148,7 +165,8 @@ function updateAccountQueue() {
 
             if (!activeTypes[accountType].active && !activeTypes[accountType].consume) {
                 console.log("remove account*******************:", accs[i].user, accs[i].source);
-                accs.splice(i, 1);
+                //accs.splice(i, 1);
+                removeAccount(accs[i]);
             }
         }
     }
@@ -184,11 +202,11 @@ function queueLogin() {
                 var acc = queue[i];
 
                 if (acc.cookieJar === null) {
-                    logutil.info("loopLogin...", att, i);
+                    logutil.info("loopLogin...", att, i, acc.user);
                     loginAccount(acc, function () {
 
                     });
-                    continue;
+                    break;
                 }
 
 

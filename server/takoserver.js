@@ -6,7 +6,7 @@ var https = require('https'),
     httpProxy = require('http-proxy'),
     os = require("os");
 var logutil = require("../logutil").config("takoserver");
-
+var querystring = require('querystring');
 var port = 80;
 var networkInterfaces = os.networkInterfaces();
 var globalIPAddress = process.argv[2] || (os.platform() === "linux" ? networkInterfaces.eth1[0].address : networkInterfaces['Wireless Network Connection'][1].address);
@@ -25,12 +25,13 @@ var sslserver = https.createServer(options, function (req, res) {
         logutil.info("443 port api call", uri)
         return;
     } else {
+    
         res.writeHead(301,
             { Location: 'http://' + globalIPAddress + '/index.html' }
         );
         res.end();
     }
-}).listen(443);
+}).listen(4433);
 
 logutil.info("Static file server running at\n  => http://" + globalIPAddress + ":" + port + "/\nCTRL + C to shutdown");
 
@@ -75,19 +76,19 @@ var apiDispatcher = {
     },
 
     feelerInfoIO: function(info, callback){
-        var accountJson = takoController.feelerInfoIO(info.user, info);
+        var accountJson = takoController.feelerInfoIO(info.body);
         callback(JSON.stringify({
             action: "feelerInfoIO",
             body: accountJson
         }));
     },
 
-    getAccounts: function(params, callback){
-        var accountsJson = takoController.getAccounts(params);
-        callback(JSON.stringify({
-            action: "getAccounts",
-            body: accountsJson
-        }));
-    }
+    // getAccounts: function(params, callback){
+    //     var accountsJson = takoController.getAccounts(params);
+    //     callback(JSON.stringify({
+    //         action: "getAccounts",
+    //         body: accountsJson
+    //     }));
+    // }
 
 }

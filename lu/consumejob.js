@@ -53,6 +53,8 @@ function consume_mobile(account, toBeConsumed, callback) {
                         console.log("consume succeed", new Date().toTimeString(), toBeConsumed, result)
                         account.availableBalance -= toBeConsumed.price;
                         account.lastConsumingTime = new Date();
+
+                        account.addToConsumeHistory(toBeConsumed);
                     } else {
                         callback(toBeConsumed);
                     }

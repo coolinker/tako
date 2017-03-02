@@ -1,19 +1,23 @@
 var logutil = require("../logutil").config("feeler");
+var simplehttp = require('../simplehttp');
+var fs = require("fs");
+
 //var rrdtransferloopjob = require("../rrd/transferloopjob");
 //var lufaxtransferloopjob = require("../lu/transferloopjob");
+
 var JOBS_OBJ = {};
 var ACCOUNT_TYPES = require("../accounttypes");
+var latestIOTime = new Date();
+var takoServerIp = process.argv[2];
 
-// for (var att in ACCOUNT_TYPES) {
-//     try {
-//         var job = require("../" + ACCOUNT_TYPES[att] + "/transferloopjob");
-//         var type = ACCOUNT_TYPES[att];
-//         if (!JOBS_OBJ[type]) JOBS_OBJ[type] = {};
-//         JOBS_OBJ[type]['transferloopjob'] = job;
-//     } catch (e) {
-//         console.log(type, e);
-//     }
-// }
+var accountqueue = require("../accountqueue");
+accountqueue.startLoopWork();
+
+var CommonAccount = require("../commonaccount");
+
+this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 300000);
+
+monitorAccountQueueAndJobs();
 
 function getTransferLoopJob(type) {
     if (!type) return null;
@@ -26,112 +30,93 @@ function getTransferLoopJob(type) {
     return JOBS_OBJ[type]['transferloopjob'];
 }
 
-var accountqueue = require("../accountqueue");
-accountqueue.startLoopWork();
+// exports.getAccountInfo = getAccountInfo;
+// function getAccountInfo(accountJson, callback) {
+//     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
+//     var acc = accountqueue.getAccount(accountObj);
+//     var result = {
+//         action: "gotAccountInfo"
+//     };
+//     if (acc && !accountqueue.needRelogin(acc)) {
+//         logutil.info("Account already logged in", acc.JSONInfo());
+//         result.body = acc.JSONInfo();
+//         if (callback) callback(result);
 
-var CommonAccount = require("../commonaccount");
+//     } else {
+//         accountqueue.loginAccount(accountObj, function (info) {
+//             if (accountObj.cookieJar) {
+//                 accountqueue.addAccount(accountObj);
+//                 result.body = accountObj.JSONInfo();
+//                 accountObj.on("consumeHistory", handleConsumeHistory);
+//             } else {
+//                 result.body = info;
+//             }
 
-this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 30000);
+//             if (callback) callback(result);
+//         });
+//     }
 
-var wsconnection;
-exports.setWebSocket = setWebSocket;
-function setWebSocket(ws) {
-    wsconnection = ws;
-}
-
-exports.getAccountInfo = getAccountInfo;
-function getAccountInfo(accountJson, callback) {
-    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-    var acc = accountqueue.getAccount(accountObj);
-    var result = {
-        action: "gotAccountInfo"
-    };
-    if (acc && !accountqueue.needRelogin(acc)) {
-        logutil.info("Account already logged in", acc.JSONInfo());
-        result.body = acc.JSONInfo();
-        if (callback) callback(result);
-
-    } else {
-        accountqueue.loginAccount(accountObj, function (info) {
-            if (accountObj.cookieJar) {
-                accountqueue.addAccount(accountObj);
-                result.body = accountObj.JSONInfo();
-                accountObj.on("consumeHistory", handleConsumeHistory);
-            } else {
-                result.body = info;
-            }
-
-            if (callback) callback(result);
-        });
-    }
-
-}
+// }
 
 
-function handleConsumeHistory(account, data) {
-    console.log("handleConsumeHistory", data, account.user)
-    var req = {
-        action: "updateConsumeHistory",
-        body: {
-            user: account.user,
-            source: account.source,
-            data: data
-        }
-    }
-    wsconnection.send(JSON.stringify(req), function (param) {
-        console.log("feeler send handleConsumeHistory callback", param)
-    });
-}
+// function handleConsumeHistory(account, data) {
+//     console.log("handleConsumeHistory", data, account.user)
+//     var req = {
+//         action: "updateConsumeHistory",
+//         body: {
+//             user: account.user,
+//             source: account.source,
+//             data: data
+//         }
+//     }
+//     wsconnection.send(JSON.stringify(req), function (param) {
+//         console.log("feeler send handleConsumeHistory callback", param)
+//     });
+// }
 
-exports.startAccountBidding = startAccountBidding;
-function startAccountBidding(accountJson, callback) {
-    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-    var acc = accountqueue.getAccount(accountObj);
-    var result = {
-        action: "startedAccountBidding"
-    };
-    if (acc) {
-        acc.config(accountJson);
-        if (startBidding(acc)) {
-            result.resultMsg = "SUCCEED";
+exports.updateAccounts = updateAccounts;
+function updateAccounts(accountJson) {
+
+    for (var i=0; i<accountJson.length; i++){
+        var accountObj = new CommonAccount(accountJson[i].user, accountJson[i].type).config(accountJson[i]);
+        var acc = accountqueue.getAccount(accountObj);
+        if (!acc){
+            accountqueue.addAccount(accountObj);
         } else {
-            result.resultMsg = "NOT_BE_ABLE_TO_CONSUME";
+            acc.config(accountJson[i]);
         }
 
-    } else {
-        result.resultMsg = "ACCOUNT_NOT_IN_QUEUE";
-    }
-
-    if (callback) callback(result);
-}
-
-function startBidding(account) {
-    if (account.ableToConsume()) {
-        // account.startedBidding = true;
-        startNewProductCheck(account.source);
-        return true;
-    } else {
-        return false;
     }
 
 }
 
-exports.stopAccountBidding = stopAccountBidding;
+// function startBidding(account) {
+//     if (account.ableToConsume()) {
+//         // account.startedBidding = true;
+//         startNewProductCheck(account.source);
+//         return true;
+//     } else {
+//         return false;
+//     }
 
-function stopAccountBidding(accountJson, callback) {
-    var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-    var acc = accountqueue.getAccount(accountObj);
-    if (!acc) {
-        logutil.info("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
-    } else {
-        // acc.startedBidding = false;
-    }
-    callback({
-        action: "stoppedAccountBidding",
-        resultMsg: "SUCCEED"
-    });
-    //accountqueue.logoutAccount(accountObj, callback);
-}
+// }
+
+// exports.stopAccountBidding = stopAccountBidding;
+
+// function stopAccountBidding(accountJson, callback) {
+//     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
+//     var acc = accountqueue.getAccount(accountObj);
+//     if (!acc) {
+//         logutil.info("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
+//     } else {
+//         // acc.startedBidding = false;
+//     }
+//     callback({
+//         action: "stoppedAccountBidding",
+//         resultMsg: "SUCCEED"
+//     });
+//     //accountqueue.logoutAccount(accountObj, callback);
+// }
 
 
 function startNewProductCheck(source) {
@@ -146,10 +131,10 @@ function startNewProductCheck(source) {
     }
 }
 
-exports.removeAccountJson = removeAccountJson;
-function removeAccountJson(accountJson) {
-    accountqueue.inactive(accountJson.user, accountJson.password, accountJson.source);
-}
+// exports.removeAccountJson = removeAccountJson;
+// function removeAccountJson(accountJson) {
+//     accountqueue.inactive(accountJson.user, accountJson.password, accountJson.source);
+// }
 
 function monitorAccountQueueAndJobs() {
     var activeAccs = accountqueue.updateAccountQueue();
@@ -173,4 +158,28 @@ function monitorAccountQueueAndJobs() {
 
 
     }
+
+    var info = accountqueue.getUpdateInfo(latestIOTime);
+    updateToTakoServer(info || {}, updateAccounts);
+
+}
+
+
+function updateToTakoServer(info, callback) {
+    simplehttp.POST("https://"+takoServerIp+"/api?action=feelerInfoIO", {
+        headers: {
+            'Content-type': 'application/json',
+        },
+        json:{body:info},
+        ca: fs.readFileSync('cert/ca-crt.pem'),
+    },
+        function (err, httpResponse, body) {
+            try {
+                var accountJson = body.body;
+                callback(accountJson)
+            } catch (e) {
+                logutil.error("updateToTakoServer exception:", err, body);
+                callback([]);
+            }
+        });
 }
