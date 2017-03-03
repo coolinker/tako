@@ -292,7 +292,7 @@ function loopNewTransfer_mobile(callback) {
         logutil.info("loopNewTransfer loopjob existed");
         return;
     }
-    var filterEndTransPrice = 0.7;
+    var filterEndTransPrice = 1;
     var jobStartTime = new Date();
     console.log("job start", jobStartTime)
     var requestCount = 0;
