@@ -6,11 +6,22 @@ var simplehttp = require('../simplehttp');
 var htmlparser = require('../htmlparser');
 var mobileheaderutil = require("./mobileheaderutil");
 
+var loginLock = false;
+
 exports.login = login;
 
 function login(account, callback) {
-    login_mobile(account, callback);
-    //login_brwoser(account, callback)
+    if (loginLock) {
+        logutil.warn("Login is locking", account.user)
+        callback(null);
+    } else {
+        loginLock = true;
+        login_mobile(account, function(cookie, info){
+            loginLock = false;
+            callback(cookie, info);
+        });
+    
+    }
 }
 
 

@@ -5,6 +5,11 @@ var TestData = require('./testdata');
 var networkConnected = true;
 var callbackQueue = [];
 
+exports.connected = connected;
+function connected(){
+    return networkConnected;
+}
+
 exports.pppoeUpdate = pppoeUpdate;
 function pppoeUpdate(callback, count) {
     if (!count) count = 0;

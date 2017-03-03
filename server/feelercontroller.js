@@ -2,6 +2,8 @@ var logutil = require("../logutil").config("feeler");
 var simplehttp = require('../simplehttp');
 var fs = require("fs");
 
+var pppoeutil = require("./pppoeutil");
+
 //var rrdtransferloopjob = require("../rrd/transferloopjob");
 //var lufaxtransferloopjob = require("../lu/transferloopjob");
 
@@ -15,7 +17,11 @@ accountqueue.startLoopWork();
 
 var CommonAccount = require("../commonaccount");
 
-this.monitorIntervalObj = setInterval(monitorAccountQueueAndJobs, 300000);
+this.monitorIntervalObj = setInterval(function () {
+        if(pppoeutil.connected()){
+            monitorAccountQueueAndJobs();
+        }
+    }, 1 * 60 * 1000);
 
 monitorAccountQueueAndJobs();
 
@@ -90,34 +96,6 @@ function updateAccounts(accountJson) {
 
 }
 
-// function startBidding(account) {
-//     if (account.ableToConsume()) {
-//         // account.startedBidding = true;
-//         startNewProductCheck(account.source);
-//         return true;
-//     } else {
-//         return false;
-//     }
-
-// }
-
-// exports.stopAccountBidding = stopAccountBidding;
-
-// function stopAccountBidding(accountJson, callback) {
-//     var accountObj = new CommonAccount(accountJson.user, accountJson.type).config(accountJson);
-//     var acc = accountqueue.getAccount(accountObj);
-//     if (!acc) {
-//         logutil.info("stopAccountBidding", "account " + accountObj.user + " doesn't existed");
-//     } else {
-//         // acc.startedBidding = false;
-//     }
-//     callback({
-//         action: "stoppedAccountBidding",
-//         resultMsg: "SUCCEED"
-//     });
-//     //accountqueue.logoutAccount(accountObj, callback);
-// }
-
 
 function startNewProductCheck(source) {
     var tjob = getTransferLoopJob(ACCOUNT_TYPES[source]);
@@ -172,6 +150,9 @@ function updateToTakoServer(info, callback) {
         },
         json:{body:info},
         ca: fs.readFileSync('cert/ca-crt.pem'),
+        checkServerIdentity: function (host, cert) {
+            return undefined;
+        }
     },
         function (err, httpResponse, body) {
             try {

@@ -7,7 +7,7 @@ var https = require('https'),
     os = require("os");
 var logutil = require("../logutil").config("takoserver");
 var querystring = require('querystring');
-var port = 80;
+var port = 443;
 var networkInterfaces = os.networkInterfaces();
 var globalIPAddress = process.argv[2] || (os.platform() === "linux" ? networkInterfaces.eth1[0].address : networkInterfaces['Wireless Network Connection'][1].address);
 console.log("globalIPAddress", globalIPAddress)
@@ -31,7 +31,7 @@ var sslserver = https.createServer(options, function (req, res) {
         );
         res.end();
     }
-}).listen(4433);
+}).listen(port);
 
 logutil.info("Static file server running at\n  => http://" + globalIPAddress + ":" + port + "/\nCTRL + C to shutdown");
 
@@ -54,7 +54,7 @@ function handleApiRequest(request, response) {
                     // 'Content-Length': output.length
                     "Access-Control-Allow-Origin": "http://" + globalIPAddress
                 });
-                logutil.info("output", output)
+                //logutil.info("output", output)
                 response.write(output);
                 response.end();
             });

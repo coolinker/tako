@@ -63,11 +63,12 @@ function loginAccount(account, callback) {
     loginjobs.login(account, function (cookieJar, info) {
         account.unlock();
         if (cookieJar === null) {
-            logutil.error("\nAccount login failed", account.user, info.resultMsg);
+            logutil.error("\nAccount login failed", account.user, info);
+        } else {
+            scheduleAccount(account);
         }
 
         if (callback) callback(info);
-        scheduleAccount(account);
     })
 }
 
@@ -206,7 +207,7 @@ function queueLogin() {
                     loginAccount(acc, function () {
 
                     });
-                    break;
+                    continue;
                 }
 
 
@@ -219,19 +220,19 @@ function queueLogin() {
                         var _acc = acc;
                         return function (cookieJar) {
                             _acc.cookieJar = cookieJar;
+                            _acc.unlock();
                             if (cookieJar === null) {
                                 logutil.info("extend login failed:", _acc.user);
                             } else {
                                 logutil.info("extend login:", _acc.user, _acc.source);
                                 //_acc.loginExtendedTime = new Date();
+                                if (_acc.needNewSchedule()) {
+                                    scheduleAccount(_acc);
+                                } else if (_acc.ableToSchedule()) {
+                                    checkSchedule(_acc);
+                                }
                             }
 
-                            _acc.unlock();
-                            if (_acc.needNewSchedule()) {
-                                scheduleAccount(_acc);
-                            } else if (_acc.ableToSchedule()) {
-                                checkSchedule(_acc);
-                            }
                         }
                     })())
                 }

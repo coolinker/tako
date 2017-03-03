@@ -180,7 +180,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", balanceFromEX.amount, "Interval max:", maxEXedAmount, '\n')
+        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", balanceFromEX.amount, "Interval max:", maxEXedAmount)
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
@@ -189,8 +189,8 @@ function walkThrough(date, productList, standardAmount) {
     day1EXables.sort(function (e0, e1) {
         var amt0 = getScheduleStatusAmount(e0, "*");
         var amt1 = getScheduleStatusAmount(e1, "*");
-        if (amt0 > amt1) return -1;
-        if (amt0 < amt1) return 1;
+        if (amt0 > amt1) return 1;
+        if (amt0 < amt1) return -1;
         if (amt0 === amt1) return 0;
     });
 
