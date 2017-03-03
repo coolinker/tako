@@ -33,7 +33,7 @@ function feelerInfoIO(info) {
             accs.push(accountMap[user]);
             accountMap[user].needUpdate = false;
         }
-        
     }
+    logutil.info("feelerInfoIO update accounts:", accs.length)
     return accs;
 }

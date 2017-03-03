@@ -22,7 +22,7 @@ var options = {
 var sslserver = https.createServer(options, function (req, res) {
     var uri = url.parse(req.url).pathname;
     if (uri === "/api" && handleApiRequest(req, res)) {
-        logutil.info("443 port api call", uri)
+        //logutil.info("443 port api call", uri)
         return;
     } else {
     

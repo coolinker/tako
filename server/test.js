@@ -17,8 +17,8 @@ var lufaxAcc = {
     stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
-        consume: false,
-        schedule: false,
+        consume: true,
+        schedule: true,
         leverage: 3.375
 
     }
@@ -33,12 +33,12 @@ var lufaxAcc1 = {
     interestLevelMax: 0.2,
     interestLevelMin: 0.08,
     reservedBalance: 0,
-    pricePerBidMax: 6000,
+    pricePerBidMax: 8000,
     pricePerBidMin: 1500,
     stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
-        consume: false,
+        consume: true,
         schedule: true,
         leverage: 2.375
     }
@@ -83,14 +83,13 @@ function postAccount(acc) {
         json: acc,
         ca: fs.readFileSync('cert/ca-crt.pem'),
         checkServerIdentity: function (host, cert) {
-            console.log("checkServerIdentity", host)
             return undefined;
         }
     },
         function (err, httpResponse, body) {
             try {
                 //var accountJson = JSON.parse(body);
-                console.log("postAccount:", body)
+                console.log("postAccount:", acc.user, body)
             } catch (e) {
                 console.error("postAccount exception:", err, body);
             }
@@ -98,3 +97,4 @@ function postAccount(acc) {
 }
 
 postAccount(lufaxAcc);
+postAccount(lufaxAcc1);

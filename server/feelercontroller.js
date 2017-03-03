@@ -2,7 +2,7 @@ var logutil = require("../logutil").config("feeler");
 var simplehttp = require('../simplehttp');
 var fs = require("fs");
 
-var pppoeutil = require("./pppoeutil");
+var pppoeutil = require("../pppoeutil");
 
 //var rrdtransferloopjob = require("../rrd/transferloopjob");
 //var lufaxtransferloopjob = require("../lu/transferloopjob");
@@ -86,6 +86,7 @@ function updateAccounts(accountJson) {
     for (var i=0; i<accountJson.length; i++){
         var accountObj = new CommonAccount(accountJson[i].user, accountJson[i].type).config(accountJson[i]);
         var acc = accountqueue.getAccount(accountObj);
+        console.log("----------", accountJson[i])
         if (!acc){
             accountqueue.addAccount(accountObj);
         } else {

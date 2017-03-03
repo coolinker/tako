@@ -6,6 +6,11 @@ var CommonAccount = function (user, source) {
     this.source = source;
     this.createdTime = new Date();
     this.consumeHistory = [];
+    this.capability = {
+        consume: true,
+        leverage: 2.375,
+        schedule: false
+    };
     //this.eventEmitter = new events.EventEmitter();
     events.EventEmitter.call(this);
 };
@@ -34,12 +39,7 @@ CommonAccount.prototype.lastConsumingTime = null;
 CommonAccount.prototype.consumeHistory = [];
 CommonAccount.prototype.infoUpdateTime = null;
 CommonAccount.prototype.scheduleObj = null;
-
-CommonAccount.prototype.capability = {
-    consume: true,
-    leverage: 4.375,
-    schedule: false
-};
+CommonAccount.prototype.capability = null;
 
 CommonAccount.prototype.config = function (obj) {
     for (var att in obj) {
@@ -76,7 +76,7 @@ CommonAccount.prototype.JSONInfo = function () {
     }
 }
 
-CommonAccount.prototype.getUpdateInfo = function(lastTime){
+CommonAccount.prototype.getUpdateInfo = function (lastTime) {
     if (this.infoUpdateTime > lastTime) {
         return {
             consumeHistory: this.consumeHistory,
@@ -127,7 +127,7 @@ CommonAccount.prototype.ableToSchedule = function () {
 CommonAccount.prototype.ableToConsume = function () {
     if (!this.cookieJar || !this.capability.consume) return false;
     var total = this.availableBalance;// + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
-    if ( total< this.stopConsumeBalance) return false;
+    if (total < this.stopConsumeBalance) return false;
     if (this.scheduleObj) {
         var afterRepay = total - this.ongoingTodayBuyBackAmount;
         if (afterRepay < this.stopConsumeBalance) return false;
