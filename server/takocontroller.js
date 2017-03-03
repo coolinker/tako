@@ -6,7 +6,7 @@ var latestFeelerIOTime = null;
 
 exports.updateAccount = updateAccount;
 function updateAccount(accountJson) {
-    accountJson.updateTime = new Date();
+    accountJson.needUpdate = true;
     accountMap[accountJson.user] = accountJson;
     return infoQueue[accountJson.user] || "Account added.";
 }
@@ -29,7 +29,11 @@ function feelerInfoIO(info) {
 
     var accs = [];
     for (var user in accountMap) {
-        accs.push(accountMap[user]);
+        if (accountMap[user].needUpdate){
+            accs.push(accountMap[user]);
+            accountMap[user].needUpdate = false;
+        }
+        
     }
     return accs;
 }
