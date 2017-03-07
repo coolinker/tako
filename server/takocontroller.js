@@ -31,7 +31,7 @@ function feelerInfoIO(params) {
 
     var accs = [];
     for (var user in accountMap) {
-        if (!accounts[user] || accounts[user] && accountMap[user].updateTime > accounts[user].updateTime){
+        if (!accounts[user] || accounts[user] && accountMap[user].updateTime > new Date(accounts[user].updateTime)){
             accs.push(accountMap[user]);
         }
     }
