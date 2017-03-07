@@ -1,9 +1,7 @@
 var TestData = require("../testdata.js");
-//var feeler = require("./feelercontroller.js");
 var simplehttp = require('../simplehttp');
 var https = require('https');
 var fs = require("fs");
-var takoServerIP = "192.168.128.94";
 var lufaxAcc = {
     user: "coolinker",
     source: "www.lu.com",
@@ -64,19 +62,11 @@ var lufaxAcc2 = {
 
 };
 
-// try {
-//     feeler.getAccountInfo(lufaxAcc, function () {
-//         //takoController.startAccountBidding(lufaxAcc);
-//     })
 
-// } catch (e) {
-//     console.log("--------------------------exit exception!", e.stack)
-// }
-
-
+var takoServerIP = "123.57.39.80";//"10.37.2.237";
 
 function postAccount(acc) {
-    simplehttp.POST("https://123.57.39.80/api?action=updateAccount", {
+    simplehttp.POST("https://"+takoServerIP+":443/api?action=updateAccount", {
         headers: {
             'Content-type': 'application/json',
         },
@@ -89,7 +79,7 @@ function postAccount(acc) {
         function (err, httpResponse, body) {
             try {
                 //var accountJson = JSON.parse(body);
-                console.log("postAccount:", acc.user, body)
+                console.log("postAccount:=>", acc.user, err, body);
             } catch (e) {
                 console.error("postAccount exception:", err, body);
             }
@@ -97,4 +87,4 @@ function postAccount(acc) {
 }
 
 postAccount(lufaxAcc);
-postAccount(lufaxAcc1);
+//postAccount(lufaxAcc1);

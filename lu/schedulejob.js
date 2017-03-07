@@ -157,8 +157,10 @@ function walkThrough(date, productList, standardAmount) {
 
         var selectedEXforRepaying = [];
         var buyBack = buyBackOnDay(dt, productList, selectedEXforRepaying);
-        if (buyBack === null) return [];
-
+        if (buyBack === null) {
+            if (i>10) break;
+            else return [];
+        }
 
         var maxEXedAmount = getMaxIntervalRepaymentAndEXAmountOfDay(dt, productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
@@ -169,7 +171,8 @@ function walkThrough(date, productList, standardAmount) {
 
         if (toEXAmount/i < -100) {
             console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount), toEXAmount);
-            return [];
+            if (i>10) break;
+            else return [];
         }
 
         var selectedExables0 = [];
@@ -179,8 +182,6 @@ function walkThrough(date, productList, standardAmount) {
         var selectedEXables = [];
         selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedEXables);
         if (selectedBalance > toEXAmount) selectedEXables.pop();
-
-
 
         if (i === 0) {
             appendArray(day1EXables, selectedEXforRepaying);
@@ -796,7 +797,7 @@ function requestM3105rate(account, investmentId, rate, callback) {
 
             var json = JSON.parse(body);
             if (!json.result) {
-                console.log("Error requestM3105rate", body);
+                console.log("Error requestM3105rate", investmentId, rate, body);
                 callback(null);
             } else {
                 json.result.interestRate = rate;
