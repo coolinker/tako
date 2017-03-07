@@ -35,19 +35,21 @@ function consume(toBeConsumed) {
 
 exports.getUpdateInfo = getUpdateInfo;
 function getUpdateInfo(lastTime) {
-    var info = null;
+    var json = { accounts: {}, info: {} };
     for (var accountType in accountQueues) {
         var accs = accountQueues[accountType];
         for (var i = accs.length - 1; i >= 0; i--) {
+            var user = accs[i].user;
+            json.accounts[user] = {user: user, updateTime: accs[i].updateTime};
             var update = accs[i].getUpdateInfo(lastTime);
+
             if (update) {
-                if (!info) info = {};
-                info[accs[i].user] = update;
+                json.info[user] = update;
             }
         }
     }
 
-    return info;
+    return json;
 }
 
 exports.loginAccount = loginAccount;

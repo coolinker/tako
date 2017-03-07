@@ -6,13 +6,15 @@ var latestFeelerIOTime = null;
 
 exports.updateAccount = updateAccount;
 function updateAccount(accountJson) {
-    accountJson.needUpdate = true;
+    accountJson.updateTime = new Date();
     accountMap[accountJson.user] = accountJson;
     return infoQueue[accountJson.user] || "Account added.";
 }
 
 exports.feelerInfoIO = feelerInfoIO;
-function feelerInfoIO(info) {
+function feelerInfoIO(params) {
+    var info = params.info;
+    var accounts = params.accounts;
     latestFeelerIOTime = new Date();
     for (var user in info) {
         var userinfo = info[user];
@@ -29,9 +31,8 @@ function feelerInfoIO(info) {
 
     var accs = [];
     for (var user in accountMap) {
-        if (accountMap[user].needUpdate){
+        if (!accounts[user] || accounts[user] && accountMap[user].updateTime > accounts[user].updateTime){
             accs.push(accountMap[user]);
-            accountMap[user].needUpdate = false;
         }
     }
     logutil.info("feelerInfoIO update accounts:", accs.length)

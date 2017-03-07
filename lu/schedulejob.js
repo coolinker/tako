@@ -65,7 +65,7 @@ function schedule(account, callback) {
             addScheduleStatus(d, 'available', get000Date(), account.availableBalance);
             var all = currentEXable.concat(recentApply).concat(repayments);
             all.push(d);
-            var standardamount = Math.floor(account.totalAssets * account.capability.leverage / 7);
+            var standardamount = Math.floor(EXdiscount * account.totalAssets * account.capability.leverage / 7);
 
             var selectedExables = walkThrough(get000Date(), all, standardamount);
             account.scheduleObj = {
@@ -148,6 +148,7 @@ function checkSchedule(account, callback) {
 function walkThrough(date, productList, standardAmount) {
     console.log("workThrough standardAmount*90%", standardAmount * 0.9);
     var day1EXables = [];
+    
     for (var i = 0; i < EXCicleDays + 1; i++) {
         var dt = get000Date(date, i);
         AEToEXable(dt, productList);
@@ -158,21 +159,28 @@ function walkThrough(date, productList, standardAmount) {
         var buyBack = buyBackOnDay(dt, productList, selectedEXforRepaying);
         if (buyBack === null) return [];
 
-        //var preEXedAmount = getTotalRepaymentAndEXAmount(get000Date(dt, -(EXIntervalDays - 1)), dt, productList);
-        //var postEXedAmount = getTotalRepaymentAndEXAmount(dt, get000Date(dt, EXIntervalDays - 1), productList);
-        var maxEXedAmount = getMaxTotalRepaymentAndEXAmountAroundDay(dt, productList);
+
+        var maxEXedAmount = getMaxIntervalRepaymentAndEXAmountOfDay(dt, productList);
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
-        if (maxEXedAmount > standardAmount * EXdiscount + 500) {
-            console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount));
+        var toEXAmount = standardAmount * EXdiscount - maxEXedAmount;
+        var paybackbalance = getPaybackBalance(get000Date(dt), get000Date(dt, EXIntervalDays - 1), productList);
+
+        toEXAmount = Math.min(toEXAmount, paybackbalance);
+
+        if (toEXAmount/i < -100) {
+            console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount), toEXAmount);
             return [];
         }
 
-        var toEXAmount = standardAmount * EXdiscount - maxEXedAmount;
-        var selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, []);
+        var selectedExables0 = [];
+        var selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedExables0);
         toEXAmount = Math.min(selectedBalance, toEXAmount);
+
         var selectedEXables = [];
         selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedEXables);
         if (selectedBalance > toEXAmount) selectedEXables.pop();
+
+
 
         if (i === 0) {
             appendArray(day1EXables, selectedEXforRepaying);
@@ -180,7 +188,7 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", balanceFromEX.amount, "Interval max:", maxEXedAmount)
+        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", balanceFromEX.amount, "Interval max:", maxEXedAmount, maxEXedAmount + balanceFromEX.amount)
         productList.push(balanceFromEX);
 
         balanceToAE(dt, productList);
@@ -196,6 +204,44 @@ function walkThrough(date, productList, standardAmount) {
 
 
     return day1EXables;
+}
+
+function getPaybackBalance(start, end, productList) {
+    var dt = start;
+    var interval = 5 * 24 * 3600 * 1000;
+    var minbalance = Math.pow(2, 53) - 1;
+    var balance = 0;
+    for (var i = 0; dt <= end; i++) {
+        dt = get000Date(start, i);
+        var repay = getRepaymentsTotalOfDay(dt, productList, []);
+        var exsum = 0;
+        for (var j = 0; j < productList.length; j++) {
+            var d = productList[j];
+            if (getScheduleStatus(d) === "AE") {
+                var applyTime = getScheduleStatusTime(d, "AE");
+                if (dt - applyTime === interval) {
+                    var amt = EXdiscount * getScheduleStatusAmount(d, "AE");
+                    exsum += amt;
+                }
+            }
+
+            if (i === 0 && getScheduleStatus(d) === "EXable") {
+                var amt = EXdiscount * getScheduleStatusAmount(d, "EXable");
+                exsum += amt;
+            }
+
+
+            // addScheduleStatus(d, "EXable", get000Date(date), getScheduleStatusAmount(d, "AE"));
+        }
+        balance += exsum - repay;
+        minbalance = Math.min(minbalance, balance);
+        if (minbalance < 0) {
+            console.log("===", dt, exsum, repay, balance, minbalance)
+        }
+
+    }
+
+    return minbalance;
 }
 
 
@@ -216,12 +262,13 @@ function getTotalRepaymentAndEXAmount(from, to, productList) {
     return amount;
 }
 
-function getMaxTotalRepaymentAndEXAmountAroundDay(date, productList) {
+function getMaxIntervalRepaymentAndEXAmountOfDay(date, productList) {
     var max = 0;
     for (var i = EXIntervalDays - 1; i >= 0; i--) {
         var start = get000Date(date, -i);
         var end = get000Date(start, EXIntervalDays - 1);
         var val = getTotalRepaymentAndEXAmount(start, end, productList);
+        //if (date.getDate() === 16 || date.getDate() === 14) console.log(start.toLocaleDateString(), end.toLocaleDateString(), val)
         max = Math.max(max, val);
     }
 
@@ -342,7 +389,7 @@ function selectEXablesToEX(date, totalamount, productList, selectedEXables) {
     selectedEXables.length = 0;
     var validEXables = [];
     for (var i = 0; i < productList.length; i++) {
-        if (getScheduleStatus(productList[i]) === "EXable") {
+        if (getScheduleStatus(productList[i]) === "EXable" && getScheduleStatusTime(productList[i]) <= date) {
             validEXables.push(productList[i]);
         }
     }
@@ -379,6 +426,22 @@ function selectEXablesToEX(date, totalamount, productList, selectedEXables) {
     }
 
     return totalamount - remain;
+}
+
+function getRepaymentsTotalOfDay(date, data, repayments) {
+    repayments.length = 0;
+    var total = 0;
+    for (var i = 0; i < data.length; i++) {
+        var d = data[i];
+        if (getScheduleStatus(d) !== "repayment") continue;
+        var expectedDate = getScheduleStatusTime(d, "repayment")
+        if (expectedDate.getTime() === date.getTime()) {
+            repayments.push(d);
+            total += getScheduleStatusAmount(d, "repayment");
+        }
+    }
+
+    return Math.round(total);
 }
 
 function getRepaymentsOnDay(date, data, repayments) {
@@ -554,11 +617,6 @@ function getEXable(account, callback) {
     })
 }
 
-// function getEXApplied(account, callback) {
-//     requestM6059(account, 'ONGOING', 'R030_TRANSFER_APPLIED', function (data) {
-//         callback(data);
-//     })
-// }
 
 function requestM6059(account, requestType, filter, callback, pageNum) {
     if (!pageNum) pageNum = 1;
