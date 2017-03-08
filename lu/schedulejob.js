@@ -714,7 +714,10 @@ function updateAppliedEXStatus(account, exables, idx, callback) {
 
     var investmentId = exable.investmentId;
     requestM3048(account, investmentId, function (result) {
-        exable.M3048Response = result;
+        if (result) {
+            exable.M3048Response = result;
+        }
+        
         if (idx + 1 < exables.length) updateAppliedEXStatus(account, exables, idx + 1, callback);
         else callback(exables)
     })

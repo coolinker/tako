@@ -11,8 +11,7 @@ var CommonAccount = function (user, source) {
         leverage: 2.375,
         schedule: false
     };
-    //this.eventEmitter = new events.EventEmitter();
-    events.EventEmitter.call(this);
+    //events.EventEmitter.call(this);
 };
 
 CommonAccount.prototype.__proto__ = events.EventEmitter.prototype;
@@ -78,9 +77,24 @@ CommonAccount.prototype.JSONInfo = function () {
 
 CommonAccount.prototype.getUpdateInfo = function (lastTime) {
     if (this.infoUpdateTime > lastTime) {
+        var consumes = this.consumeHistory.map(function(item){
+            return {
+                productId: item.productId,
+                price: item.price,
+                interest: item.interest,
+                producedTime: item.producedTime
+            }
+        });
+
         return {
-            consumeHistory: this.consumeHistory,
-            schedule: this.scheduleObj,
+            consume: consumes,
+            schedule: {
+                EXables: this.scheduleObj.selectedExables.length,
+                appliedEX: this.scheduleObj.appliedEX.length,
+                transferingTotal: this.scheduleObj.transferingTotal,
+                expectedEXAmount: this.scheduleObj.expectedEXAmount,
+                scheduleTime: this.scheduleObj.scheduleTime
+            }
         }
     }
     return null;
@@ -88,7 +102,7 @@ CommonAccount.prototype.getUpdateInfo = function (lastTime) {
 
 CommonAccount.prototype.addToConsumeHistory = function (obj) {
     this.consumeHistory.push(obj);
-    this.emit('consumeHistory', this, obj);
+    //this.emit('consumeHistory', this, obj);
     this.markInfoUpdate();
 }
 
