@@ -90,7 +90,7 @@ CommonAccount.prototype.getUpdateInfo = function (lastTime) {
             updateTime: this.infoUpdateTime,
             consume: consumes,
             schedule: {
-                EXables: this.scheduleObj.selectedExables.length,
+                EXables: this.scheduleObj.EXables.length,
                 appliedEX: this.scheduleObj.appliedEX.length,
                 transferingTotal: this.scheduleObj.transferingTotal,
                 expectedEXAmount: this.scheduleObj.expectedEXAmount,

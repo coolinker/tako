@@ -6,7 +6,7 @@ var latestFeelerIOTime = null;
 
 exports.updateAccount = updateAccount;
 function updateAccount(accountJson) {
-    accountJson.updateTime = new Date();
+    accountJson.updateTime = new Date().getTime();
     accountMap[accountJson.user] = accountJson;
     return infoQueue[accountJson.user] || "Account added.";
 }
