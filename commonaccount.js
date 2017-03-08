@@ -87,6 +87,7 @@ CommonAccount.prototype.getUpdateInfo = function (lastTime) {
         });
 
         return {
+            updateTime: this.infoUpdateTime,
             consume: consumes,
             schedule: {
                 EXables: this.scheduleObj.selectedExables.length,

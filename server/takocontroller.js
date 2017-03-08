@@ -18,6 +18,7 @@ function feelerInfoIO(params) {
     latestFeelerIOTime = new Date();
     for (var user in info) {
         var userinfo = info[user];
+        userinfo.updateTime = new Date(userinfo.updateTime);
         if (!infoQueue[user]) {
             infoQueue[user] = [];
             infoQueue[user].push(userinfo);
