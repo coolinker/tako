@@ -48,6 +48,6 @@ function feelerInfoIO(params) {
             accs.push(accountMap[user]);
         }
     }
-    logutil.info("feelerInfoIO update accounts:", accs.length)
+    logutil.info("latestFeelerIOTime:", latestFeelerIOTime);
     return accs;
 }
