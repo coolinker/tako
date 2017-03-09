@@ -139,7 +139,10 @@ function monitorAccountQueueAndJobs() {
     }
 
     var info = accountqueue.getUpdateInfo(latestIOTime);
-    updateToTakoServer(info || {}, updateAccounts);
+    updateToTakoServer(info || {}, function(accs){
+        updateAccounts(accs);
+        latestIOTime = new Date();
+    } );
 
 }
 

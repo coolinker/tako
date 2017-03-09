@@ -67,8 +67,8 @@ function handleApiRequest(request, response) {
 
 var takoController = require("./takocontroller");
 var apiDispatcher = {
-    updateAccount: function (accountJson, callback) {
-        var responseInfo = takoController.updateAccount(accountJson);
+    updateAccount: function (json, callback) {
+        var responseInfo = takoController.updateAccount(json.body, json.timestamp);
         callback(JSON.stringify({
             action: "updateAccount",
             body: responseInfo

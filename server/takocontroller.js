@@ -5,10 +5,22 @@ var infoQueue = {};
 var latestFeelerIOTime = null;
 
 exports.updateAccount = updateAccount;
-function updateAccount(accountJson) {
-    accountJson.updateTime = new Date().getTime();
+function updateAccount(accountJson, timestamp) {
+    timestamp = new Date(timestamp?timestamp:0); 
+    accountJson.updateTime = new Date();
     accountMap[accountJson.user] = accountJson;
-    return infoQueue[accountJson.user] || "Account added.";
+    if (!infoQueue[accountJson.user]) {
+        "Account added.";
+        return;
+    }
+    var infotoupdate = [];
+    for (var i=0; i<infoQueue[accountJson.user].length; i++) {
+        var info = infoQueue[accountJson.user][i];
+        if (new Date(info.updateTime) > timestamp) {
+            infotoupdate.push(info);
+        }
+    }
+    return infotoupdate;
 }
 
 exports.feelerInfoIO = feelerInfoIO;

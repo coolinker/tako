@@ -10,7 +10,7 @@ var lufaxAcc = {
     interestLevelMax: 0.2,
     interestLevelMin: 0.08,
     reservedBalance: 0,
-    pricePerBidMax: 8000,
+    pricePerBidMax: 7000,
     pricePerBidMin: 1500,
     stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
@@ -50,27 +50,29 @@ var lufaxAcc2 = {
     interestLevelMax: 0.2,
     interestLevelMin: 0.08,
     reservedBalance: 0,
-    pricePerBidMax: 6000,
+    pricePerBidMax: 7000,
     pricePerBidMin: 1500,
     stopConsumeBalance: 5000,
     loginExtendInterval: 5 * 60 * 1000,
     capability: {
         consume: false,
         schedule: true,
-        leverage: 2.375
+        leverage: 4.375
     }
 
 };
 
 
-var takoServerIP = "123.57.39.80";//"10.37.2.237";
+var takoServerIP = "192.168.128.92:4433";//"123.57.39.80";//
 
 function postAccount(acc) {
-    simplehttp.POST("https://"+takoServerIP+":443/api?action=updateAccount", {
+    simplehttp.POST("https://" + takoServerIP + "/api?action=updateAccount", {
         headers: {
             'Content-type': 'application/json',
         },
-        json: acc,
+        json: {
+            body: acc,
+        },
         ca: fs.readFileSync('cert/ca-crt.pem'),
         checkServerIdentity: function (host, cert) {
             return undefined;
@@ -78,10 +80,9 @@ function postAccount(acc) {
     },
         function (err, httpResponse, body) {
             try {
-                //var accountJson = JSON.parse(body);
-                console.log("postAccount:=>", acc.user, err, body);
+                console.log("postAccount:=>", acc.user, err, JSON.stringify(body));
             } catch (e) {
-                console.error("postAccount exception:", err, body);
+                console.error("postAccount exception:", err, body, e.stack);
             }
         });
 }

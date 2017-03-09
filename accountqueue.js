@@ -66,7 +66,7 @@ function loginAccount(account, callback) {
         account.unlock();
         if (cookieJar === null) {
             logutil.error("\nAccount login failed", account.user, info);
-        } else {
+        } else if (account.needNewSchedule()){
             scheduleAccount(account);
         }
 

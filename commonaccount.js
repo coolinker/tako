@@ -136,7 +136,7 @@ CommonAccount.prototype.ableToSchedule = function () {
     if (scheduleTime.getDate() !== now.getDate() || (now - scheduleTime) > 24 * 60 * 60 * 1000) return false;
 
     var hours = now.getHours() + now.getMinutes() / 60;
-    return this.cookieJar && this.capability.schedule && hours >= 8.25 && hours <= 22;
+    return this.cookieJar && this.capability.schedule && hours >= 8.25 && hours <= 21;
 }
 
 CommonAccount.prototype.ableToConsume = function () {
