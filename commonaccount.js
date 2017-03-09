@@ -123,7 +123,10 @@ CommonAccount.prototype.needNewSchedule = function () {
     var scheduleTime = this.scheduleObj.scheduleTime;
     var now = new Date();
     var hours = now.getHours() + now.getMinutes() / 60;
+    var shours = scheduleTime.getHours() + scheduleTime.getMinutes() / 60;
+    
     if (scheduleTime.getDate() !== now.getDate() && hours >= 7.5) return true;
+    if (scheduleTime.getDate() === now.getDate() && hours - shours > 6) return true;
     return false;
 
 }

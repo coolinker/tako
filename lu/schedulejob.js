@@ -673,7 +673,7 @@ function getEXInterestRate(account, minPrice, callback) {
         function (err, httpResponse, body) {
             var json = JSON.parse(body).result.products[0].productList;
             if (json.length <= 5) {
-                callback(4.81)
+                callback(4.51)
                 return;
             }
 
