@@ -22,28 +22,28 @@ exports.guessCaptchaForTrading = guessCaptchaForTrading;
 function guessCaptchaForTrading(productId, sid, cookieJar, callback) {
     var startTime = new Date();
     simplehttp.POST("https://trading.lu.com/trading/service/trade/captcha/create-captcha", {
-            "cookieJar": cookieJar,
-            "form": {
-                sid: sid,
-                productId: productId
-            }
-        },
-        function(err, httpResponse, body) {
-            
+        "cookieJar": cookieJar,
+        "form": {
+            sid: sid,
+            productId: productId
+        }
+    },
+        function (err, httpResponse, body) {
+
             var captchaInfo = JSON.parse(body);
             if (!captchaInfo.imageId) {
                 callback();
                 return;
             }
-            getCaptchaByImageId(captchaInfo.imageId, cookieJar, function(image) {
-                logutil.log("get Image:", new Date()-startTime)
+            getCaptchaByImageId(captchaInfo.imageId, cookieJar, function (image) {
+                logutil.log("get Image:", new Date() - startTime)
                 var cstart = new Date();
                 var captachStr = crackCaptcha(image);
-                logutil.log("crack Image:", new Date()-cstart,  new Date()-startTime)
+                logutil.log("crack Image:", new Date() - cstart, new Date() - startTime)
                 if (!NEED_PRE_CHECK) {
                     callback(captachStr, captchaInfo.imageId);
                 } else {
-                    captachaPreCheck(captachStr, "sid=" + sid + "&imgId=" + captchaInfo.imageId, cookieJar, function(success) {
+                    captachaPreCheck(captachStr, "sid=" + sid + "&imgId=" + captchaInfo.imageId, cookieJar, function (success) {
                         logutil.log("guessCaptcha", captchaInfo.imageId, captachStr, success);
                         if (success) {
                             callback(captachStr, captchaInfo.imageId);
@@ -59,10 +59,10 @@ function guessCaptchaForTrading(productId, sid, cookieJar, callback) {
 
 function getCaptchaByImageId(imageId, cookieJar, callback) {
     simplehttp.image("https://user.lu.com/user/captcha/get-captcha?source=1&imageId=" + imageId + "&_=" + new Date().getTime(), {
-            "cookieJar": cookieJar,
-            type: 'image/jpeg'
-        },
-        function(err, pixels) {
+        "cookieJar": cookieJar,
+        type: 'image/jpeg'
+    },
+        function (err, pixels) {
             if (err) console.log("getCaptchaByImageId:", "https://user.lu.com/user/captcha/get-captcha?source=1&imageId=" + imageId + "&_=" + new Date().getTime(),
                 err);
             var image = {
@@ -80,10 +80,10 @@ function getCaptchaByImageId(imageId, cookieJar, callback) {
 exports.guessCaptchaForLogin = guessCaptchaForLogin;
 
 function guessCaptchaForLogin(source, cookieJar, callback) {
-    getCaptchaBySource(source, cookieJar, function(captchaImage) {
+    getCaptchaBySource(source, cookieJar, function (captchaImage) {
         var captachStr = crackCaptcha(captchaImage);
         console.log("guessCaptchaForLogin", source, captachStr, captchaImage.width, captchaImage.height, captchaImage.data.length)
-        preCheck(captachStr, "source=" + source, cookieJar, function(success) {
+        preCheck(captachStr, "source=" + source, cookieJar, function (success) {
             // logutil.log("guessCaptcha", source, captachStr, success);
             if (success) {
                 callback(captachStr);
@@ -96,10 +96,10 @@ function guessCaptchaForLogin(source, cookieJar, callback) {
 
 function getCaptchaBySource(source, cookieJar, callback) {
     simplehttp.image("https://user.lu.com/user/captcha/captcha.jpg?source=" + source + "&_=" + new Date().getTime(), {
-            "cookieJar": cookieJar,
-            type: 'image/jpeg'
-        },
-        function(err, pixels) {
+        "cookieJar": cookieJar,
+        type: 'image/jpeg'
+    },
+        function (err, pixels) {
             var image = {
                 width: pixels.shape[0],
                 height: pixels.shape[1],
@@ -112,21 +112,27 @@ function getCaptchaBySource(source, cookieJar, callback) {
 }
 
 function crackCaptcha(imageData) {
-    var imgs = imageProcessor.getMainColorGroupImages(imageData);
     var captachStr = "";
-    for (var i = 0; i < imgs.length; i++) {
-        imageProcessor.rotateToMinWidth(imgs[i]);
-        imageUtil.makeSingleColor(imgs[i], 0);
+    try {
+        var imgs = imageProcessor.getMainColorGroupImages(imageData);
+        for (var i = 0; i < imgs.length; i++) {
+            imageProcessor.rotateToMinWidth(imgs[i]);
+            imageUtil.makeSingleColor(imgs[i], 0);
 
-        imgs[i] = imageUtil.removePadding(imgs[i], 255);
-        imgs[i] = imageUtil.scale(imgs[i], 32, 32);
+            imgs[i] = imageUtil.removePadding(imgs[i], 255);
+            imgs[i] = imageUtil.scale(imgs[i], 32, 32);
 
-        // var nda = ndarray(new Float32Array(imgs[i].data), [imgs[i].width, imgs[i].height, 4], [4, imgs[i].width * 4, 1]);
-        // savePixels(nda, "png").pipe(fs.createWriteStream("lufax/guess/" + i + ".png"));
+            // var nda = ndarray(new Float32Array(imgs[i].data), [imgs[i].width, imgs[i].height, 4], [4, imgs[i].width * 4, 1]);
+            // savePixels(nda, "png").pipe(fs.createWriteStream("lufax/guess/" + i + ".png"));
 
-        var charactor = imageRepository.guess(imgs[i], "charactor");
-        // console.log("charactor:", charactor)
-        captachStr += charactor;
+            var charactor = imageRepository.guess(imgs[i], "charactor");
+            // console.log("charactor:", charactor)
+            captachStr += charactor;
+        }
+
+    } catch (e){
+       captachStr = "";
+       console.log("crackCaptcha", captachStr) 
     }
 
     return captachStr;
@@ -138,7 +144,7 @@ function captachaPreCheck(captachaStr, paramsStr, cookieJar, callback) {
     console.log("checkCaptacha", url);
     simplehttp.GET(url, {
         "cookieJar": cookieJar
-    }, function(error, request, body) {
+    }, function (error, request, body) {
         console.log("body", error, body)
         json = JSON.parse(body);
         if (json.result === "SUCCESS") {
@@ -155,13 +161,13 @@ function preCheck(captachaStr, paramsStr, cookieJar, callback) {
 
     simplehttp.GET(url, {
         "cookieJar": cookieJar
-    }, function(error, request, body) {
-         console.log("check:", error, body)
+    }, function (error, request, body) {
+        console.log("check:", error, body)
         if (error) {
-            callback(false);            
+            callback(false);
             return;
         }
-        
+
         json = JSON.parse(body);
         if (json.result === "SUCCESS") {
             callback(true);

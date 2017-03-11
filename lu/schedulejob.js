@@ -148,7 +148,7 @@ function checkSchedule(account, callback) {
 function walkThrough(date, productList, standardAmount) {
     console.log("workThrough standardAmount*90%", standardAmount * 0.9);
     var day1EXables = [];
-    
+
     for (var i = 0; i < EXCicleDays + 1; i++) {
         var dt = get000Date(date, i);
         AEToEXable(dt, productList);
@@ -158,7 +158,7 @@ function walkThrough(date, productList, standardAmount) {
         var selectedEXforRepaying = [];
         var buyBack = buyBackOnDay(dt, productList, selectedEXforRepaying);
         if (buyBack === null) {
-            if (i>10) break;
+            if (i > 10) break;
             else return [];
         }
 
@@ -166,14 +166,22 @@ function walkThrough(date, productList, standardAmount) {
         //console.log("********", dt.toLocaleString(), preEXedAmount, postEXedAmount);
         var toEXAmount = standardAmount * EXdiscount - maxEXedAmount;
         var paybackbalance = getPaybackBalance(get000Date(dt), get000Date(dt, EXIntervalDays - 1), productList);
+        if (paybackbalance < 0) {
+            console.log("reserve balance needed:", dt.toLocaleDateString(), paybackbalance)
+            toEXAmount = 0;
+        } else {
+            toEXAmount = Math.min(toEXAmount, paybackbalance);
+        }
+        var availablebalance = getAvailableBalanceOnDay(dt, productList, []);
+        var safevalue = Math.min(toEXAmount, availablebalance + paybackbalance);
 
-        toEXAmount = Math.min(toEXAmount, paybackbalance);
-
-        if (toEXAmount/i < -100) {
+        if (safevalue / i < -100) {
             console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount), toEXAmount);
-            if (i>10) break;
+            if (i > 10) break;
             else return [];
         }
+        var reservedbalance = paybackbalance < 0 ? -paybackbalance : 0;
+
 
         var selectedExables0 = [];
         var selectedBalance = selectEXablesToEX(dt, toEXAmount, productList, selectedExables0);
@@ -189,10 +197,13 @@ function walkThrough(date, productList, standardAmount) {
         }
 
         var balanceFromEX = EXForBalance(dt, selectedEXables);
-        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", balanceFromEX.amount, "Interval max:", maxEXedAmount, maxEXedAmount + balanceFromEX.amount)
+        console.log(dt.toLocaleString(), "BuyBack", repayonday, "+ EX*90%:", Math.round(balanceFromEX.amount), "Interval max:", Math.round(maxEXedAmount), Math.round(maxEXedAmount + balanceFromEX.amount))
         productList.push(balanceFromEX);
 
-        balanceToAE(dt, productList);
+        var remainbalance = balanceToAE(dt, reservedbalance, productList);
+        if (remainbalance < 0) {
+            console.log("remain balance <0 risk", dt, remainbalance, reservedbalance);
+        }
     }
 
     day1EXables.sort(function (e0, e1) {
@@ -236,9 +247,9 @@ function getPaybackBalance(start, end, productList) {
         }
         balance += exsum - repay;
         minbalance = Math.min(minbalance, balance);
-        if (minbalance < 0) {
-            console.log("===", dt, exsum, repay, balance, minbalance)
-        }
+        // if (minbalance < 0) {
+        //     console.log("===", dt, exsum, repay, balance, minbalance)
+        // }
 
     }
 
@@ -468,11 +479,11 @@ function getRepaymentsOnDay(date, data, repayments) {
     return Math.round(total);
 }
 
-function balanceToAE(date, productList) {
+function balanceToAE(date, reserved, productList) {
 
     var balances = [];
     var available = getAvailableBalanceOnDay(date, productList, balances);
-
+    available -= reserved;
     var c = Math.floor(available / AEPrice);
 
     for (var i = 0; i < c; i++) {
@@ -496,11 +507,11 @@ function balanceToAE(date, productList) {
     if (available > 0) {
         var d = {
             orign: 'BALANCE',
-            amount: available,
+            amount: available + reserved,
             applyTime: get000Date(date)
 
         }
-        addScheduleStatus(d, 'available', get000Date(date), available);
+        addScheduleStatus(d, 'available', get000Date(date), d.amount);
         productList.push(d);
     }
 
@@ -717,7 +728,7 @@ function updateAppliedEXStatus(account, exables, idx, callback) {
         if (result) {
             exable.M3048Response = result;
         }
-        
+
         if (idx + 1 < exables.length) updateAppliedEXStatus(account, exables, idx + 1, callback);
         else callback(exables)
     })

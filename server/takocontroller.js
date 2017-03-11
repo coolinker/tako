@@ -10,8 +10,7 @@ function updateAccount(accountJson, timestamp) {
     accountJson.updateTime = new Date();
     accountMap[accountJson.user] = accountJson;
     if (!infoQueue[accountJson.user]) {
-        "Account added.";
-        return;
+        return "Account added.";
     }
     var infotoupdate = [];
     for (var i=0; i<infoQueue[accountJson.user].length; i++) {

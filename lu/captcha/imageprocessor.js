@@ -635,153 +635,153 @@ function removeNoiseLine(imageData) {
     return nlimg;
 }
 
+// function splitCharactors(imageData) {
+//     var colorPixels = {};
+//     var colorKeys = [];
+//     // return [imageData]
+//     var avex = imageUtil.getPixelAveX(imageData);
+//     var avey = imageUtil.getPixelAveY(imageData);
+//     var blackPIxels = {};
+//     for (var i = 0; i < imageData.data.length; i += 4) {
+//         var r = imageData.data[i];
+//         var g = imageData.data[i + 1];
+//         var b = imageData.data[i + 2];
+//         if (r === g && r === b && g === b && r === 0) {
+//             blackPIxels[i] = i;
+//             continue;
+//         } else if (r === g && r === b && r === BACKGROUND_COLOR) continue;
+
+//         var key = r + "_" + g + "_" + b;
+//         if (!colorPixels[key]) {
+//             colorKeys.push(key);
+//             colorPixels[key] = [];
+//         }
+//         colorPixels[key].push(i);
+//     }
+
+//     colorKeys.sort(function(k1, k2) {
+//         if (colorPixels[k1].length > colorPixels[k2].length) return -1;
+//         else if (colorPixels[k1].length < colorPixels[k2].length) return 1;
+//         else return 0;
+//     });
+
+//     var getAveX = function(pixels) {
+//         var tx = 0;
+//         for (var _p = 0; _p < pixels.length; _p++) {
+//             tx += (pixels[_p] % (imageData.width * 4)) / 4;
+//         }
+
+//         return tx / pixels.length;
+//     }
+//     var getAveY = function(pixels) {
+//         var ty = 0;
+//         for (var _p = 0; _p < pixels.length; _p++) {
+//             ty += Math.floor(pixels[_p] / (imageData.width * 4));
+//         }
+//         return ty / pixels.length;
+//     }
+
+//     var mainkey0_idx;
+//     var image0pixels = []; //colorPixels[colorKeys[mainkey0_idx]];
+//     var rgb_main_str_0;
+//     var avex0;
+//     var avey0;
+
+//     var mainkey1_idx;
+//     var rgb_main_str_1;
+//     var image1pixels = [];
+//     var avex1;
+//     var avey1;
+//     // console.log("ave:", avex, avey);
+//     for (var i = 0; i < colorKeys.length; i++) {
+//         var ckey = colorKeys[i];
+//         var avexi = getAveX(colorPixels[ckey]);
+//         var aveyi = getAveY(colorPixels[ckey]);
+//         if (true || Math.abs(avex - avexi) > 10 || Math.abs(avey - aveyi) > 6) {
+//             if (mainkey0_idx === undefined) {
+//                 mainkey0_idx = i;
+//                 avex0 = getAveX(colorPixels[colorKeys[i]]);
+//                 avey0 = getAveY(colorPixels[colorKeys[i]]);
+//                 // console.log(i, "avex0", avex0, "avey0", avey0, ckey, colorPixels[ckey].length);
+//                 imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
+//             } else if (mainkey0_idx !== undefined && Math.abs(avex0 - avexi) < 25 && Math.abs(avey0 - aveyi) < 13) {
+//                 //console.log("add to group0", avex0, avexi, avey0, aveyi, colorKeys[mainkey0_idx], ckey, colorPixels[ckey].length)
+//                 imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
+//             } else if (mainkey1_idx === undefined) {
+//                 mainkey1_idx = i;
+//                 avex1 = getAveX(colorPixels[colorKeys[i]]);
+//                 avey1 = getAveY(colorPixels[colorKeys[i]]);
+//                 // console.log(i, "avex1", avex1, "avey1", avey1, ckey, colorPixels[ckey].length);
+//                 imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
+//             } else if (mainkey1_idx !== undefined && Math.abs(avex1 - avexi) < 25 && Math.abs(avey1 - aveyi) < 13) {
+//                 imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
+//                 // console.log("add to group1", colorKeys[mainkey1_idx], ckey, colorPixels[ckey].length)
+//             } else {
+//                 var dist0 = distanceIn3DByColorKey(ckey, colorKeys[mainkey0_idx])
+//                 var dist1 = distanceIn3DByColorKey(ckey, colorKeys[mainkey1_idx])
+//                 if (dist0 < dist1 * 0.8 && Math.abs(avex0 - avexi) < Math.abs(avex1 - avexi)) {
+//                     imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
+//                 } else if (dist1 < dist0 * 0.8 && Math.abs(avex1 - avexi) < Math.abs(avex0 - avexi)) {
+//                     imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
+//                 } else {
+//                     imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
+//                     imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
+//                         // console.log("add to both images",i, ckey, dist0, dist1, colorPixels[ckey].length);
+//                 }
+
+
+//             }
+
+
+//         } else {
+//             console.log("drop", i, "avexi", avexi, "aveyi", aveyi, ckey, colorPixels[ckey].length);
+//         }
+//     }
+//     if (image0pixels.length < MINIMUM_CHAR_PIXEL || image1pixels.length < MINIMUM_CHAR_PIXEL) return [imageData];
+
+//     var img0 = imageUtil.getSubImage(imageData, image0pixels);
+//     var img1 = imageUtil.getSubImage(imageData, image1pixels);
+
+//     function mergePixels(_img0, _img1) {
+//         imageUtil.addToImage(_img0, imageData, blackPIxels);
+//         cutNoiseLine(_img0);
+//         var removed0 = removeFarIslets(_img0, 5, 10);
+//         imageUtil.addToImage(_img1, imageData, removed0);
+//     }
+
+//     mergePixels(img0, img1);
+//     mergePixels(img1, img0);
+
+//     function mergeIslets(_img0, _img1) {
+//         var islets = imageUtil.getIslets(_img0, 200);
+//         var img1map = imageUtil.pixelMap(_img1);
+//         for (var i = 0; i < islets.length; i++) {
+//             var islet = islets[i];
+//             var count = 0;
+//             for (var att in islet) {
+//                 count++;
+//             }
+
+//             imageUtil.addToImage(_img1, _img0, islet);
+//             var dist = imageUtil.getIsletsMinDistance(_img1, islet, img1map);
+//             if (dist === 0) {
+//                 imageUtil.removePixelColor(_img0, islet);
+//             } else {
+//                 console.log("mergeIslets:------------------ distance is not 0");
+//             }
+//         }
+//     }
+//     // return [img1]
+//     mergeIslets(img0, img1);
+//     mergeIslets(img1, img0);
+
+//     var avx0 = imageUtil.getPixelAveX(img0);
+//     var avx1 = imageUtil.getPixelAveX(img1);
+//     return avx0 < avx1 ? [img0, img1] : [img1, img0];
+// }
+
+
 function splitCharactors(imageData) {
-    var colorPixels = {};
-    var colorKeys = [];
-    // return [imageData]
-    var avex = imageUtil.getPixelAveX(imageData);
-    var avey = imageUtil.getPixelAveY(imageData);
-    var blackPIxels = {};
-    for (var i = 0; i < imageData.data.length; i += 4) {
-        var r = imageData.data[i];
-        var g = imageData.data[i + 1];
-        var b = imageData.data[i + 2];
-        if (r === g && r === b && g === b && r === 0) {
-            blackPIxels[i] = i;
-            continue;
-        } else if (r === g && r === b && r === BACKGROUND_COLOR) continue;
-
-        var key = r + "_" + g + "_" + b;
-        if (!colorPixels[key]) {
-            colorKeys.push(key);
-            colorPixels[key] = [];
-        }
-        colorPixels[key].push(i);
-    }
-
-    colorKeys.sort(function(k1, k2) {
-        if (colorPixels[k1].length > colorPixels[k2].length) return -1;
-        else if (colorPixels[k1].length < colorPixels[k2].length) return 1;
-        else return 0;
-    });
-
-    var getAveX = function(pixels) {
-        var tx = 0;
-        for (var _p = 0; _p < pixels.length; _p++) {
-            tx += (pixels[_p] % (imageData.width * 4)) / 4;
-        }
-
-        return tx / pixels.length;
-    }
-    var getAveY = function(pixels) {
-        var ty = 0;
-        for (var _p = 0; _p < pixels.length; _p++) {
-            ty += Math.floor(pixels[_p] / (imageData.width * 4));
-        }
-        return ty / pixels.length;
-    }
-
-    var mainkey0_idx;
-    var image0pixels = []; //colorPixels[colorKeys[mainkey0_idx]];
-    var rgb_main_str_0;
-    var avex0;
-    var avey0;
-
-    var mainkey1_idx;
-    var rgb_main_str_1;
-    var image1pixels = [];
-    var avex1;
-    var avey1;
-    // console.log("ave:", avex, avey);
-    for (var i = 0; i < colorKeys.length; i++) {
-        var ckey = colorKeys[i];
-        var avexi = getAveX(colorPixels[ckey]);
-        var aveyi = getAveY(colorPixels[ckey]);
-        if (true || Math.abs(avex - avexi) > 10 || Math.abs(avey - aveyi) > 6) {
-            if (mainkey0_idx === undefined) {
-                mainkey0_idx = i;
-                avex0 = getAveX(colorPixels[colorKeys[i]]);
-                avey0 = getAveY(colorPixels[colorKeys[i]]);
-                // console.log(i, "avex0", avex0, "avey0", avey0, ckey, colorPixels[ckey].length);
-                imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
-            } else if (mainkey0_idx !== undefined && Math.abs(avex0 - avexi) < 25 && Math.abs(avey0 - aveyi) < 13) {
-                //console.log("add to group0", avex0, avexi, avey0, aveyi, colorKeys[mainkey0_idx], ckey, colorPixels[ckey].length)
-                imageUtil.arrayConcat(image0pixels, colorPixels[ckey]);
-            } else if (mainkey1_idx === undefined) {
-                mainkey1_idx = i;
-                avex1 = getAveX(colorPixels[colorKeys[i]]);
-                avey1 = getAveY(colorPixels[colorKeys[i]]);
-                // console.log(i, "avex1", avex1, "avey1", avey1, ckey, colorPixels[ckey].length);
-                imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
-            } else if (mainkey1_idx !== undefined && Math.abs(avex1 - avexi) < 25 && Math.abs(avey1 - aveyi) < 13) {
-                imageUtil.arrayConcat(image1pixels, colorPixels[ckey]);
-                // console.log("add to group1", colorKeys[mainkey1_idx], ckey, colorPixels[ckey].length)
-            } else {
-                var dist0 = distanceIn3DByColorKey(ckey, colorKeys[mainkey0_idx])
-                var dist1 = distanceIn3DByColorKey(ckey, colorKeys[mainkey1_idx])
-                if (dist0 < dist1 * 0.8 && Math.abs(avex0 - avexi) < Math.abs(avex1 - avexi)) {
-                    imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
-                } else if (dist1 < dist0 * 0.8 && Math.abs(avex1 - avexi) < Math.abs(avex0 - avexi)) {
-                    imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
-                } else {
-                    imageUtil.arrayConcat(image0pixels, colorPixels[ckey])
-                    imageUtil.arrayConcat(image1pixels, colorPixels[ckey])
-                        // console.log("add to both images",i, ckey, dist0, dist1, colorPixels[ckey].length);
-                }
-
-
-            }
-
-
-        } else {
-            console.log("drop", i, "avexi", avexi, "aveyi", aveyi, ckey, colorPixels[ckey].length);
-        }
-    }
-    if (image0pixels.length < MINIMUM_CHAR_PIXEL || image1pixels.length < MINIMUM_CHAR_PIXEL) return [imageData];
-
-    var img0 = imageUtil.getSubImage(imageData, image0pixels);
-    var img1 = imageUtil.getSubImage(imageData, image1pixels);
-
-    function mergePixels(_img0, _img1) {
-        imageUtil.addToImage(_img0, imageData, blackPIxels);
-        cutNoiseLine(_img0);
-        var removed0 = removeFarIslets(_img0, 5, 10);
-        imageUtil.addToImage(_img1, imageData, removed0);
-    }
-
-    mergePixels(img0, img1);
-    mergePixels(img1, img0);
-
-    function mergeIslets(_img0, _img1) {
-        var islets = imageUtil.getIslets(_img0, 200);
-        var img1map = imageUtil.pixelMap(_img1);
-        for (var i = 0; i < islets.length; i++) {
-            var islet = islets[i];
-            var count = 0;
-            for (var att in islet) {
-                count++;
-            }
-
-            imageUtil.addToImage(_img1, _img0, islet);
-            var dist = imageUtil.getIsletsMinDistance(_img1, islet, img1map);
-            if (dist === 0) {
-                imageUtil.removePixelColor(_img0, islet);
-            } else {
-                console.log("mergeIslets:------------------ distance is not 0");
-            }
-        }
-    }
-    // return [img1]
-    mergeIslets(img0, img1);
-    mergeIslets(img1, img0);
-
-    var avx0 = imageUtil.getPixelAveX(img0);
-    var avx1 = imageUtil.getPixelAveX(img1);
-    return avx0 < avx1 ? [img0, img1] : [img1, img0];
-}
-
-
-function splitCharactors(imageData, count) {
     var colorPixels = {};
     var colorKeys = [];
     // return [imageData]
@@ -910,6 +910,7 @@ function splitCharactors(imageData, count) {
                 imageUtil.removePixelColor(_img0, islet);
             } else {
                 console.log("mergeIslets:------------------ distance is not 0");
+                throw "Distance is not 0!";
             }
         }
     }

@@ -18,10 +18,10 @@ accountqueue.startLoopWork();
 var CommonAccount = require("../commonaccount");
 
 this.monitorIntervalObj = setInterval(function () {
-        if(pppoeutil.connected()){
-            monitorAccountQueueAndJobs();
-        }
-    }, 1 * 60 * 1000);
+    if (pppoeutil.connected()) {
+        monitorAccountQueueAndJobs();
+    }
+}, 1 * 60 * 1000);
 
 monitorAccountQueueAndJobs();
 
@@ -83,13 +83,16 @@ function getTransferLoopJob(type) {
 exports.updateAccounts = updateAccounts;
 function updateAccounts(accountJson) {
 
-    for (var i=0; i<accountJson.length; i++){
+    for (var i = 0; i < accountJson.length; i++) {
         var accountObj = new CommonAccount(accountJson[i].user, accountJson[i].type).config(accountJson[i]);
         var acc = accountqueue.getAccount(accountObj);
-        console.log("----------", accountJson[i])
         if (!acc){
-            accountqueue.addAccount(accountObj);
+            if(accountObj.isActive()) {
+                console.log("add account----------", accountJson[i])
+                accountqueue.addAccount(accountObj);
+            }
         } else {
+            console.log("config account----------", accountJson[i])
             acc.config(accountJson[i]);
         }
 
@@ -139,20 +142,20 @@ function monitorAccountQueueAndJobs() {
     }
 
     var info = accountqueue.getUpdateInfo(latestIOTime);
-    updateToTakoServer(info || {}, function(accs){
+    updateToTakoServer(info || {}, function (accs) {
         updateAccounts(accs);
         latestIOTime = new Date();
-    } );
+    });
 
 }
 
 
 function updateToTakoServer(info, callback) {
-    simplehttp.POST("https://"+takoServerIp+"/api?action=feelerInfoIO", {
+    simplehttp.POST("https://" + takoServerIp + "/api?action=feelerInfoIO", {
         headers: {
             'Content-type': 'application/json',
         },
-        json:{body:info},
+        json: { body: info },
         ca: fs.readFileSync('cert/ca-crt.pem'),
         checkServerIdentity: function (host, cert) {
             return undefined;
