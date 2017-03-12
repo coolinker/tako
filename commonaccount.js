@@ -126,7 +126,6 @@ CommonAccount.prototype.needNewSchedule = function () {
     var shours = scheduleTime.getHours() + scheduleTime.getMinutes() / 60;
     
     if (scheduleTime.getDate() !== now.getDate() && hours >= 7.5) return true;
-    if (scheduleTime.getDate() === now.getDate() && shours < 2.5) return true;
     return false;
 
 }
