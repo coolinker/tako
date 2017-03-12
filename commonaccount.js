@@ -144,6 +144,7 @@ CommonAccount.prototype.ableToSchedule = function () {
 
 CommonAccount.prototype.ableToConsume = function () {
     if (!this.cookieJar || !this.capability.consume) return false;
+    var total = this.availableBalance// + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
     if (total < this.stopConsumeBalance) return false;
     if (this.scheduleObj) {
         var afterRepay = total - this.ongoingTodayBuyBackAmount;
