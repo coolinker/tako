@@ -24,11 +24,15 @@ var sslserver = https.createServer(options, function (req, res) {
     if (uri === "/api" && handleApiRequest(req, res)) {
         //logutil.info("443 port api call", uri)
         return;
+    } else if (uri === "/test") {
+        fs.readFile("test.html", "binary", function (err, file) {
+            res.writeHead(200);
+            res.write(file, "binary");
+            res.end();
+        });
     } else {
-    
-        res.writeHead(301,
-            { Location: 'http://' + globalIPAddress + '/index.html' }
-        );
+        res.writeHead(200);
+        res.write("Wrong url");
         res.end();
     }
 }).listen(port);
@@ -75,7 +79,7 @@ var apiDispatcher = {
         }));
     },
 
-    feelerInfoIO: function(info, callback){
+    feelerInfoIO: function (info, callback) {
         var accountJson = takoController.feelerInfoIO(info.body);
         callback(JSON.stringify({
             action: "feelerInfoIO",

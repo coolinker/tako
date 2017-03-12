@@ -17,7 +17,7 @@ function consume(toBeConsumed) {
 
     for (var i = 0; i < accounts.length; i++) {
         if (toBeConsumed.length === 0) break;
-        if (accounts[i].cookieJar !== null) {
+        if (accounts[i].ableToConsume()) {
             for (var j = 0; j < toBeConsumed.length; j++) {
                 if (toBeConsumed[j].consumed) continue;
                 var finished = consumejob.consume(accounts[i], toBeConsumed[j]);

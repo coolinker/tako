@@ -4,8 +4,13 @@ var accountMap = {};
 var infoQueue = {};
 var latestFeelerIOTime = null;
 
+function validAccount(accJson){
+    return !!accJson.user;
+}
+
 exports.updateAccount = updateAccount;
 function updateAccount(accountJson, timestamp) {
+    if (!validAccount(accountJson)) return "Invalid input";
     timestamp = new Date(timestamp?timestamp:0); 
     accountJson.updateTime = new Date();
     accountMap[accountJson.user] = accountJson;

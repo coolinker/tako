@@ -114,7 +114,7 @@ CommonAccount.prototype.markInfoUpdate = function () {
 CommonAccount.prototype.isActive = function () {
     var lgt = this.loginExtendedTime ? this.loginExtendedTime : this.loginTime;
 
-    return this.capability.consume || this.capability.schedule || new Date() - lgt < this.loginExtendInterval + 600000;
+    return this.capability.consume || this.capability.schedule || new Date() - lgt < this.loginExtendInterval + 60000;
     //return this.ableToConsume() || this.loginTime ? (new Date() - this.loginTime < this.loginExtendInterval) : (new Date() - this.createdTime < 1000*60*15)
 }
 
@@ -126,7 +126,7 @@ CommonAccount.prototype.needNewSchedule = function () {
     var shours = scheduleTime.getHours() + scheduleTime.getMinutes() / 60;
     
     if (scheduleTime.getDate() !== now.getDate() && hours >= 7.5) return true;
-    if (scheduleTime.getDate() === now.getDate() && hours - shours > 6) return true;
+    if (scheduleTime.getDate() === now.getDate() && shours < 2.5) return true;
     return false;
 
 }
@@ -139,12 +139,11 @@ CommonAccount.prototype.ableToSchedule = function () {
     if (scheduleTime.getDate() !== now.getDate() || (now - scheduleTime) > 24 * 60 * 60 * 1000) return false;
 
     var hours = now.getHours() + now.getMinutes() / 60;
-    return this.cookieJar && this.capability.schedule && hours >= 8.25 && hours <= 21;
+    return this.capability.schedule && hours >= 8.25 && hours <= 20;
 }
 
 CommonAccount.prototype.ableToConsume = function () {
     if (!this.cookieJar || !this.capability.consume) return false;
-    var total = this.availableBalance;// + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
     if (total < this.stopConsumeBalance) return false;
     if (this.scheduleObj) {
         var afterRepay = total - this.ongoingTodayBuyBackAmount;

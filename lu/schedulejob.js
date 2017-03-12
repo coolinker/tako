@@ -127,6 +127,7 @@ function checkSchedule(account, callback) {
                     if (result) {
                         console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
                         applied.push(exables.shift());
+                        account.scheduleObj.transferingTotal += EXdiscount * exable.remainingPrincipal;
                         updateExpectedEXAmount(account);
                         account.markInfoUpdate();
                         callback(exable, rate);
@@ -158,7 +159,7 @@ function walkThrough(date, productList, standardAmount) {
         var selectedEXforRepaying = [];
         var buyBack = buyBackOnDay(dt, productList, selectedEXforRepaying);
         if (buyBack === null) {
-            if (i > 10) break;
+            if (i > 5) break;
             else return [];
         }
 
@@ -177,7 +178,7 @@ function walkThrough(date, productList, standardAmount) {
 
         if (safevalue / i < -100) {
             console.log("Can not repay risk!", dt.toLocaleString(), Math.round(standardAmount * EXdiscount), Math.round(maxEXedAmount), toEXAmount);
-            if (i > 10) break;
+            if (i > 5) break;
             else return [];
         }
         var reservedbalance = paybackbalance < 0 ? -paybackbalance : 0;

@@ -1,0 +1,69 @@
+<html>
+
+<head>
+    <title>Tako</title>
+</head>
+<script type="text/javascript">
+    function submit() {
+        try {
+            document.getElementById('info').value = "loading...";
+            var acc = document.getElementById('acc');
+            var json = JSON.parse(acc.value);
+            var param = {
+                body: json,
+                timestamp: new Date(),
+            }
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api?action=updateAccount", true);
+            xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+            xhr.send(JSON.stringify(param));
+
+
+            xhr.onloadend = function () {
+                var txt = xhr.responseText;
+                txt = txt.replace("\",", "\",\n");
+                txt = txt.replace("{", "{\n");
+                txt = txt.replace("}", "\n}");
+                document.getElementById('info').value = txt;
+            };
+        } catch (e) {
+            alert(e.stack);
+        }
+    }
+
+</script>
+
+<body>
+
+    <div align="center">
+        <textarea cols="40" rows="20" id="acc">
+    {
+    "user": "",
+    "password": "",
+    "tradePassword": "",
+    "source": "www.lu.com",
+    "interestLevelMax": 0.2,
+    "interestLevelMin": 0.08,
+    "reservedBalance": 0,
+    "pricePerBidMax": 7000,
+    "pricePerBidMin": 1500,
+    "stopConsumeBalance": 5000,
+    "loginExtendInterval": 300000,
+    "capability": {
+        "consume": true,
+        "schedule": true,
+        "leverage": 3.375
+
+    }
+
+}
+</textarea>
+        <br><br>
+        <button onclick="submit()">Submit</button>
+        <br><br>
+        <textarea cols="40" rows="20" id="info">
+        </textarea>
+    </div>
+</body>
+
+</html>
