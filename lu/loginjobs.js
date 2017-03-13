@@ -141,7 +141,7 @@ function userInfo_mobile(account, callback) {
                         account.totalAssets = Math.round(account.allIncomeAmount + result.ongoingTotalBuyBackAmount / 9);
                     }
                     logutil.info("account.availableBalance:", account.availableBalance, "ongoingTodayBuyBackAmount:",  account.ongoingTodayBuyBackAmount, 
-                        account.uid, "totalAssets:", account.totalAssets, "buyback:", buyback, "leverage:", account.capability.leverage);
+                        "uid:", account.uid, "totalAssets:", account.totalAssets, "buyback:", buyback, "leverage:", account.capability.leverage);
 
                     callback(result);
                 })

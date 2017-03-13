@@ -109,9 +109,9 @@ function checkSchedule(account, callback) {
     var applied = account.scheduleObj.appliedEX;
     var exable = exables[0];
 
-    var price = exable.remainingPrincipal;//getScheduleStatusAmount(exable, "EXable");
-
-    var needToBuyBack = account.ongoingTodayBuyBackAmount - account.availableBalance;
+    var price = exable.remainingPrincipal;
+    var price1 = getScheduleStatusAmount(exable, "EXable");
+    if (price !== price1) console.log("ERROR***********************************price != price1", price, price1);
 
     updateAppliedEXStatus(account, applied, 1, function (items) {
         var transferingTotal = 0;
@@ -123,6 +123,10 @@ function checkSchedule(account, callback) {
         if (account.reservedBalance + 3 * AEPrice > (account.availableBalance + transferingTotal)) {
 
             getEXInterestRate(account, price, function (rate) {
+                if (!rate) {
+                    callback();
+                    return;
+                }
                 sellAEforEX(account, exable, rate, function (result) {
                     if (result) {
                         console.log("sellAEforEX", exable.remainingPrincipal, rate, result)
@@ -132,7 +136,7 @@ function checkSchedule(account, callback) {
                         account.markInfoUpdate();
                         callback(exable, rate);
                     } else {
-                        callback(null);
+                        callback();
                     }
 
                 })
@@ -683,28 +687,33 @@ function getEXInterestRate(account, minPrice, callback) {
         }
     },
         function (err, httpResponse, body) {
-            var json = JSON.parse(body).result.products[0].productList;
-            if (json.length <= 5) {
-                callback(4.51)
-                return;
+            try {
+
+                var json = JSON.parse(body).result.products[0].productList;
+                if (json.length <= 5) {
+                    callback(4.51)
+                    return;
+                }
+
+                var r0 = Number(json[0].interestRate);
+                var r0prc = json[0].remainingAmount;
+                var r5 = Number(json[5].interestRate);
+                var r5prc = json[5].remainingAmount;
+                var now = new Date();
+                var hours = now.getHours() + now.getMinutes() / 60;
+                //var r10 = json[10].interestRate;
+                var r = r0;
+                if (r0 === r5 || r5prc - r0prc > 200) {
+                    r = r0 + 0.0001;
+                } else if (r0 - r5 >= 0.0005) {
+                    r = r5 + 0.0001;
+                }
+
+                callback(Math.floor(r * 10000) / 100);
+            } catch (e) {
+                callback(null);
+                console.log("******************", e.stack)
             }
-
-
-            var r0 = Number(json[0].interestRate);
-            var r0prc = json[0].remainingAmount;
-            var r5 = Number(json[5].interestRate);
-            var r5prc = json[5].remainingAmount;
-            var now = new Date();
-            var hours = now.getHours() + now.getMinutes() / 60;
-            //var r10 = json[10].interestRate;
-            var r = r0;
-            if (r0 === r5 || r5prc - r0prc > 200) {
-                r = r0 + 0.0001;
-            } else if (r0 - r5 >= 0.0005) {
-                r = r5 + 0.0001;
-            }
-
-            callback(Math.floor(r * 10000) / 100);
         });
 
 }

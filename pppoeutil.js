@@ -4,14 +4,21 @@ var TestData = require('./testdata');
 
 var networkConnected = true;
 var callbackQueue = [];
+var locked = false;
+
+exports.lock = lock;
+function lock(b) {
+    locked = b;
+}
 
 exports.connected = connected;
-function connected(){
+function connected() {
     return networkConnected;
 }
 
 exports.pppoeUpdate = pppoeUpdate;
 function pppoeUpdate(callback, count) {
+    if (locked) return false;
     if (!count) count = 0;
     var bstr = new Buffer(TestData.pppoe.user + ':' + TestData.pppoe.password).toString('base64')
     //http://admin:B3ijing19@192.168.128.1/pppoe.cgi?id=1440307927
@@ -68,9 +75,9 @@ function pppoeUpdate(callback, count) {
                 },
                     function (err, httpResponse, body) {
                         console.log("pppoeUpdate succeed", networkConnected, new Date())
-                        tryNetwork(function(){
+                        tryNetwork(function () {
                             networkConnected = true;
-                            while(callbackQueue.length>0) {
+                            while (callbackQueue.length > 0) {
                                 var cb = callbackQueue.shift();
                                 cb(true);
                             }
@@ -82,25 +89,27 @@ function pppoeUpdate(callback, count) {
                 pppoeUpdate(callback, ++count);
             };
         });
+
+    return true;
 }
 
 
 exports.whenNetworkReady = whenNetworkReady;
-function whenNetworkReady(callback){
+function whenNetworkReady(callback) {
     if (networkConnected) callback(true);
     else callbackQueue.push(callback);
 }
 
 exports.isNetworkReady = isNetworkReady;
-function isNetworkReady(){
+function isNetworkReady() {
     return networkConnected;
 }
 
 function tryNetwork(callback) {
     simplehttp.GET("https://www.lu.com", {},
         function (err, httpResponse, body) {
-            if(err) {
-                setTimeout(function(){
+            if (err) {
+                setTimeout(function () {
                     tryNetwork(callback)
                 }, 2000)
             } else {

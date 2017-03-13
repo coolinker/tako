@@ -1,4 +1,6 @@
 var logutil = require("./logutil");
+var pppoeutil = require("./pppoeutil");
+
 var events = require('events');
 
 var CommonAccount = function (user, source) {
@@ -144,9 +146,10 @@ CommonAccount.prototype.ableToSchedule = function () {
 
 CommonAccount.prototype.ableToConsume = function () {
     if (!this.cookieJar || !this.capability.consume) return false;
-    var total = this.availableBalance// + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
+    var total = this.availableBalance;
     if (total < this.stopConsumeBalance) return false;
     if (this.scheduleObj) {
+        //total = this.availableBalance + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
         var afterRepay = total - this.ongoingTodayBuyBackAmount;
         if (afterRepay < this.stopConsumeBalance) return false;
     }
@@ -157,12 +160,14 @@ CommonAccount.prototype.ableToConsume = function () {
 CommonAccount.prototype.lock = function () {
     this.locked = true;
     this.lockedTime = new Date();
+    pppoeutil.lock(true);
     logutil.log("lock account:", this.user);
 };
 
 CommonAccount.prototype.unlock = function () {
     this.locked = false;
     this.unlockedTime = new Date();
+    pppoeutil.lock(false);
     logutil.log("unlock account:", this.user);
 };
 module.exports = CommonAccount;
