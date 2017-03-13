@@ -352,7 +352,8 @@ function loopNewTransfer_mobile(callback) {
                     for (var i = 0; i < productObjs.length; i++) {
                         var item = productObjs[i];
                         if (!consumedProducts[item.id]) {
-                            console.log("*******************product:", item.id, item.price, item.principal, item.interestRate, item.numOfInstalments, item.publishedAt,new Date().toLocaleTimeString(), "totalCount", bodyJson.result.totalCount);
+                            if (Number(item.price) <7000)
+                                console.log("*******************product:", item.id, item.price, item.principal, item.interestRate, item.numOfInstalments, item.publishedAt,new Date().toLocaleTimeString(), "totalCount", bodyJson.result.totalCount);
                             products.push({
                                 productId: item.id,
                                 productCategory: item.productCategory,
