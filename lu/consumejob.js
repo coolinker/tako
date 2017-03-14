@@ -36,7 +36,7 @@ function consume(account, toBeConsumed, callback) {
 }
 
 function consume_mobile(account, toBeConsumed, callback) {
-    account.lock();
+    account.lock("lock for consuming");
     var productId = toBeConsumed.productId;
     mobileGetSID(account, toBeConsumed, function (sid) {
         logutil.info("mobileGetSID", new Date().toTimeString(), productId, sid)

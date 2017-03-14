@@ -1,6 +1,5 @@
 var logutil = require("./logutil").config('feeler');
 var pppoeutil = require("./pppoeutil");
-
 var ACCOUNT_TYPES = require("./accounttypes");
 
 var LOGIN_ACCOUNTS_NUMBER = 3;
@@ -61,7 +60,7 @@ function loginAccount(account, callback) {
 
     var accounttype = ACCOUNT_TYPES[account['source']];
     var loginjobs = require("./" + accounttype + "/loginjobs");
-    account.lock();
+    account.lock("lock for login");
     loginjobs.login(account, function (cookieJar, info) {
         account.unlock();
         if (cookieJar === null) {
@@ -81,7 +80,7 @@ function scheduleAccount(account) {
 
     var accounttype = ACCOUNT_TYPES[account['source']];
     var job = require("./" + accounttype + "/schedulejob");
-    account.lock();
+    account.lock("lock for scheduling");
     job.schedule(account, function (scheduleObj) {
         //should start consume job here
         account.unlock();
@@ -101,7 +100,7 @@ function checkSchedule(account) {
     }
     var accounttype = ACCOUNT_TYPES[account['source']];
     var job = require("./" + accounttype + "/schedulejob");
-    account.lock();
+    account.lock("lock for checking schedule");
     job.checkSchedule(account, function (exable, rate) {
         account.unlock();
     });
@@ -216,7 +215,7 @@ function queueLogin() {
                 if (!acc.locked && needExtendLogin(acc)) {
                     var accounttype = ACCOUNT_TYPES[acc['source']];
                     var loginjobs = require("./" + accounttype + "/loginjobs");
-                    acc.lock();
+                    acc.lock("lock for extending login");
 
                     loginjobs.extendLogin(acc, (function () {
                         var _acc = acc;
@@ -226,7 +225,7 @@ function queueLogin() {
                             if (cookieJar === null) {
                                 logutil.info("extend login failed:", _acc.user);
                             } else {
-                                logutil.info("extend login:", _acc.user, _acc.source);
+                                // logutil.info("extend login:", _acc.user, _acc.source);
                                 //_acc.loginExtendedTime = new Date();
                                 if (_acc.needNewSchedule()) {
                                     scheduleAccount(_acc);
@@ -236,7 +235,8 @@ function queueLogin() {
                             }
 
                         }
-                    })())
+                    })());
+                    break;
                 }
 
             }

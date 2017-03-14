@@ -157,17 +157,17 @@ CommonAccount.prototype.ableToConsume = function () {
     return true;
 }
 
-CommonAccount.prototype.lock = function () {
+CommonAccount.prototype.lock = function (info) {
     this.locked = true;
     this.lockedTime = new Date();
     pppoeutil.lock(true);
-    logutil.log("lock account:", this.user);
+    logutil.log("lock account:", this.user, info);
 };
 
-CommonAccount.prototype.unlock = function () {
+CommonAccount.prototype.unlock = function (info) {
     this.locked = false;
     this.unlockedTime = new Date();
     pppoeutil.lock(false);
-    logutil.log("unlock account:", this.user);
+    logutil.log("unlock account:", this.user, info);
 };
 module.exports = CommonAccount;

@@ -281,7 +281,7 @@ function extendLogin(account, callback) {
                 callback(account.cookieJar)
             } else {
                 login(account, function (cookieJar, info) {
-                    logutil.info("extendLogin======", account.user, account.source);
+                    logutil.info("extendLogin======1", account.user, account.source);
                     account.loginExtendedTime = new Date();
                     callback(cookieJar);
                 });

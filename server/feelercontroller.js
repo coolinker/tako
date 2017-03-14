@@ -2,6 +2,7 @@ var logutil = require("../logutil").config("feeler");
 var simplehttp = require('../simplehttp');
 var fs = require("fs");
 
+var TestData = require("../testdata.js");
 var pppoeutil = require("../pppoeutil");
 
 //var rrdtransferloopjob = require("../rrd/transferloopjob");
@@ -85,7 +86,11 @@ function updateAccounts(accountJson) {
 
     for (var i = 0; i < accountJson.length; i++) {
         var accountObj = new CommonAccount(accountJson[i].user, accountJson[i].type).config(accountJson[i]);
+        accountObj.password = TestData.lu.user[accountObj.user].password;
+        accountObj.tradePassword = TestData.lu.user[accountObj.user].tradePassword;
+
         var acc = accountqueue.getAccount(accountObj);
+
         if (!acc){
             if(accountObj.isActive()) {
                 console.log("add account----------", accountJson[i])
