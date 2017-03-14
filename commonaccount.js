@@ -149,7 +149,7 @@ CommonAccount.prototype.ableToConsume = function () {
     var total = this.availableBalance;
     if (total < this.stopConsumeBalance) return false;
     if (this.scheduleObj) {
-        //total = this.availableBalance + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
+        total = this.availableBalance + this.scheduleObj.expectedEXAmount + this.scheduleObj.transferingTotal;
         var afterRepay = total - this.ongoingTodayBuyBackAmount;
         if (afterRepay < this.stopConsumeBalance) return false;
     }
