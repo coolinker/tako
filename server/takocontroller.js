@@ -21,6 +21,7 @@ function updateAccount(accountJson, timestamp) {
     for (var i=0; i<infoQueue[accountJson.user].length; i++) {
         var info = infoQueue[accountJson.user][i];
         if (new Date(info.updateTime) > timestamp) {
+            info.latestFeelerIOTime = latestFeelerIOTime ? latestFeelerIOTime.toLocaleTimeString():null;
             infotoupdate.push(info);
         }
     }

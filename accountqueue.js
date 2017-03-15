@@ -109,15 +109,15 @@ function checkSchedule(account) {
 }
 
 exports.getAccount = getAccount;
-function getAccount(accountInfo) {
-    var accounttype = ACCOUNT_TYPES[accountInfo['source']];
-    return queuesMap[accounttype] ? queuesMap[accounttype][accountInfo.user] : null;
+function getAccount(user, source) {
+    var accounttype = ACCOUNT_TYPES[source];
+    return queuesMap[accounttype] ? queuesMap[accounttype][user] : null;
 }
 
 exports.addAccount = addAccount;
 
 function addAccount(account) {
-    var acc = getAccount(account);
+    var acc = getAccount(account.user, account.source);
     if (acc) {
         removeAccount(acc);
     }

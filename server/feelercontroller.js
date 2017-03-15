@@ -89,7 +89,7 @@ function updateAccounts(accountJson) {
         accountObj.password = TestData.lu.user[accountObj.user].password;
         accountObj.tradePassword = TestData.lu.user[accountObj.user].tradePassword;
 
-        var acc = accountqueue.getAccount(accountObj);
+        var acc = accountqueue.getAccount(accountObj.user, accountObj.source);
 
         if (!acc){
             if(accountObj.isActive()) {

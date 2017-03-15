@@ -111,7 +111,7 @@ function checkSchedule(account, callback) {
 
     var price = exable.remainingPrincipal;
     var price1 = getScheduleStatusAmount(exable, "EXable");
-    if (price !== price1) console.log("ERROR***********************************price != price1", price, price1);
+    if (price !== price1) console.log("ERROR***********************************price != price1", price, price1, JSON.stringify(exable));
 
     updateAppliedEXStatus(account, applied, 1, function (items) {
         var transferingTotal = 0;

@@ -82,6 +82,10 @@ exports.guessCaptchaForLogin = guessCaptchaForLogin;
 function guessCaptchaForLogin(source, cookieJar, callback) {
     getCaptchaBySource(source, cookieJar, function (captchaImage) {
         var captachStr = crackCaptcha(captchaImage);
+        if (!captachaStr || captachStr.length!==4) {
+            guessCaptchaForLogin(source, cookieJar, callback);
+            return;
+        }
         console.log("guessCaptchaForLogin", source, captachStr, captchaImage.width, captchaImage.height, captchaImage.data.length)
         preCheck(captachStr, "source=" + source, cookieJar, function (success) {
             // logutil.log("guessCaptcha", source, captachStr, success);
@@ -100,6 +104,11 @@ function getCaptchaBySource(source, cookieJar, callback) {
         type: 'image/jpeg'
     },
         function (err, pixels) {
+            if (err) {
+                callback(null)
+                return;
+            }
+
             var image = {
                 width: pixels.shape[0],
                 height: pixels.shape[1],

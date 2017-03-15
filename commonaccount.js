@@ -43,6 +43,7 @@ CommonAccount.prototype.scheduleObj = null;
 CommonAccount.prototype.capability = null;
 
 CommonAccount.prototype.config = function (obj) {
+    var leverageChanged = obj.capability.leverage !== this.capability.leverage;
     for (var att in obj) {
         if (obj[att] instanceof Object && this[att] instanceof Object) {
             for (var subatt in obj[att]) {
@@ -51,9 +52,12 @@ CommonAccount.prototype.config = function (obj) {
         } else {
             this[att] = obj[att];
         }
-
-
     }
+
+    if (leverageChanged && this.scheduleObj && this.scheduleObj.transferingTotal === 0) {
+        delete this.scheduleObj;
+    }
+    
     return this;
 };
 
