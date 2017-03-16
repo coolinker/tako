@@ -82,7 +82,7 @@ exports.guessCaptchaForLogin = guessCaptchaForLogin;
 function guessCaptchaForLogin(source, cookieJar, callback) {
     getCaptchaBySource(source, cookieJar, function (captchaImage) {
         var captachStr = crackCaptcha(captchaImage);
-        if (!captachaStr || captachStr.length!==4) {
+        if (!captachStr || captachStr.length!==4) {
             guessCaptchaForLogin(source, cookieJar, callback);
             return;
         }
