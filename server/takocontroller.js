@@ -4,24 +4,24 @@ var accountMap = {};
 var infoQueue = {};
 var latestFeelerIOTime = null;
 
-function validAccount(accJson){
+function validAccount(accJson) {
     return !!accJson.user;
 }
 
 exports.updateAccount = updateAccount;
 function updateAccount(accountJson, timestamp) {
     if (!validAccount(accountJson)) return "Invalid input";
-    timestamp = new Date(timestamp?timestamp:0); 
+    timestamp = new Date(timestamp ? timestamp : 0);
     accountJson.updateTime = new Date();
     accountMap[accountJson.user] = accountJson;
     if (!infoQueue[accountJson.user]) {
         return "Account added.";
     }
     var infotoupdate = [];
-    for (var i=0; i<infoQueue[accountJson.user].length; i++) {
+    for (var i = 0; i < infoQueue[accountJson.user].length; i++) {
         var info = infoQueue[accountJson.user][i];
         if (new Date(info.updateTime) > timestamp) {
-            info.latestFeelerIOTime = latestFeelerIOTime ? latestFeelerIOTime.toLocaleTimeString():null;
+            info.latestFeelerIOTime = latestFeelerIOTime ? latestFeelerIOTime.toLocaleTimeString() : null;
             infotoupdate.push(info);
         }
     }
@@ -49,7 +49,7 @@ function feelerInfoIO(params) {
 
     var accs = [];
     for (var user in accountMap) {
-        if (!accounts[user] || accounts[user] && accountMap[user].updateTime > new Date(accounts[user].updateTime)){
+        if (!accounts[user] || accounts[user] && accountMap[user].updateTime > new Date(accounts[user].updateTime)) {
             accs.push(accountMap[user]);
         }
     }
